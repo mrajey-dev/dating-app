@@ -1,0 +1,1232 @@
+<template>
+  <div>
+    <!-- SKELETON LOADER -->
+    <div v-if="loading" class="details-skeleton">
+      <div class="skeleton-header"></div>
+      <div class="skeleton-card">
+        <div class="skeleton-img"></div>
+        <div class="skeleton-text title"></div>
+        <div class="skeleton-text meta"></div>
+        <div class="skeleton-text rating"></div>
+      </div>
+    </div>
+
+    <!-- ACTUAL CONTENT -->
+    <div v-else-if="person" class="details">
+      <!-- Header -->
+      <div class="details-header">
+        <span class="back" @click="$router.back()">‹</span>
+      </div>
+
+      <!-- Card -->
+      <div class="details-card">
+        <!-- Image -->
+        <img class="hero-img" :src="person.profile_photo" />
+
+        <!-- Name + Verified -->
+        <h2>
+          {{ person.first_name }}
+          <img
+            v-if="person.verified_badge == 1"
+            src="@/assets/verified1.png"
+            class="verified"
+          />
+        </h2>
+
+        <!-- Subtitle -->
+        <p class="subtitle" v-if="person.subtitle">
+          {{ person.subtitle }}
+        </p>
+
+        <!-- Location -->
+        <div class="info-card">
+          <div class="info-row">
+            <span>📍</span>
+            <span>
+              {{ person.city }},
+              {{ person.state }},
+              {{ person.country }}
+            </span>
+          </div>
+        </div>
+   <!-- Features -->
+        <div class="features">
+          <div class="feature">🧑 {{ person.status }}</div>
+          <div class="feature">🎂 {{ age }} yrs</div>
+        </div>
+        <!-- Stats -->
+        <div class="stats">
+          <div class="stat">
+            ❤️
+            <strong>{{ person.like_count || 0 }}</strong>
+            <span>Likes</span>
+          </div>
+
+          <div class="stat">
+            💬
+            <strong>{{ person.comments || 0 }}</strong>
+            <span>Comments</span>
+          </div>
+
+          <div class="stat">
+            ⭐
+            <strong>{{ person.rating || '4.5' }}</strong>
+            <span>Rating</span>
+          </div>
+        </div>
+
+     
+
+       <!-- Habits & Lifestyle -->
+<div class="section" v-if="formattedHabits">
+  <h4 class="section-title">Habits & Lifestyle</h4>
+
+  <div class="habit-card">
+    <span class="habit-icon">✨</span>
+    <span class="habit-text">{{ formattedHabits }}</span>
+  </div>
+</div>
+
+
+        <!-- Photo Gallery -->
+        <div class="section">
+          <h4 class="section-title">More Photos</h4>
+
+          <div class="photo-gallery">
+            <div
+              v-for="(img, index) in person.photo_gallery"
+              :key="index"
+              class="photo-card"
+              @click="openViewer(index)"
+            >
+              <img :src="img" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bottom Bar -->
+      <div class="bottom-bar">
+        <div class="price">
+          <span>Total</span>
+          <strong>₹{{ animatedPrice }} / hour</strong>
+        </div>
+
+        <button class="checkout" @click="showPayment = true">
+          Go to Checkout
+        </button>
+      </div>
+
+      <!-- Payment Sheet -->
+      <div class="payment-sheet" :class="{ open: showPayment }">
+        <h3>Select Payment Method</h3>
+
+        <div class="duration-box">
+          <div class="duration-header">
+            <span>Duration</span>
+            <strong>{{ hours }} hrs</strong>
+          </div>
+
+          <input
+            type="range"
+            min="1"
+            max="12"
+            step="1"
+            v-model.number="hours"
+          />
+        </div>
+
+        <div class="pay-summary">
+          <div class="row">
+            <span>Rate</span>
+            <strong>₹{{ person.rate }} / hr</strong>
+          </div>
+
+          <div class="row total">
+            <span>Total</span>
+            <strong>₹{{ animatedPrice }}</strong>
+          </div>
+        </div>
+
+        <button class="pay-btn" @click="confirmBooking">
+          Pay Securely
+        </button>
+
+        <p class="cancel" @click="showPayment = false">Cancel</p>
+      </div>
+
+      <!-- Overlay -->
+      <div class="overlay" v-if="showPayment" @click="showPayment = false"></div>
+
+      <!-- Image Viewer -->
+      <div v-if="viewerOpen" class="viewer" @click="viewerOpen = false">
+        <img
+          :src="person.photo_gallery[currentIndex]"
+          class="viewer-img"
+          @click.stop
+        />
+      </div>
+
+      <!-- Success -->
+      <div v-if="showSuccess" class="success-overlay">
+        <div class="success-card">
+          <h2>Booked Successfully 🎉</h2>
+          <button @click="closeSuccess">Done</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>
+
+
+<script>
+import axios from "axios"
+
+export default {
+  name: "Details",
+
+  data() {
+    return {
+      person: null,
+      hours: 2,
+      animatedPrice: 0,
+      timer: null,
+      loading: true,
+      showPayment: false,
+      showSuccess: false,
+      viewerOpen: false,
+      currentIndex: 0
+    }
+  },
+
+  mounted() {
+    this.fetchPerson()
+  },
+
+computed: {
+     formattedHabits() {
+  if (!this.person || !this.person.habits) return ""
+
+  // If string like "['Yoga']"
+  if (typeof this.person.habits === "string") {
+    try {
+      const parsed = JSON.parse(this.person.habits)
+      return Array.isArray(parsed) ? parsed.join(" • ") : parsed
+    } catch {
+      return this.person.habits
+    }
+  }
+
+  // If array
+  if (Array.isArray(this.person.habits)) {
+    return this.person.habits.join(" • ")
+  }
+
+  return ""
+},
+  totalPrice() {
+    return this.person ? this.person.rate * this.hours : 0
+  },
+
+  age() {
+    if (!this.person || !this.person.dob) return null
+
+    const dob = new Date(this.person.dob)
+    const today = new Date()
+
+    let age = today.getFullYear() - dob.getFullYear()
+    const monthDiff = today.getMonth() - dob.getMonth()
+
+    if (
+      monthDiff < 0 ||
+      (monthDiff === 0 && today.getDate() < dob.getDate())
+    ) {
+      age--
+    }
+
+    return age
+  }
+},
+
+
+  watch: {
+    totalPrice() {
+      this.animatePrice()
+    }
+  },
+
+  methods: {
+ 
+async fetchPerson() {
+  try {
+    const res = await axios.get(
+      `https://companion.ajaywatpade.in/api/users/${this.$route.params.id}`,
+      {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`
+        }
+      }
+    );
+
+    const data = res.data;
+
+    if (data.success && data.user) {
+      const user = data.user;
+
+      // Profile photo
+    // Profile photo
+const profilePhoto = user.profile_photo
+  ? `https://companion.ajaywatpade.in/${user.profile_photo}`
+  : null;
+
+// Gallery
+let gallery = [];
+if (user.photo_gallery && Array.isArray(user.photo_gallery)) {
+  gallery = user.photo_gallery.map(img => `https://companion.ajaywatpade.in/${img}`);
+}
+
+this.person = {
+  ...user,
+  profile_photo: profilePhoto,
+  photo_gallery: gallery
+};
+
+
+      this.loading = false;
+      this.animatePrice();
+    } else {
+      console.error("User not found");
+      this.$router.push("/");
+    }
+  } catch (e) {
+    console.error(e);
+    this.$router.push("/");
+  }
+},
+
+
+
+    animatePrice() {
+      clearInterval(this.timer)
+      let current = this.animatedPrice
+      const end = this.totalPrice
+
+      this.timer = setInterval(() => {
+        current += Math.ceil((end - current) / 5)
+        this.animatedPrice = current
+
+        if (current >= end) {
+          this.animatedPrice = end
+          clearInterval(this.timer)
+        }
+      }, 30)
+    },
+
+    openViewer(index) {
+      this.currentIndex = index
+      this.viewerOpen = true
+    },
+
+    confirmBooking() {
+      let bookings = JSON.parse(localStorage.getItem("bookings") || "[]")
+
+      bookings.push({
+        id: this.person.id,
+        name: this.person.first_name,
+        hours: this.hours,
+        total: this.totalPrice,
+        image: this.person.profile_photo
+      })
+
+      localStorage.setItem("bookings", JSON.stringify(bookings))
+      this.showSuccess = true
+    },
+
+    closeSuccess() {
+      this.showSuccess = false
+      this.showPayment = false
+      this.$router.push("/my-bookings")
+    }
+  }
+}
+</script>
+
+
+<style scoped>
+.details {
+  min-height: 100vh;
+  background: #003cfd2b;
+  background-image: url(https://www.shutterstock.com/blog/wp-content/uploads/sites/5/2020/07/trendy-background-ideas-cover.jpg);
+  padding-bottom: 90px;
+  font-family: 'Inter', sans-serif;
+}
+
+/* Header */
+.details-header {
+  height: 240px;
+  /* background: linear-gradient(180deg, #1f4fd8, #3b6edc); */
+  /* background-image: url(https://img.freepik.com/free-vector/wave-gradient-blue-background-modern-design_343694-3814.jpg); */
+  background-image: url(https://static.vecteezy.com/system/resources/thumbnails/001/410/432/small/pink-fluid-dynamic-abstract-background-free-vector.jpg);
+  border-bottom-left-radius: 60px;
+  border-bottom-right-radius: 60px;
+  /* position: relative; */
+}
+
+.back {
+  position: absolute;
+  top: 18px;
+  left: 16px;
+  font-size: 26px;
+  color: rgb(0, 0, 0);
+  cursor: pointer;
+}
+
+/* Card */
+.details-card {
+  /* background: white; */
+  border-radius: 28px;
+  margin: -120px 16px 0;
+  padding: 16px;
+  /* box-shadow: 0 20px 40px rgba(0,0,0,0.15); */
+  text-align: center;
+}
+
+/* Image */
+.hero-img {
+  width: 100%;
+  border-radius: 22px;
+  margin-top: -87px;
+  border-bottom-style: inset;
+}
+
+/* Title */
+.details-card h2 {
+  margin-top: 14px;
+  font-size: 20px;
+  font-weight: 700;
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+}
+
+.verified {
+      height: 18px;
+    margin-top: 7px;
+    width: 18px;
+}
+
+.meta {
+  font-size: 13px;
+  color: #666;
+}
+
+.rating {
+  margin: 8px 0 14px;
+  font-size: 13px;
+  color: #444;
+}
+
+/* Features */
+.features {
+  display: flex;
+  justify-content: space-around;
+  margin: 16px 0;
+  font-size: 13px;
+}
+
+/* Sections */
+.section {
+  margin-top: 14px;
+  text-align: left;
+}
+
+.section h4 {
+  font-size: 13px;
+  margin-bottom: 6px;
+  color: #444;
+}
+
+.box {
+  background: #f6f7fb;
+  padding: 14px;
+  border-radius: 14px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 13px;
+}
+
+.bottom-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  background: #ffffff;
+  padding: 14px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  box-shadow: 0 -6px 20px rgba(0, 0, 0, 0.08);
+  border-top-left-radius: 16px;
+  border-top-right-radius: 16px;
+  z-index: 1000;
+}
+
+/* Price Section */
+.price {
+  display: flex;
+  flex-direction: column;
+}
+
+.price span {
+  font-size: 12px;
+  color: #888;
+  font-weight: 500;
+}
+
+.price strong {
+  font-size: 13px;
+  font-weight: 700;
+  color: #111;
+}
+
+/* Checkout Button */
+.checkout {
+  background: linear-gradient(135deg, #ff4d6d, #ff2e63);
+  color: #fff;
+  border: none;
+  padding: 12px 20px;
+  border-radius: 12px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 8px 20px rgba(255, 46, 99, 0.35);
+  transition: all 0.2s ease;
+}
+
+.checkout:active {
+  transform: scale(0.96);
+}
+/* Overlay */
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  z-index: 999;
+}
+
+/* Payment Sheet */
+.payment-sheet {
+  position: fixed;
+  bottom: -100%;
+  left: 0;
+  width: 100%;
+  background: #fff;
+  border-top-left-radius: 24px;
+  border-top-right-radius: 24px;
+  padding: 16px;
+  z-index: 1000;
+  transition: bottom 0.35s ease;
+}
+
+.payment-sheet.open {
+  bottom: 0;
+}
+
+/* Handle */
+.sheet-handle {
+  width: 40px;
+  height: 4px;
+  background: #ddd;
+  border-radius: 10px;
+  margin: 6px auto 14px;
+}
+
+/* Title */
+.payment-sheet h3 {
+  text-align: center;
+  font-size: 16px;
+  margin-bottom: 14px;
+}
+
+/* Rows */
+.pay-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 12px 0;
+  font-size: 14px;
+  border-bottom: 1px solid #eee;
+}
+
+.pay-row.total {
+  font-size: 16px;
+  font-weight: 700;
+  border-bottom: none;
+  margin-top: 6px;
+}
+
+/* Pay Button */
+.pay-btn {
+  width: 100%;
+  margin-top: 16px;
+  padding: 14px;
+  background: linear-gradient(135deg, #ff2e63, #2d010c);
+  color: white;
+  border: none;
+  border-radius: 14px;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+/* Cancel */
+.cancel {
+  text-align: center;
+  margin-top: 10px;
+  font-size: 13px;
+  color: #888;
+}
+/* iOS Bounce Animation */
+.payment-sheet {
+  transition: transform 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
+  transform: translateY(100%);
+}
+
+.payment-sheet.open {
+  transform: translateY(0);
+}
+
+/* Payment Methods */
+.methods {
+  display: flex;
+  justify-content: space-between;
+  margin: 16px 0;
+}
+
+.method {
+  flex: 1;
+  margin: 0 6px;
+  padding: 12px;
+  border-radius: 14px;
+  background: #f6f7fb;
+  text-align: center;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.method img {
+  height: 26px;
+  margin-bottom: 6px;
+}
+
+.method.active {
+  background: #e8edff;
+  border: 2px solid #bebebe;
+  transform: scale(1.05);
+}
+
+/* Summary */
+.pay-summary {
+  background: #fafafa;
+  padding: 14px;
+  border-radius: 14px;
+}
+
+.pay-summary .row {
+  display: flex;
+  justify-content: space-between;
+  padding: 6px 0;
+  font-size: 14px;
+}
+
+.pay-summary .total {
+  font-size: 17px;
+  font-weight: 700;
+}
+
+/* Price Animation */
+.price-animate {
+  transition: transform 0.2s ease;
+}
+
+/* Pay Button */
+.pay-btn {
+  width: 100%;
+  margin-top: 18px;
+  padding: 14px;
+  background: linear-gradient(135deg, #ff2e63, #2d010c);
+  color: #fff;
+  border: none;
+  border-radius: 14px;
+  font-size: 15px;
+  font-weight: 600;
+  box-shadow: 0 10px 30px rgba(255, 91, 236, 0.4);
+}
+
+/* Cancel */
+.cancel {
+  text-align: center;
+  margin-top: 10px;
+  font-size: 13px;
+  color: #777;
+}
+
+/* Duration Slider Box */
+.duration-box {
+  margin: 16px 0;
+  padding: 14px;
+  background: #f6f7fb;
+  border-radius: 16px;
+}
+
+.duration-header {
+  display: flex;
+  justify-content: space-between;
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 10px;
+}
+
+/* Slider */
+.duration-slider {
+  width: 100%;
+  appearance: none;
+  height: 6px;
+  border-radius: 6px;
+  background: linear-gradient(135deg, #ff2e63, #2d010c);
+  outline: none;
+}
+
+/* Slider Thumb */
+.duration-slider::-webkit-slider-thumb {
+  appearance: none;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #fff;
+  border: 3px solid #ba0982;
+  box-shadow: 0 6px 12px rgba(0,0,0,0.2);
+  cursor: pointer;
+}
+
+/* Scale */
+.duration-scale {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  color: #777;
+  margin-top: 6px;
+}
+
+/* Photo Gallery */
+.photo-gallery {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  padding-bottom: 6px;
+  scroll-snap-type: x mandatory;
+}
+
+.photo-gallery::-webkit-scrollbar {
+  display: none;
+}
+
+.photo-gallery img {
+  flex: 0 0 auto;
+  width: 120px;
+  height: 160px;
+  border-radius: 16px;
+  object-fit: cover;
+  scroll-snap-align: start;
+  box-shadow: 0 10px 20px rgba(0,0,0,0.15);
+  transition: transform 0.2s ease;
+}
+
+.photo-gallery img:active {
+  transform: scale(0.95);
+}
+/* FULLSCREEN VIEWER */
+.viewer {
+  position: fixed;
+  inset: 0;
+  background: #000;
+  z-index: 2000;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.viewer-img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+.close {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  font-size: 32px;
+  color: white;
+  cursor: pointer;
+  z-index: 3000; /* 🔥 THIS FIXES IT */
+}
+
+
+/* Counter */
+.counter {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  background: rgba(0,0,0,0.6);
+  color: white;
+  padding: 6px 10px;
+  border-radius: 12px;
+  font-size: 13px;
+}
+
+/* Dots */
+.dots {
+  position: absolute;
+  bottom: 24px;
+  display: flex;
+  gap: 8px;
+}
+
+.dots span {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.4);
+}
+
+.dots span.active {
+  background: white;
+}
+
+/* Navigation */
+.nav {
+  position: absolute;
+  top: 0;
+  width: 50%;
+  height: 100%;
+}
+
+.nav.left {
+  left: 0;
+}
+
+.nav.right {
+  right: 0;
+}
+/* Success Overlay */
+.success-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+  z-index: 3000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Card */
+.success-card {
+  background: #fff;
+  width: 86%;
+  max-width: 320px;
+  padding: 28px 20px;
+  border-radius: 22px;
+  text-align: center;
+  animation: pop 0.35s ease;
+}
+
+/* Icon */
+.success-icon {
+  width: 64px;
+  height: 64px;
+  background: linear-gradient(135deg, #00c853, #00e676);
+  color: white;
+  font-size: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 14px;
+}
+
+/* Text */
+.success-card h2 {
+  font-size: 20px;
+  margin-bottom: 8px;
+}
+
+.success-card p {
+  font-size: 14px;
+  color: #555;
+  line-height: 1.4;
+}
+
+/* Done Button */
+.done-btn {
+  margin-top: 18px;
+  width: 100%;
+  padding: 12px;
+  border: none;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #ff2e63, #2d010c);
+  color: #fff;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+/* Animation */
+@keyframes pop {
+  0% {
+    transform: scale(0.8);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+/* CONFETTI */
+.confetti {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+  z-index: 3001;
+}
+
+.confetti span {
+  position: absolute;
+  top: -10px;
+  width: 8px;
+  height: 14px;
+  background: red;
+  opacity: 0.9;
+  animation: fall 3s linear forwards;
+}
+
+/* Random colors */
+.confetti span:nth-child(3n) { background: #ff4d6d; }
+.confetti span:nth-child(3n+1) { background: #635bff; }
+.confetti span:nth-child(3n+2) { background: #00e676; }
+
+/* Random positions & delays */
+.confetti span {
+  left: calc(100% * var(--x));
+  animation-delay: var(--delay);
+  transform: rotate(var(--rotate));
+}
+
+/* Falling animation */
+@keyframes fall {
+  0% {
+    transform: translateY(0) rotate(0deg);
+  }
+  100% {
+    transform: translateY(110vh) rotate(360deg);
+  }
+}
+
+@keyframes fall {
+  0% {
+    transform: translateY(-10px) rotate(0deg);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(110vh) rotate(360deg);
+    opacity: 0;
+  }
+}
+.photo-section {
+  margin-top: 24px;
+}
+
+.section-title {
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 12px;
+  color: #222;
+}
+
+/* Grid layout */
+.photo-gallery {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+/* Card wrapper */
+.photo-card {
+  border-radius: 14px;
+  overflow: hidden;
+  position: relative;
+  background: #f5f5f5;
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.08);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+/* Image */
+.photo-card img {
+  width: 100%;
+  height: 110px;
+  object-fit: cover;
+  display: block;
+}
+
+/* Tap / hover effect */
+.photo-card:active {
+  transform: scale(0.96);
+}
+
+.photo-card:hover {
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.12);
+}
+
+/* Optional overlay icon */
+.photo-card::after {
+  content: "📸";
+  position: absolute;
+  bottom: 6px;
+  right: 8px;
+  font-size: 14px;
+  opacity: 0.7;
+}
+
+.details-skeleton {
+  min-height: 100vh;
+  padding: 16px;
+  background: #f0f2f5;
+  font-family: 'Inter', sans-serif;
+}
+
+.skeleton-header {
+  height: 200px;
+  border-radius: 60px 60px 0 0;
+  background: linear-gradient(90deg, #eee 25%, #ddd 50%, #eee 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+.skeleton-card {
+  background: white;
+  border-radius: 28px;
+  padding: 16px;
+  margin-top: -80px;
+}
+
+.skeleton-img {
+  height: 180px;
+  border-radius: 22px;
+  background: linear-gradient(90deg, #eee 25%, #ddd 50%, #eee 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+.skeleton-text {
+  height: 16px;
+  border-radius: 8px;
+  margin: 10px 0;
+  background: linear-gradient(90deg, #eee 25%, #ddd 50%, #eee 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+.skeleton-text.title { width: 40%; margin: 16px auto 10px; }
+.skeleton-text.meta { width: 30%; margin: 0 auto; }
+.skeleton-text.rating { width: 20%; margin: 0 auto; }
+
+.skeleton-features {
+  display: flex;
+  justify-content: space-around;
+  margin: 16px 0;
+}
+.skeleton-feature {
+  width: 80px;
+  height: 20px;
+  border-radius: 10px;
+  background: linear-gradient(90deg, #eee 25%, #ddd 50%, #eee 75%);
+  animation: shimmer 1.5s infinite;
+}
+
+.skeleton-gallery {
+  display: flex;
+  gap: 12px;
+  margin-top: 14px;
+}
+.skeleton-photo {
+  width: 120px;
+  height: 160px;
+  border-radius: 16px;
+  background: linear-gradient(90deg, #eee 25%, #ddd 50%, #eee 75%);
+  animation: shimmer 1.5s infinite;
+}
+
+.skeleton-bottom {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 20px;
+}
+.skeleton-price { width: 80px; height: 20px; border-radius: 10px; background: #ddd; }
+.skeleton-button { width: 120px; height: 36px; border-radius: 12px; background: #ddd; }
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+/* ===============================
+   SUBTITLE
+================================ */
+.subtitle {
+  font-size: 14px;
+  color: #555;
+  margin-top: 6px;
+  margin-bottom: 10px;
+  text-align: center;
+  line-height: 1.4;
+}
+
+/* ===============================
+   LOCATION INFO CARD
+================================ */
+.info-card {
+  background: #f6f7fb;
+  padding: 12px 14px;
+  border-radius: 16px;
+  margin: 12px 0 16px;
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.05);
+}
+
+.info-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: #333;
+}
+
+/* ===============================
+   STATS (LIKES / COMMENTS / RATING)
+================================ */
+.stats {
+  display: flex;
+  justify-content: space-around;
+  margin: 18px 0 10px;
+}
+
+.stat {
+  text-align: center;
+  font-size: 12px;
+  color: #666;
+}
+
+.stat strong {
+  display: block;
+  font-size: 16px;
+  font-weight: 700;
+  color: #111;
+  margin: 2px 0;
+}
+
+.stat span {
+  font-size: 11px;
+}
+
+/* ===============================
+   HABITS SECTION
+================================ */
+.habits {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.habit-chip {
+  padding: 6px 14px;
+  background: linear-gradient(135deg, #ff4d6d, #ff2e63);
+  color: #fff;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 500;
+  box-shadow: 0 6px 14px rgba(255, 46, 99, 0.3);
+  transition: transform 0.2s ease;
+}
+
+.habit-chip:active {
+  transform: scale(0.95);
+}
+
+/* ===============================
+   SECTION TITLE (REUSE)
+================================ */
+.section-title {
+  font-size: 15px;
+  font-weight: 600;
+  margin-bottom: 8px;
+  color: #222;
+}
+
+/* ===============================
+   MOBILE POLISH
+================================ */
+@media (max-width: 480px) {
+  .stats {
+    margin-top: 14px;
+  }
+
+  .info-card {
+    padding: 10px 12px;
+  }
+}
+/* ===============================
+   HABITS & LIFESTYLE (PREMIUM)
+================================ */
+.habit-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  border-radius: 18px;
+  background: linear-gradient(135deg, #fff5f7, #ffeef2);
+  box-shadow: 0 8px 20px rgba(255, 77, 109, 0.15);
+  margin-top: 10px;
+}
+
+.habit-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #ff4d6d, #ff2e63);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  color: #fff;
+  flex-shrink: 0;
+}
+
+.habit-text {
+  font-size: 14px;
+  font-weight: 600;
+  color: #333;
+  letter-spacing: 0.3px;
+}
+
+/* Mobile polish */
+@media (max-width: 480px) {
+  .habit-card {
+    padding: 12px 14px;
+  }
+
+  .habit-text {
+    font-size: 13px;
+  }
+}
+
+</style>
