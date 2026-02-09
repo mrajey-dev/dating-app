@@ -215,13 +215,35 @@
 
       </div>
     </div>
+    <!-- CROP MODAL -->
+<div v-if="showCropper" class="cropper-overlay">
+  <div class="cropper-header">
+    <button @click="cancelCrop">Cancel</button>
+    <span>Move & Scale</span>
+    <button @click="confirmCrop">Done</button>
   </div>
+
+  <div class="cropper-body">
+    <img ref="cropperImage" :src="cropImageSrc" />
+  </div>
+</div>
+
+  </div>
+
 </template>
 
 <script>
+import Cropper from 'cropperjs'
+import 'cropperjs/dist/cropper.min.css'
+
+
 export default {
   data() {
     return {
+      cropper: null,
+    showCropper: false,
+    cropImageSrc: null,
+    selectedImageFile: null,
       locationLoading: false, 
       loading: false,
       currentStep: 0,
@@ -389,12 +411,57 @@ nextStep() {
 },
 
 
-    handleImage(e) {
-      const file = e.target.files[0]
-      if (!file) return
-      this.form.profilePhoto = file
-      this.selfiePreview = URL.createObjectURL(file)
-    },
+   handleImage(e) {
+  const file = e.target.files[0]
+  if (!file) return
+
+  this.selectedImageFile = file
+  this.cropImageSrc = URL.createObjectURL(file)
+  this.showCropper = true
+
+  this.$nextTick(() => {
+    if (this.cropper) this.cropper.destroy()
+
+    this.cropper = new Cropper(this.$refs.cropperImage, {
+      aspectRatio: 1,
+      viewMode: 1,
+      dragMode: 'move',
+      background: false,
+      guides: false,
+      center: true,
+      autoCropArea: 1,
+      cropBoxResizable: false,
+      cropBoxMovable: false,
+    })
+  })
+},
+confirmCrop() {
+  this.cropper.getCroppedCanvas({
+    width: 600,
+    height: 600,
+    imageSmoothingQuality: 'high'
+  }).toBlob(blob => {
+    const croppedFile = new File([blob], 'profile.jpg', {
+      type: 'image/jpeg'
+    })
+
+    this.form.profilePhoto = croppedFile
+    this.selfiePreview = URL.createObjectURL(blob)
+
+    this.showCropper = false
+    this.cropper.destroy()
+    this.cropper = null
+  }, 'image/jpeg', 0.95)
+},
+cancelCrop() {
+  this.showCropper = false
+  if (this.cropper) {
+    this.cropper.destroy()
+    this.cropper = null
+  }
+},
+
+
     handleMultiplePhotos(e) {
       const files = Array.from(e.target.files)
       files.forEach(f => this.photos.push(URL.createObjectURL(f)))
@@ -764,6 +831,46 @@ button.outline.full:active {
   cursor: not-allowed;
   box-shadow: none;
   transform: none;
+}
+
+.cropper-overlay {
+  position: fixed;
+  inset: 0;
+  background: #000;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+}
+
+.cropper-header {
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px;
+  color: #fff;
+  font-weight: 600;
+}
+
+.cropper-header button {
+  background: none;
+  border: none;
+  color: #22c55e;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.cropper-body {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cropper-body img {
+  max-width: 100%;
+  max-height: 100%;
 }
 
 </style>

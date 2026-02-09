@@ -21,7 +21,22 @@
       <!-- Card -->
       <div class="details-card">
         <!-- Image -->
-        <img class="hero-img" :src="person.profile_photo" />
+ <div class="hero-wrapper">
+  <!-- Heart pulse ONLY for verified users -->
+  <div v-if="person.verified_badge == 1" class="heart-pulse">
+    <span class="heart"></span>
+    <span class="heart"></span>
+    <span class="heart"></span>
+  </div>
+
+  <!-- Normal circular rings for everyone -->
+  <!-- <span class="ring ring-1"></span>
+  <span class="ring ring-2"></span> -->
+
+  <img class="hero-img" :src="person.profile_photo" />
+</div>
+
+
 
         <!-- Name + Verified -->
         <h2>
@@ -364,9 +379,7 @@ this.person = {
 /* Header */
 .details-header {
   height: 240px;
-  /* background: linear-gradient(180deg, #1f4fd8, #3b6edc); */
-  /* background-image: url(https://img.freepik.com/free-vector/wave-gradient-blue-background-modern-design_343694-3814.jpg); */
-  background-image: url(https://static.vecteezy.com/system/resources/thumbnails/001/410/432/small/pink-fluid-dynamic-abstract-background-free-vector.jpg);
+   /* background-image: url(https://static.vecteezy.com/system/resources/thumbnails/001/410/432/small/pink-fluid-dynamic-abstract-background-free-vector.jpg); */
   border-bottom-left-radius: 60px;
   border-bottom-right-radius: 60px;
   /* position: relative; */
@@ -393,8 +406,9 @@ this.person = {
 
 /* Image */
 .hero-img {
-  width: 100%;
-  border-radius: 22px;
+      width: 101px;
+    height: 101px;
+  border-radius: 171px;
   margin-top: -87px;
   border-bottom-style: inset;
 }
@@ -1226,6 +1240,150 @@ this.person = {
 
   .habit-text {
     font-size: 13px;
+  }
+}
+
+/* ===============================
+   HERO IMAGE WITH ANIMATED RINGS
+================================ */
+.hero-wrapper {
+  position: relative;
+  width: 110px;
+  height: 110px;
+  margin: -90px auto 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Profile Image */
+.hero-img {
+     width: 81px;
+    height: 81px;
+    border-radius: 50%;
+    object-fit: cover;
+    position: relative;
+    z-index: 5;
+    background: #fff;
+    box-shadow: 0px 0px 20px 0px rgb(76 162 208);
+    margin-top: -20px;
+}
+
+/* Animated Rings */
+.ring {
+  position: absolute;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 46, 99, 0.5);
+  animation: pulse 3s infinite ease-out;
+  z-index: 1;
+}
+
+.ring-1 {
+  width: 110px;
+  height: 110px;
+  animation-delay: 0s;
+}
+
+.ring-2 {
+  width: 125px;
+  height: 125px;
+  animation-delay: 1s;
+  opacity: 0.6;
+}
+
+.ring-3 {
+  width: 145px;
+  height: 145px;
+  animation-delay: 2s;
+  opacity: 0.4;
+}
+
+/* Pulse animation */
+@keyframes pulse {
+  0% {
+    transform: scale(0.9);
+    opacity: 0.8;
+  }
+  70% {
+    transform: scale(1.1);
+    opacity: 0;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+/* ===============================
+   HEART PULSE (VERIFIED USERS)
+================================ */
+.heart-pulse {
+  position: absolute;
+  width: 160px;
+  height: 160px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 0;
+}
+
+.heart {
+  position: absolute;
+  width: 60px;
+  height: 60px;
+  background: #ff2e63;
+  transform: rotate(-45deg);
+  animation: heartPulse 3s infinite ease-out;
+  opacity: 0.6;
+}
+
+.heart::before,
+.heart::after {
+  content: "";
+  position: absolute;
+  width: 60px;
+  height: 60px;
+  background: #ff2e63;
+  border-radius: 50%;
+}
+
+.heart::before {
+  top: -30px;
+  left: 0;
+}
+
+.heart::after {
+  left: 30px;
+  top: 0;
+}
+
+/* Multiple pulse layers */
+.heart:nth-child(1) {
+  animation-delay: 0s;
+}
+
+.heart:nth-child(2) {
+  animation-delay: 1s;
+  opacity: 0.4;
+  transform: scale(1.2) rotate(-45deg);
+}
+
+.heart:nth-child(3) {
+  animation-delay: 2s;
+  opacity: 0.25;
+  transform: scale(1.4) rotate(-45deg);
+}
+
+/* Heart pulse animation */
+@keyframes heartPulse {
+  0% {
+    transform: scale(0.7) rotate(-45deg);
+    opacity: 0.8;
+  }
+  70% {
+    transform: scale(1.6) rotate(-45deg);
+    opacity: 0;
+  }
+  100% {
+    opacity: 0;
   }
 }
 

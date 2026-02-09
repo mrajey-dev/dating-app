@@ -8,7 +8,8 @@
         <img :src="previewPhoto.profile_photo || user.profile_photo" class="avatar" />
         <label class="upload-btn">
           Change Photo
-         <input type="file" @change="e => onFileChange('profile_photo', e)" hidden />
+         <input type="file" accept="image/*" @change="onProfilePhotoSelect" hidden />
+
 
         </label>
       </div>
@@ -163,15 +164,36 @@
     {{ toast.message }}
   </div>
 </div>
+<!-- CROP MODAL -->
+<div v-if="showCropper" class="cropper-modal">
+  <div class="cropper-header">
+    <button @click="closeCropper">Cancel</button>
+    <span>Move & Scale</span>
+    <button class="done" @click="cropAndUpload">Done</button>
+  </div>
+
+  <div class="cropper-body">
+    <img ref="cropImage" :src="cropImageUrl" />
+  </div>
+</div>
+
  </div>
+
 </template>
 
 <script>
 import axios from "axios"
+import Cropper from "cropperjs"
+import "cropperjs/dist/cropper.min.css"
 
 export default {
   data() {
     return {
+        showCropper: false,
+cropper: null,
+cropImageUrl: null,
+selectedProfileFile: null,
+
         toast: {
       show: false,
       message: "",
@@ -287,6 +309,69 @@ async mounted() {
 
 
   methods: {
+    onProfilePhotoSelect(e) {
+  const file = e.target.files[0]
+  if (!file) return
+
+  this.selectedProfileFile = file
+  this.cropImageUrl = URL.createObjectURL(file)
+  this.showCropper = true
+
+  this.$nextTick(() => {
+    this.cropper = new Cropper(this.$refs.cropImage, {
+      aspectRatio: 1,
+      viewMode: 1,
+      dragMode: "move",
+      background: false,
+      autoCropArea: 1,
+      responsive: true,
+      zoomOnWheel: true,
+    })
+  })
+},
+
+closeCropper() {
+  if (this.cropper) {
+    this.cropper.destroy()
+    this.cropper = null
+  }
+  this.showCropper = false
+},
+
+async cropAndUpload() {
+  const token = localStorage.getItem("token")
+  if (!token) return
+
+  const canvas = this.cropper.getCroppedCanvas({
+    width: 512,
+    height: 512,
+    imageSmoothingQuality: "high",
+  })
+
+  canvas.toBlob(async (blob) => {
+    const formData = new FormData()
+    formData.append("profile_photo", blob, "profile.jpg")
+
+    try {
+      const res = await axios.post(
+        "https://companion.ajaywatpade.in/api/profile/upload-profile-photo",
+        formData,
+        { headers: { Authorization: `Bearer ${token}` } }
+      )
+
+      this.previewPhoto.profile_photo = canvas.toDataURL()
+      this.user.profile_photo = res.data.profile_photo
+      localStorage.setItem("user", JSON.stringify(res.data))
+      this.showToast("Profile photo updated")
+    } catch (err) {
+      console.error(err)
+      this.showToast("Failed to upload photo", "error")
+    } finally {
+      this.closeCropper()
+    }
+  }, "image/jpeg", 0.9)
+},
+
     showToast(message, type = "success") {
   this.toast.message = message
   this.toast.type = type
@@ -417,6 +502,7 @@ async onFileChange(field, e) {
   max-width: 500px;
   background: #fff;
   border-radius: 20px;
+      margin-bottom: 39px;
   padding: 25px;
   box-shadow: 0 12px 30px rgba(0, 0, 0, 0.1);
 }
@@ -824,4 +910,58 @@ img {
   }
 }
 
+/* Cropper Modal */
+.cropper-modal {
+  position: fixed;
+  inset: 0;
+  background: #000;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Header */
+.cropper-header {
+  height: 54px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 16px;
+  color: #fff;
+  font-weight: 600;
+}
+
+.cropper-header button {
+  background: none;
+  border: none;
+  color: #25d366;
+  font-size: 15px;
+  cursor: pointer;
+}
+
+.cropper-header .done {
+  font-weight: 700;
+}
+
+/* Body */
+.cropper-body {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cropper-body img {
+  max-width: 100%;
+  max-height: 100%;
+}
+
+/* Dark background like WhatsApp */
+.cropper-bg {
+  background: #000 !important;
+}
+.cropper-modal {
+    background-color: #000;
+    opacity: 8!important;
+}
 </style>
