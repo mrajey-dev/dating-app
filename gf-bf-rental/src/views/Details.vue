@@ -188,7 +188,7 @@ export default {
   data() {
     return {
       person: null,
-      hours: 2,
+      hours: 1,
       animatedPrice: 0,
       timer: null,
       loading: true,

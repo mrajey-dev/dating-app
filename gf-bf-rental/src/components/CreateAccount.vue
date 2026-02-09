@@ -131,7 +131,7 @@
 
       <!-- STEP 6 : SUBTITLE -->
       <div v-if="currentStep === 7">
-        <label>Profession</label>
+        <label>Bio</label>
         <input v-model="form.subtitle" placeholder="Student • Singer • Actor" />
       </div>
 

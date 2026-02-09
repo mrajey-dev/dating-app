@@ -12,7 +12,7 @@
       </div>
 
       <ul class="menu-list">
-        <li>👤 My Profile</li>
+       <li @click="goToProfile">👤 My Profile</li>
         <li>❤️ Matches</li>
         <li>💬 Chats</li>
         <li @click="goToBookings">📅 Bookings</li>
@@ -110,6 +110,10 @@ export default {
     await this.loadUsers()
   },
   methods: {
+    goToProfile() {
+    this.isMenuOpen = false
+    this.$router.push("/profile")
+  },
     /* ================= USER ================= */
     async loadUser() {
       const storedUser = JSON.parse(localStorage.getItem("user"))
@@ -119,12 +123,12 @@ export default {
       }
 
       this.user = {
-        name: storedUser.name || storedUser.first_name || "User",
-        city: storedUser.city || "Unknown",
-        profile_photo: storedUser.profile_photo
-          ? `https://companion.ajaywatpade.in/dating-backend/public/storage/${storedUser.profile_photo}`
-          : "https://via.placeholder.com/100",
-      }
+  name: storedUser.name || storedUser.first_name || "User",
+  city: storedUser.city || "Unknown",
+  profile_photo: storedUser.profile_photo
+    ? `https://companion.ajaywatpade.in/dating-backend/public/storage/${storedUser.profile_photo}`
+    : "https://via.placeholder.com/100",
+}
     },
 
     logout() {
@@ -146,26 +150,30 @@ export default {
     },
 
     /* ================= USERS ================= */
-    async loadUsers() {
-      const token = localStorage.getItem("token")
-      if (!token) return
+async loadUsers() {
+  const token = localStorage.getItem("token")
+  if (!token) return
 
-      try {
-        const res = await axios.get("https://companion.ajaywatpade.in/api/users", {
-          headers: { Authorization: `Bearer ${token}` },
-        })
+  try {
+    const res = await axios.get(
+      "https://companion.ajaywatpade.in/api/users",
+      { headers: { Authorization: `Bearer ${token}` } }
+    )
 
-        // Map API response to frontend-friendly structure
-        this.people = res.data.map((person) => ({
-          ...person,
-          profile_photo: person.profile_photo
-            ? `https://companion.ajaywatpade.in/${person.profile_photo}`
-            : "https://via.placeholder.com/200",
-        }))
-      } catch (err) {
-        console.error("Failed to load users:", err.response || err)
-      }
-    },
+    this.people = res.data
+      .map((person) => ({
+        ...person,
+        profile_photo: person.profile_photo
+          ? `https://companion.ajaywatpade.in/${person.profile_photo}`
+          : "https://via.placeholder.com/200",
+      }))
+      .sort((a, b) => b.id - a.id)
+  } catch (err) {
+    console.error("Failed to load users:", err.response || err)
+  }
+},
+
+
 
     /* ================= FAVOURITES ================= */
     async toggleFavourite(id) {
