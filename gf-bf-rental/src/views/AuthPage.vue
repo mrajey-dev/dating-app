@@ -7,7 +7,7 @@
     <div class="auth-card">
       <!-- Only show these when login tab is active -->
       <template v-if="activeTab === 'login'">
-        <img src="https://img.freepik.com/free-vector/romantic-red-glowing-hearts-valentines-day-background_1017-36138.jpg?semt=ais_hybrid&w=740&q=80" alt="" class="login-img">
+        <img src="/banner.png" alt="" class="login-img">
         <h1 class="logo">Intimate<strong>Match</strong></h1>
 
         <!-- Tabs -->
@@ -63,6 +63,14 @@ export default {
     }
   },
 
+  mounted() {
+    // Redirect if already logged in
+    const token = localStorage.getItem('token')
+    if (token) {
+      this.$router.push('/home')
+    }
+  },
+
   methods: {
     async submitLogin() {
       this.error = ''
@@ -88,6 +96,7 @@ export default {
   }
 }
 </script>
+
 
 <style scoped>
 /* Full page background */
@@ -205,7 +214,7 @@ export default {
 }
 
 .login-img {
-  width: 80%;
+  width: 54%;
   margin-top: -23px;
   border-radius: 20px;
   margin-bottom: 0px;
