@@ -7,7 +7,8 @@
     <div class="side-menu" :class="{ open: isMenuOpen }">
       <div class="menu-header">
         <img :src="user.profile_photo" class="menu-avatar" />
-        <h3>{{ user.name }}</h3>
+        <h3>{{ user.first_name }} {{ user.last_name }}</h3>
+
         <p>{{ user.city }}</p>
       </div>
 
@@ -101,7 +102,7 @@ export default {
       isMenuOpen: false,
       favourites: [],
       people: [],
-      user: { name: "", city: "", profile_photo: "" },
+      user: { first_name: "", last_name: "", city: "", profile_photo: "" },
     }
   },
   async mounted() {
@@ -114,42 +115,6 @@ export default {
     this.isMenuOpen = false
     this.$router.push("/profile")
   },
-    /* ================= USER ================= */
-    async loadUser() {
-      const storedUser = JSON.parse(localStorage.getItem("user"))
-      if (!storedUser || !localStorage.getItem("token")) {
-        this.$router.replace("/")
-        return
-      }
-
-      this.user = {
-  name: storedUser.name || storedUser.first_name || "User",
-  city: storedUser.city || "Unknown",
-  profile_photo: storedUser.profile_photo
-    ? `https://companion.ajaywatpade.in/dating-backend/public/storage/${storedUser.profile_photo}`
-    : "https://via.placeholder.com/100",
-}
-    },
-
-    logout() {
-      axios
-        .post(
-          "https://companion.ajaywatpade.in/api/logout",
-          {},
-          {
-            headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
-          }
-        )
-        .catch(() => {})
-
-      localStorage.removeItem("token")
-      localStorage.removeItem("favourites")
-      localStorage.removeItem("user")
-      this.isMenuOpen = false
-      this.$router.replace("/")
-    },
-
-    /* ================= USERS ================= */
 async loadUsers() {
   const token = localStorage.getItem("token")
   if (!token) return
@@ -172,6 +137,44 @@ async loadUsers() {
     console.error("Failed to load users:", err.response || err)
   }
 },
+
+
+    logout() {
+      axios
+        .post(
+          "https://companion.ajaywatpade.in/api/logout",
+          {},
+          {
+            headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+          }
+        )
+        .catch(() => {})
+
+      localStorage.removeItem("token")
+      localStorage.removeItem("favourites")
+      localStorage.removeItem("user")
+      this.isMenuOpen = false
+      this.$router.replace("/")
+    },
+
+    /* ================= USERS ================= */
+async loadUser() {
+  const storedUser = JSON.parse(localStorage.getItem("user"))
+  if (!storedUser || !localStorage.getItem("token")) {
+    this.$router.replace("/")
+    return
+  }
+
+  this.user = {
+    first_name: storedUser.first_name || "",
+    last_name: storedUser.last_name || "",
+    city: storedUser.city || "Unknown",
+    profile_photo: storedUser.profile_photo
+      ? `https://companion.ajaywatpade.in/dating-backend/public/storage/${storedUser.profile_photo}`
+      : "https://via.placeholder.com/100",
+  }
+},
+
 
 
 

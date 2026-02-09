@@ -227,8 +227,15 @@
     <img ref="cropperImage" :src="cropImageSrc" />
   </div>
 </div>
+<!-- TOAST -->
+<div v-if="toast.show" class="toast">
+  {{ toast.message }}
+  <span class="countdown">({{ toast.seconds }})</span>
+</div>
+
 
   </div>
+
 
 </template>
 
@@ -240,6 +247,14 @@ import 'cropperjs/dist/cropper.min.css'
 export default {
   data() {
     return {
+   toast: {
+  show: false,
+  message: '',
+  seconds: 5,
+  timer: null
+},
+
+
       cropper: null,
     showCropper: false,
     cropImageSrc: null,
@@ -348,6 +363,30 @@ export default {
 },
 
   methods: {
+showToast(message, redirect = false) {
+  this.toast.message = message
+  this.toast.seconds = 5
+  this.toast.show = true
+
+  // Clear old timer if any
+  if (this.toast.timer) clearInterval(this.toast.timer)
+
+  this.toast.timer = setInterval(() => {
+    this.toast.seconds--
+
+    if (this.toast.seconds <= 0) {
+      clearInterval(this.toast.timer)
+      this.toast.show = false
+
+      if (redirect) {
+        window.location.href = '/'
+        // OR: this.$router.push('/')
+      }
+    }
+  }, 1000)
+}
+,
+
     requestLocation() {
   this.locationLoading = true; // start loader
 
@@ -396,12 +435,12 @@ nextStep() {
       .then(res => res.json())
       .then(data => {
         console.log('User saved:', data);
-        alert('Account created successfully!');
-        
-        // ✅ Redirect after successful registration
-        window.location.href = '/'; // <-- redirect to homepage
-        // OR if using Vue Router:
-        // this.$router.push('/');
+    this.showToast(
+  'Account created successfully 🎉 Redirecting',
+  true
+)
+ 
+      
       })
       .catch(err => console.error(err))
       .finally(() => {
@@ -871,6 +910,38 @@ button.outline.full:active {
 .cropper-body img {
   max-width: 100%;
   max-height: 100%;
+}
+.toast {
+  position: fixed;
+  top: 18px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: linear-gradient(135deg,#22c55e,#16a34a);
+  color: #fff;
+  padding: 14px 20px;
+  border-radius: 14px;
+  font-weight: 600;
+  font-size: 14px;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.25);
+  z-index: 99999;
+  animation: toastIn 0.35s ease;
+}
+
+@keyframes toastIn {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -10px);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+}
+
+.countdown {
+  margin-left: 6px;
+  opacity: 0.85;
+  font-weight: 700;
 }
 
 </style>

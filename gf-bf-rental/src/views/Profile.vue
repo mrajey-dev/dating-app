@@ -146,6 +146,12 @@
 
 </div>
 
+<!-- DELETE ACCOUNT -->
+<div class="delete-account">
+  <button @click="confirmDelete" class="btn-delete">
+    Delete My Account
+  </button>
+</div>
 
       <!-- Sticky Save Bar -->
 <div class="save-bar">
@@ -309,6 +315,42 @@ async mounted() {
 
 
   methods: {
+    confirmDelete() {
+  const confirmed = confirm(
+    "Are you sure?\nThis will permanently delete your account and cannot be undone."
+  )
+
+  if (confirmed) {
+    this.deleteAccount()
+  }
+},
+
+async deleteAccount() {
+  const token = localStorage.getItem("token")
+  if (!token) return
+
+  try {
+    await axios.delete(
+      "https://companion.ajaywatpade.in/api/profile/delete",
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    )
+
+    // Clear everything
+    localStorage.removeItem("token")
+    localStorage.removeItem("user")
+
+    // Redirect to home
+    window.location.href = "/"
+  } catch (err) {
+    console.error(err)
+    this.showToast("Failed to delete account", "error")
+  }
+},
+
     onProfilePhotoSelect(e) {
   const file = e.target.files[0]
   if (!file) return
@@ -964,4 +1006,26 @@ img {
     background-color: #000;
     opacity: 8!important;
 }
+.delete-account {
+  margin-top: 20px;
+  text-align: center;
+}
+
+.btn-delete {
+  width: 100%;
+  padding: 14px;
+  background: linear-gradient(135deg, #ff3b3b, #c70000);
+  color: #fff;
+  font-weight: bold;
+  border: none;
+  border-radius: 25px;
+  cursor: pointer;
+  transition: 0.3s;
+}
+
+.btn-delete:hover {
+  opacity: 0.9;
+  box-shadow: 0 10px 25px rgba(255, 0, 0, 0.35);
+}
+
 </style>
