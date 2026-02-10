@@ -23,15 +23,18 @@
         <!-- Image -->
  <div class="hero-wrapper">
   <!-- Heart pulse ONLY for verified users -->
-  <div v-if="person.verified_badge == 1" class="heart-pulse">
+  <!-- <div v-if="person.verified_badge == 1" class="heart-pulse">
     <span class="heart"></span>
     <span class="heart"></span>
     <span class="heart"></span>
-  </div>
+  </div> -->
 
   <!-- Normal circular rings for everyone -->
-  <!-- <span class="ring ring-1"></span>
-  <span class="ring ring-2"></span> -->
+  <span class="ring ring-1"></span>
+  <span class="ring ring-2"></span>
+
+
+
 
   <img class="hero-img" :src="person.profile_photo" />
 </div>
@@ -72,34 +75,36 @@
         <!-- Stats -->
         <div class="stats">
           <div class="stat">
-            ❤️
+            
             <strong>{{ person.like_count || 0 }}</strong>
-            <span>Likes</span>
+            <span>Likes ❤️</span>
           </div>
 
           <div class="stat">
-            💬
+            
             <strong>{{ person.comments || 0 }}</strong>
-            <span>Comments</span>
+            <span>Comments 💬</span>
           </div>
 
           <div class="stat">
-            ⭐
+            
             <strong>{{ person.rating || '4.5' }}</strong>
-            <span>Rating</span>
+            <span>Rating ⭐</span>
           </div>
         </div>
 
      
 
        <!-- Habits & Lifestyle -->
-<div class="section" v-if="formattedHabits">
-  <h4 class="section-title">Habits & Lifestyle</h4>
+<div class="section" v-if="formattedHabits && formattedHabits.length">
 
-  <div class="habit-card">
-    <span class="habit-icon">✨</span>
-    <span class="habit-text">{{ formattedHabits }}</span>
-  </div>
+  <h4 class="section-title">Habits</h4>
+
+<div class="habit-card">
+  <!-- <span class="habit-icon">🌿</span> -->
+  <span class="habit-text">🌿 {{ formattedHabits }}</span>
+</div>
+
 </div>
 
 
@@ -175,6 +180,7 @@
 
       <!-- Image Viewer -->
       <div v-if="viewerOpen" class="viewer" @click="viewerOpen = false">
+         <span class="close" @click="viewerOpen = false">✕</span>
         <img
           :src="person.photo_gallery[currentIndex]"
           class="viewer-img"
@@ -219,26 +225,60 @@ export default {
   },
 
 computed: {
-     formattedHabits() {
-  if (!this.person || !this.person.habits) return ""
+formattedHabits() {
+  if (!this.person || !this.person.habits) return null
 
-  // If string like "['Yoga']"
-  if (typeof this.person.habits === "string") {
+  let habits = this.person.habits
+
+  // Array already? Easy.
+  if (Array.isArray(habits)) {
+    return habits.length ? habits.join(" • ") : null
+  }
+
+  if (typeof habits !== "string") return null
+
+  habits = habits.trim()
+  if (!habits || habits === "[]" || habits.toLowerCase() === "null") {
+    return null
+  }
+
+  // 🔥 Decode JSON up to 2 times
+  for (let i = 0; i < 2; i++) {
     try {
-      const parsed = JSON.parse(this.person.habits)
-      return Array.isArray(parsed) ? parsed.join(" • ") : parsed
+      habits = JSON.parse(habits)
     } catch {
-      return this.person.habits
+      break
     }
   }
 
-  // If array
-  if (Array.isArray(this.person.habits)) {
-    return this.person.habits.join(" • ")
+  // If array after decode
+  if (Array.isArray(habits)) {
+    return habits.length ? habits.join(" • ") : null
   }
 
-  return ""
+  // If string after decode
+  if (typeof habits === "string") {
+    // 💥 REMOVE wrapping quotes if present
+    habits = habits.replace(/^"+|"+$/g, "")
+
+    // CSV support
+    if (habits.includes(",")) {
+      return habits
+        .split(",")
+        .map(h => h.trim())
+        .filter(Boolean)
+        .join(" • ")
+    }
+
+    return habits
+  }
+
+  return null
 },
+
+
+
+
   totalPrice() {
     return this.person ? this.person.rate * this.hours : 0
   },
@@ -281,43 +321,42 @@ async fetchPerson() {
           Authorization: `Bearer ${localStorage.getItem("token")}`
         }
       }
-    );
+    )
 
-    const data = res.data;
+    const data = res.data
 
     if (data.success && data.user) {
-      const user = data.user;
+      const user = data.user
 
-      // Profile photo
-    // Profile photo
-const profilePhoto = user.profile_photo
-  ? `https://companion.ajaywatpade.in/${user.profile_photo}`
-  : null;
+      // ✅ SAFE DEBUG
+      console.log("RAW HABITS FROM API 👉", user.habits)
 
-// Gallery
-let gallery = [];
-if (user.photo_gallery && Array.isArray(user.photo_gallery)) {
-  gallery = user.photo_gallery.map(img => `https://companion.ajaywatpade.in/${img}`);
-}
+      const profilePhoto = user.profile_photo
+        ? `https://companion.ajaywatpade.in/${user.profile_photo}`
+        : null
 
-this.person = {
-  ...user,
-  profile_photo: profilePhoto,
-  photo_gallery: gallery
-};
+      let gallery = []
+      if (Array.isArray(user.photo_gallery)) {
+        gallery = user.photo_gallery.map(
+          img => `https://companion.ajaywatpade.in/${img}`
+        )
+      }
 
+      this.person = {
+        ...user,
+        profile_photo: profilePhoto,
+        photo_gallery: gallery
+      }
 
-      this.loading = false;
-      this.animatePrice();
-    } else {
-      console.error("User not found");
-      this.$router.push("/");
+      this.loading = false
+      this.animatePrice()
     }
   } catch (e) {
-    console.error(e);
-    this.$router.push("/");
+    console.error(e)
+    this.$router.push("/")
   }
 },
+
 
 
 
@@ -370,8 +409,8 @@ this.person = {
 <style scoped>
 .details {
   min-height: 100vh;
-  background: #003cfd2b;
-  background-image: url(https://www.shutterstock.com/blog/wp-content/uploads/sites/5/2020/07/trendy-background-ideas-cover.jpg);
+  background: #ffffff;
+  /* background-image: url(https://www.shutterstock.com/blog/wp-content/uploads/sites/5/2020/07/trendy-background-ideas-cover.jpg); */
   padding-bottom: 90px;
   font-family: 'Inter', sans-serif;
 }
@@ -455,7 +494,7 @@ this.person = {
 }
 
 .section h4 {
-  font-size: 13px;
+  font-size: 11px;
   margin-bottom: 6px;
   color: #444;
 }
@@ -1113,7 +1152,7 @@ this.person = {
   padding: 12px 14px;
   border-radius: 16px;
   margin: 12px 0 16px;
-  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.05);
+  /* box-shadow: 0 6px 14px rgba(0, 0, 0, 0.05); */
 }
 
 .info-row {
@@ -1141,8 +1180,8 @@ this.person = {
 
 .stat strong {
   display: block;
-  font-size: 16px;
-  font-weight: 700;
+  font-size: 12px;
+  /* font-weight: 700; */
   color: #111;
   margin: 2px 0;
 }
@@ -1208,7 +1247,7 @@ this.person = {
   padding: 14px 16px;
   border-radius: 18px;
   background: linear-gradient(135deg, #fff5f7, #ffeef2);
-  box-shadow: 0 8px 20px rgba(255, 77, 109, 0.15);
+  /* box-shadow: 0 8px 20px rgba(255, 77, 109, 0.15); */
   margin-top: 10px;
 }
 
@@ -1216,7 +1255,7 @@ this.person = {
   width: 38px;
   height: 38px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #ff4d6d, #ff2e63);
+  /* background: linear-gradient(135deg, #ff4d6d, #ff2e63); */
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1226,8 +1265,8 @@ this.person = {
 }
 
 .habit-text {
-  font-size: 14px;
-  font-weight: 600;
+  font-size: 12px;
+  /* font-weight: 600; */
   color: #333;
   letter-spacing: 0.3px;
 }
@@ -1239,7 +1278,7 @@ this.person = {
   }
 
   .habit-text {
-    font-size: 13px;
+    font-size: 12px;
   }
 }
 
@@ -1265,8 +1304,8 @@ this.person = {
     position: relative;
     z-index: 5;
     background: #fff;
-    box-shadow: 0px 0px 20px 0px rgb(76 162 208);
-    margin-top: -20px;
+    box-shadow: 0px 0px 20px 0px #ff2e633b;
+    margin-top: -2px;
 }
 
 /* Animated Rings */

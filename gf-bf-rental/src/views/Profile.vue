@@ -18,9 +18,19 @@
       <div class="photo-gallery">
         <h3>Gallery</h3>
         <div class="gallery-scroll">
-          <div v-for="(photo, i) in previewPhoto.photo_gallery || user.photo_gallery || []" :key="i">
-            <img :src="photo" class="gallery-img" />
-          </div>
+        <div
+  v-for="(photo, i) in previewPhoto.photo_gallery || []"
+  :key="i"
+  class="gallery-item"
+>
+  <img :src="photo" class="gallery-img" />
+
+  <!-- REMOVE BUTTON -->
+  <button class="remove-photo" @click="removeGalleryPhoto(i)">
+    ✕
+  </button>
+</div>
+
           <label class="add-photo">
             +
           <input type="file" multiple @change="e => onFileChange('photo_gallery', e)" hidden />
@@ -63,7 +73,7 @@
             <select v-model="user.gender">
               <option value="male">Male</option>
               <option value="female">Female</option>
-              <option value="other">Other</option>
+              <!-- <option value="other">Other</option> -->
             </select>
           </div>
           <div class="form-group">
@@ -315,6 +325,41 @@ async mounted() {
 
 
   methods: {
+    async removeGalleryPhoto(index) {
+  const confirmed = confirm("Remove this photo from your gallery?")
+  if (!confirmed) return
+
+  const token = localStorage.getItem("token")
+  if (!token) return
+
+  // Remove from preview instantly (UX win)
+  const removedPhoto = this.user.photo_gallery[index]
+
+  this.previewPhoto.photo_gallery.splice(index, 1)
+  this.user.photo_gallery.splice(index, 1)
+
+  try {
+    const res = await axios.post(
+      "https://companion.ajaywatpade.in/api/profile/remove-gallery-photo",
+      {
+        photo: removedPhoto,
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    )
+
+    // Update local storage with latest user data
+    localStorage.setItem("user", JSON.stringify(res.data))
+    this.showToast("Photo removed successfully")
+  } catch (err) {
+    console.error(err)
+    this.showToast("Failed to remove photo", "error")
+  }
+},
+
     confirmDelete() {
   const confirmed = confirm(
     "Are you sure?\nThis will permanently delete your account and cannot be undone."
@@ -596,6 +641,8 @@ text-align: center;
   gap: 10px;
   overflow-x: auto;
   padding-bottom: 10px;
+  flex-wrap: wrap;
+  justify-content: flex-start;
 }
 
 .gallery-img {
@@ -1026,6 +1073,29 @@ img {
 .btn-delete:hover {
   opacity: 0.9;
   box-shadow: 0 10px 25px rgba(255, 0, 0, 0.35);
+}
+
+.gallery-item {
+  position: relative;
+}
+
+.remove-photo {
+  position: absolute;
+  top: 2px;
+    right: 0px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #ff3b3b;
+  color: #fff;
+  border: none;
+  font-size: 14px;
+  cursor: pointer;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.25);
+}
+
+.remove-photo:hover {
+  transform: scale(1.1);
 }
 
 </style>

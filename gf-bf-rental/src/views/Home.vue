@@ -30,23 +30,22 @@
         <img class="avatar" :src="user.profile_photo" />
       </div>
 
-      <h1>Choose a Companion</h1>
+   <h1 class="page-title">Choose a Companion</h1>
 
-      <div class="search-box">
-        <div class="location">
-          <span class="location-icon">📍</span>
-          <span class="location-text">Nashik, India</span>
-        </div>
-        <div class="actions">
-          <button class="icon-btn filter">⚙️</button>
-        </div>
-      </div>
+<input
+  type="text"
+  v-model="search"
+  placeholder="Search"
+  class="search-input"
+/>
+
     </div>
 
     <!-- Results -->
     <div class="content">
       <div v-if="people.length">
-        <div class="deal-card" v-for="person in people" :key="person.id">
+        <div class="deal-card" v-for="person in filteredPeople" :key="person.id">
+
           <!-- Top -->
           <div class="deal-top">
             <div class="deal-rating">⭐ {{ person.rating || 0 }}</div>
@@ -102,6 +101,7 @@ export default {
       isMenuOpen: false,
       favourites: [],
       people: [],
+        search: "",
       user: { first_name: "", last_name: "", city: "", profile_photo: "" },
     }
   },
@@ -110,6 +110,28 @@ export default {
     this.favourites = JSON.parse(localStorage.getItem("favourites") || "[]")
     await this.loadUsers()
   },
+  computed: {
+  filteredPeople() {
+    if (!this.search) return this.people
+
+    const q = this.search.toLowerCase()
+
+    return this.people.filter(person => {
+      return (
+        (person.first_name && person.first_name.toLowerCase().includes(q)) ||
+        (person.last_name && person.last_name.toLowerCase().includes(q)) ||
+        (person.status && person.status.toLowerCase().includes(q)) ||
+        (person.subtitle && person.subtitle.toLowerCase().includes(q)) ||
+        (person.city && person.city.toLowerCase().includes(q)) ||
+        (person.state && person.state.toLowerCase().includes(q)) ||
+        (person.country && person.country.toLowerCase().includes(q)) ||
+        (person.address && person.address.toLowerCase().includes(q)) ||
+        (person.rate && person.rate.toString().includes(q))
+      )
+    })
+  }
+},
+
   methods: {
     goToProfile() {
     this.isMenuOpen = false
@@ -457,28 +479,6 @@ async loadUser() {
   font-size: 16px;
 }
 
-/* Right buttons */
-.actions {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.icon-btn {
-  border: none;
-  outline: none;
-  background: #000000;
-  width: 34px;
-  height: 34px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 15px;
-  cursor: pointer;
-}
-
-
 
         
        /* Overlay */
@@ -608,5 +608,14 @@ async loadUser() {
 .deal-img {
   margin-top: 50px;
 }
+.search-input {
+  width: 100%;
+  padding: 12px 14px;
+  margin: 10px 0 16px;
+  border-radius: 30px;
+  border: 1px solid #ddd;
+  font-size: 14px;
+}
+
  </style>
 

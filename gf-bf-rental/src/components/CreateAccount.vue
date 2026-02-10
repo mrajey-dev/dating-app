@@ -84,7 +84,6 @@
       <div v-if="currentStep === 3" class="grid">
         <button class="chip" :class="{ active: form.gender==='Male' }" @click="form.gender='Male'">Male</button>
         <button class="chip" :class="{ active: form.gender==='Female' }" @click="form.gender='Female'">Female</button>
-        <!-- <button class="chip" :class="{ active: form.gender==='Other' }" @click="form.gender='Other'">Other</button> -->
       </div>
 
       <!-- STEP 4.1 : DATE OF BIRTH -->
@@ -421,7 +420,14 @@ nextStep() {
       } else if (key === 'profilePhoto') {
         if (this.form.profilePhoto) formData.append('profile_photo', this.form.profilePhoto);
       } else if (key === 'genderPreference') {
-        this.form.genderPreference.forEach(pref => formData.append('gender_preference[]', pref));
+      let genderPreference = 'both'
+
+if (this.form.genderPreference.length === 1) {
+  genderPreference = this.form.genderPreference[0].toLowerCase()
+}
+
+formData.append('gender_preference', genderPreference)
+
       } else {
         formData.append(key, this.form[key]);
       }
@@ -500,13 +506,21 @@ cancelCrop() {
   }
 },
 
+handleMultiplePhotos(e) {
+  const files = Array.from(e.target.files)
 
-    handleMultiplePhotos(e) {
-      const files = Array.from(e.target.files)
-      files.forEach(f => this.photos.push(URL.createObjectURL(f)))
-      this.form.gallery = files
-    },
-    togglePreference(gender) {
+  files.forEach(file => {
+    // preview
+    this.photos.push(URL.createObjectURL(file))
+
+    // actual file for upload
+    this.form.gallery.push(file)
+  })
+
+  // reset input so same file can be selected again if needed
+  e.target.value = ''
+},
+   togglePreference(gender) {
       const index = this.form.genderPreference.indexOf(gender)
       if (index > -1) {
         this.form.genderPreference.splice(index, 1)
