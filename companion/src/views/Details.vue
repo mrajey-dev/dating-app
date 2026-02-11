@@ -21,57 +21,84 @@
       <!-- Card -->
       <div class="details-card">
         <!-- Image -->
- <div class="hero-wrapper">
-  <!-- Heart pulse ONLY for verified users -->
-  <!-- <div v-if="person.verified_badge == 1" class="heart-pulse">
-    <span class="heart"></span>
-    <span class="heart"></span>
-    <span class="heart"></span>
-  </div> -->
-
-  <!-- Normal circular rings for everyone -->
+ <!-- <div class="hero-wrapper">
+  
   <span class="ring ring-1"></span>
   <span class="ring ring-2"></span>
 
-
-
-
   <img class="hero-img" :src="person.profile_photo" />
+</div> -->
+
+
+
+      <div class="insta-profile">
+  <!-- LEFT COLUMN -->
+  <div class="insta-left">
+    <img class="insta-avatar" :src="person.profile_photo" />
+
+    
+
+    <p class="insta-subtitle" v-if="person.subtitle">
+      {{ person.subtitle }}
+    </p>
+  </div>
+
+  <!-- RIGHT COLUMN -->
+  <div class="insta-right">
+    <div class="insta-name-row">
+      <span class="insta-name">{{ person.first_name }}</span>
+      <img
+        v-if="person.verified_badge == 1"
+        src="@/assets/verified1.png"
+        class="verified"
+      />
+    </div>
+    <div class="insta-stats">
+      <div class="insta-stat">
+        <strong>{{ person.photo_gallery?.length || 0 }}</strong>
+        <span>Posts</span>
+      </div>
+      <div class="insta-stat">
+        <strong>{{ person.like_count || 0 }}</strong>
+        <span>Followers</span>
+      </div>
+      <div class="insta-stat">
+        <strong>{{ person.following_count || 0 }}</strong>
+        <span>Following</span>
+      </div>
+    </div>
+
+    <button
+      class="insta-follow-btn"
+      :class="{ following: isFollowing }"
+      @click="toggleFollow"
+    >
+      {{ isFollowing ? "Following" : "Follow" }}
+    </button>
+  </div>
 </div>
 
 
+<!-- Self Introduction -->
+<div class="section intro-section">
+  <div class="intro-card">
+    <div class="intro-header">
+   
+    </div>
 
-        <!-- Name + Verified -->
-        <h2>
-          {{ person.first_name }}
-          <img
-            v-if="person.verified_badge == 1"
-            src="@/assets/verified1.png"
-            class="verified"
-          />
-        </h2>
+    <p class="intro-text">
+      {{ introMessage }}
+    </p>
 
-        <!-- Subtitle -->
-        <p class="subtitle" v-if="person.subtitle">
-          {{ person.subtitle }}
-        </p>
+    <!-- <div class="intro-tags">
+      <span class="tag">📍 {{ person.city }}</span>
+      <span class="tag">🧑 {{ person.status }}</span>
+      <span class="tag">🎂 {{ age }} yrs</span>
+    </div> -->
+  </div>
+</div>
 
-        <!-- Location -->
-        <div class="info-card">
-          <div class="info-row">
-            <span>📍</span>
-            <span>
-              {{ person.city }},
-              {{ person.state }},
-              {{ person.country }}
-            </span>
-          </div>
-        </div>
-   <!-- Features -->
-        <div class="features">
-          <div class="feature">🧑 {{ person.status }}</div>
-          <div class="feature">🎂 {{ age }} yrs</div>
-        </div>
+
         <!-- Stats -->
         <div class="stats">
           <div class="stat">
@@ -93,9 +120,7 @@
           </div>
         </div>
 
-     
-
-       <!-- Habits & Lifestyle -->
+            <!-- Habits & Lifestyle -->
 <div class="section" v-if="formattedHabits && formattedHabits.length">
 
   <h4 class="section-title">Habits</h4>
@@ -106,6 +131,8 @@
 </div>
 
 </div>
+
+
 
 
         <!-- Photo Gallery -->
@@ -128,13 +155,16 @@
       <!-- Bottom Bar -->
       <div class="bottom-bar">
         <div class="price">
-          <span>Total</span>
-          <strong>₹{{ animatedPrice }} / hour</strong>
+          <span></span>
+          <!-- <strong>₹{{ animatedPrice }} / hour</strong> -->
+          <strong></strong>
+
         </div>
 
-        <button class="checkout" @click="showPayment = true">
-          Go to Checkout
-        </button>
+       <button class="checkout" @click="showChat = true">
+  Start Messaging
+</button>
+
       </div>
 
       <!-- Payment Sheet -->
@@ -174,6 +204,49 @@
 
         <p class="cancel" @click="showPayment = false">Cancel</p>
       </div>
+<!-- CHAT POPUP -->
+<!-- CHAT POPUP -->
+<div v-if="showChat">
+  <div class="chat-sheet open">
+    <div class="chat-header">
+      <span class="close" @click="showChat = false">✕</span>
+      <h3>Start a Conversation 💬</h3>
+    </div>
+
+    <div class="chat-body">
+      <div class="chat-bubble received">
+        Hi {{ person.first_name }} 😊  
+        I came across your profile and felt we might vibe well.  
+        Looking forward to getting to know you better 💕
+      </div>
+
+      <div class="chat-bubble sent">
+        👋 Hey! Thanks for reaching out.  
+        That’s really sweet — tell me more about yourself 🙂
+      </div>
+    </div>
+
+    <div class="chat-footer">
+      <input
+        type="text"
+        placeholder="Type your message..."
+        disabled
+      />
+      <button disabled>Send</button>
+    </div>
+  </div>
+
+  <!-- OVERLAY -->
+  <div class="overlay" @click="showChat = false"></div>
+</div>
+
+
+<!-- OVERLAY -->
+<div
+  class="overlay"
+  v-if="showChat"
+  @click="showChat = false"
+></div>
 
       <!-- Overlay -->
       <div class="overlay" v-if="showPayment" @click="showPayment = false"></div>
@@ -208,6 +281,11 @@ export default {
 
   data() {
     return {
+      showChat: false,
+
+     // 👇 FOLLOW STATE
+    isFollowing: false,
+    followLoading: false,
       person: null,
       hours: 1,
       animatedPrice: 0,
@@ -300,7 +378,18 @@ formattedHabits() {
     }
 
     return age
-  }
+  },
+  introMessage() {
+  if (!this.person) return ""
+
+  const name = this.person.first_name || ""
+  const city = this.person.city || ""
+  const status = this.person.status || ""
+  const age = this.age
+
+  return `Hi, my name is ${name}. I’m ${age} years old and I live in ${city}. I’m ${status} and here to find a genuine and meaningful connection. Looking forward to meeting the right companion and seeing where things go 😊.`
+}
+
 },
 
 
@@ -311,7 +400,34 @@ formattedHabits() {
   },
 
   methods: {
- 
+ async toggleFollow() {
+    if (this.followLoading) return
+
+    this.followLoading = true
+
+    // 🔥 Optimistic UI (instant toggle)
+    this.isFollowing = !this.isFollowing
+
+    try {
+      await axios.post(
+        "https://companion.ajaywatpade.in/api/follow-toggle",
+        {
+          user_id: this.person.id
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`
+          }
+        }
+      )
+    } catch (e) {
+      // ❌ rollback if API fails
+      this.isFollowing = !this.isFollowing
+      console.error("Follow failed", e)
+    } finally {
+      this.followLoading = false
+    }
+  },
 async fetchPerson() {
   try {
     const res = await axios.get(
@@ -350,6 +466,7 @@ async fetchPerson() {
 
       this.loading = false
       this.animatePrice()
+      
     }
   } catch (e) {
     console.error(e)
@@ -417,7 +534,7 @@ async fetchPerson() {
 
 /* Header */
 .details-header {
-  height: 240px;
+  height: 151px;
    /* background-image: url(https://static.vecteezy.com/system/resources/thumbnails/001/410/432/small/pink-fluid-dynamic-abstract-background-free-vector.jpg); */
   border-bottom-left-radius: 60px;
   border-bottom-right-radius: 60px;
@@ -820,6 +937,12 @@ async fetchPerson() {
   top: 18px;
   right: 18px;
   font-size: 32px;
+  background-color: #ff2e63;
+  
+    justify-self: right;
+  border-radius: 18px;
+
+      width: 31px;
   color: white;
   cursor: pointer;
   z-index: 3000; /* 🔥 THIS FIXES IT */
@@ -1136,12 +1259,11 @@ async fetchPerson() {
    SUBTITLE
 ================================ */
 .subtitle {
-  font-size: 14px;
-  color: #555;
-  margin-top: 6px;
-  margin-bottom: 10px;
-  text-align: center;
-  line-height: 1.4;
+font-size: 14px;
+    color: #555;
+    margin-top: 2px;
+    margin-bottom: 10px;
+    line-height: 1.4;
 }
 
 /* ===============================
@@ -1424,6 +1546,331 @@ async fetchPerson() {
   100% {
     opacity: 0;
   }
+}
+/* ===============================
+   FOLLOW BUTTON (INSTAGRAM STYLE)
+================================ */
+.follow-btn {
+  margin-top: 10px;
+  padding: 8px 22px;
+  border-radius: 999px;
+  border: none;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  background: linear-gradient(135deg, #ff4d6d, #ff2e63);
+  color: #fff;
+  box-shadow: 0 6px 14px rgba(255, 46, 99, 0.35);
+}
+
+.follow-btn:active {
+  transform: scale(0.95);
+}
+
+/* Following state */
+.follow-btn.following {
+  background: #f1f1f1;
+  color: #333;
+  box-shadow: none;
+  border: 1px solid #ddd;
+}
+/* ===============================
+   INSTAGRAM PROFILE HEADER
+================================ */
+.insta-profile {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  margin-top: 10px;
+}
+
+/* Avatar */
+.insta-avatar img {
+  width: 86px;
+  height: 86px;
+  margin-top: 6px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid #ff2e63;
+}
+
+/* Right Section */
+.insta-right {
+  flex: 1;
+  margin-top: -9px;
+}
+
+/* Stats Row */
+.insta-stats {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.insta-stat {
+  text-align: center;
+  font-size: 12px;
+}
+
+.insta-stat strong {
+  display: block;
+  font-size: 14px;
+  font-weight: 700;
+  color: #111;
+}
+
+.insta-stat span {
+  color: #666;
+  font-size: 11px;
+}
+
+/* Follow Button */
+.insta-follow-btn {
+  width: 100%;
+  padding: 8px 0;
+  border-radius: 8px;
+  border: none;
+  font-size: 14px;
+  font-weight: 600;
+  background: #0095f6;
+  color: #fff;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.insta-follow-btn.following {
+  background: #efefef;
+  color: #111;
+  border: 1px solid #ddd;
+}
+
+.insta-follow-btn:active {
+  transform: scale(0.97);
+}
+
+/* Name */
+.insta-name {
+  margin-top: 8px;
+  font-size: 15px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.subtitle {
+  text-align: left;
+}
+/* ===============================
+   INSTAGRAM NAME ROW
+================================ */
+.insta-name-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+     margin-top: -4px;
+    margin-left: 19px;
+}
+
+.insta-name {
+  font-size: 15px;
+  font-weight: 600;
+  color: #111;
+}
+
+/* Verified badge */
+.verified {
+  width: 16px;
+  height: 16px;
+}
+/* LEFT COLUMN */
+.insta-left {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center; /* 🔥 vertical centering */
+  min-width: 120px;
+}
+
+/* Avatar */
+.insta-avatar {
+  width: 86px;
+  height: 86px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid #ff2e63;
+  margin-bottom: 6px;
+}
+
+/* Name row */
+.insta-name-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 2px 0;
+}
+
+/* Name */
+.insta-name {
+  font-size: 15px;
+  font-weight: 600;
+  color: #111;
+}
+
+/* Subtitle */
+.insta-subtitle {
+  font-size: 12px;
+  color: #666;
+  text-align: center;
+  max-width: 140px;
+  line-height: 1.3;
+}
+.intro-section {
+  margin-top: 16px;
+}
+
+.intro-text {
+  font-size: 12px;
+  line-height: 1.6;
+  text-align: justify;
+  color: #444;
+  background: #f9f9f9;
+  padding: 12px;
+  border-radius: 10px;
+}
+.intro-section {
+  margin-top: 18px;
+}
+
+.intro-card {
+  background: linear-gradient(135deg, #fff, #fafafa);
+  border-radius: 16px;
+  padding: 4px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.06);
+}
+
+.intro-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.intro-header h4 {
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.intro-icon {
+  font-size: 18px;
+}
+
+.intro-text {
+  line-height: 1.7;
+  color: #333;
+  margin-bottom: 12px;
+}
+
+.intro-tags {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.tag {
+  background: #f1f3f5;
+  padding: 6px 10px;
+  border-radius: 20px;
+  font-size: 12px;
+  color: #555;
+}
+.chat-sheet {
+  position: fixed;
+  left: 0;
+  bottom: -100%;
+  width: 100%;
+  height: 100vh;
+  background: #fff;
+  z-index: 1001;
+  transition: bottom 0.35s ease;
+  display: flex;
+  flex-direction: column;
+}
+
+.chat-sheet.open {
+  bottom: 0;
+}
+
+.chat-header {
+  padding: 16px;
+  text-align: center;
+  border-bottom: 1px solid #eee;
+  position: relative;
+}
+
+.chat-header h3 {
+  margin: 0;
+  font-size: 15px;
+}
+
+.chat-header .close {
+  position: absolute;
+  left: 16px;
+  top: 8px;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.chat-body {
+  flex: 1;
+  padding: 16px;
+  overflow-y: auto;
+  background: #fafafa;
+}
+
+.chat-bubble {
+  max-width: 80%;
+  padding: 12px 14px;
+  margin-bottom: 12px;
+  border-radius: 16px;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.chat-bubble.received {
+  background: #fff;
+  border: 1px solid #eee;
+  align-self: flex-start;
+}
+
+.chat-bubble.sent {
+  background: #ff4d6d;
+  color: #fff;
+  justify-self: right;
+  align-self: flex-end;
+}
+
+.chat-footer {
+  padding: 12px;
+  display: flex;
+  gap: 8px;
+  border-top: 1px solid #eee;
+}
+
+.chat-footer input {
+  flex: 1;
+  padding: 10px;
+  border-radius: 20px;
+  border: 1px solid #ddd;
+}
+
+.chat-footer button {
+  padding: 10px 16px;
+  border-radius: 20px;
+  background: #ff4d6d;
+  color: #fff;
+  border: none;
+  opacity: 0.6;
 }
 
 </style>
