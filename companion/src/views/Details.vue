@@ -2,12 +2,50 @@
   <div>
     <!-- SKELETON LOADER -->
     <div v-if="loading" class="details-skeleton">
+      <!-- Header -->
       <div class="skeleton-header"></div>
+
+      <!-- Card -->
       <div class="skeleton-card">
-        <div class="skeleton-img"></div>
-        <div class="skeleton-text title"></div>
-        <div class="skeleton-text meta"></div>
-        <div class="skeleton-text rating"></div>
+        <!-- Insta Profile -->
+        <div class="skeleton-insta">
+          <div class="skeleton-avatar shimmer"></div>
+
+          <div class="skeleton-right">
+            <div class="skeleton-line name shimmer"></div>
+
+            <div class="skeleton-stats">
+              <div class="skeleton-stat shimmer"></div>
+              <div class="skeleton-stat shimmer"></div>
+              <div class="skeleton-stat shimmer"></div>
+            </div>
+
+            <div class="skeleton-btn shimmer"></div>
+          </div>
+        </div>
+
+        <!-- Intro -->
+        <div class="skeleton-intro">
+          <div class="skeleton-line full shimmer"></div>
+          <div class="skeleton-line full shimmer"></div>
+          <div class="skeleton-line half shimmer"></div>
+        </div>
+
+        <!-- Habits -->
+        <div class="skeleton-habit shimmer"></div>
+
+        <!-- Gallery -->
+        <div class="skeleton-gallery">
+          <div class="skeleton-photo shimmer"></div>
+          <div class="skeleton-photo shimmer"></div>
+          <div class="skeleton-photo shimmer"></div>
+        </div>
+      </div>
+
+      <!-- Bottom Bar -->
+      <div class="skeleton-bottom">
+        <div class="skeleton-price shimmer"></div>
+        <div class="skeleton-action shimmer"></div>
       </div>
     </div>
 
@@ -15,130 +53,90 @@
     <div v-else-if="person" class="details">
       <!-- Header -->
       <div class="details-header">
-        <span class="back" @click="$router.back()">‹</span>
+     
       </div>
 
       <!-- Card -->
       <div class="details-card">
-        <!-- Image -->
- <!-- <div class="hero-wrapper">
-  
-  <span class="ring ring-1"></span>
-  <span class="ring ring-2"></span>
+        <div class="insta-profile">
+          <!-- LEFT COLUMN -->
+          <div class="insta-left">
+            <img class="insta-avatar" :src="person.profile_photo" />
+            <p class="insta-subtitle" v-if="person.subtitle">
+              {{ person.subtitle }}
+            </p>
+          </div>
 
-  <img class="hero-img" :src="person.profile_photo" />
-</div> -->
+          <!-- RIGHT COLUMN -->
+          <div class="insta-right">
+            <div class="insta-name-row">
+              <span class="insta-name">{{ person.first_name }}</span>
+              <img
+                v-if="person.verified_badge == 1"
+                src="@/assets/verified1.png"
+                class="verified"
+              />
+            </div>
+            <div class="insta-stats">
+              <div class="insta-stat">
+                <strong>{{ person.photo_gallery?.length || 0 }}</strong>
+                <span>Posts</span>
+              </div>
+              <div class="insta-stat">
+                <strong>{{ person.followers_count || 0 }}</strong>
+                <span>Followers</span>
+              </div>
+              <div class="insta-stat">
+                <strong>{{ person.following_count || 0 }}</strong>
+                <span>Following</span>
+              </div>
+            </div>
 
+            <button
+              v-if="isFollowing !== null"
+              class="insta-follow-btn"
+              :class="{ following: isFollowing }"
+              @click="toggleFollow"
+            >
+              {{ isFollowing ? "Following" : "Follow" }}
+            </button>
+          </div>
+        </div>
 
-
-      <div class="insta-profile">
-  <!-- LEFT COLUMN -->
-  <div class="insta-left">
-    <img class="insta-avatar" :src="person.profile_photo" />
-
-    
-
-    <p class="insta-subtitle" v-if="person.subtitle">
-      {{ person.subtitle }}
-    </p>
-  </div>
-
-  <!-- RIGHT COLUMN -->
-  <div class="insta-right">
-    <div class="insta-name-row">
-      <span class="insta-name">{{ person.first_name }}</span>
-      <img
-        v-if="person.verified_badge == 1"
-        src="@/assets/verified1.png"
-        class="verified"
-      />
-    </div>
-    <div class="insta-stats">
-      <div class="insta-stat">
-        <strong>{{ person.photo_gallery?.length || 0 }}</strong>
-        <span>Posts</span>
-      </div>
-      <div class="insta-stat">
-        <strong>{{ person.like_count || 0 }}</strong>
-        <span>Followers</span>
-      </div>
-      <div class="insta-stat">
-        <strong>{{ person.following_count || 0 }}</strong>
-        <span>Following</span>
-      </div>
-    </div>
-
-    <button
-      class="insta-follow-btn"
-      :class="{ following: isFollowing }"
-      @click="toggleFollow"
-    >
-      {{ isFollowing ? "Following" : "Follow" }}
-    </button>
-  </div>
-</div>
-
-
-<!-- Self Introduction -->
-<div class="section intro-section">
-  <div class="intro-card">
-    <div class="intro-header">
-   
-    </div>
-
-    <p class="intro-text">
-      {{ introMessage }}
-    </p>
-
-    <!-- <div class="intro-tags">
-      <span class="tag">📍 {{ person.city }}</span>
-      <span class="tag">🧑 {{ person.status }}</span>
-      <span class="tag">🎂 {{ age }} yrs</span>
-    </div> -->
-  </div>
-</div>
-
+        <!-- Self Introduction -->
+        <div class="section intro-section">
+          <div class="intro-card">
+            <p class="intro-text">{{ introMessage }}</p>
+          </div>
+        </div>
 
         <!-- Stats -->
         <div class="stats">
           <div class="stat">
-            
             <strong>{{ person.like_count || 0 }}</strong>
             <span>Likes ❤️</span>
           </div>
-
           <div class="stat">
-            
             <strong>{{ person.comments || 0 }}</strong>
             <span>Comments 💬</span>
           </div>
-
           <div class="stat">
-            
             <strong>{{ person.rating || '4.5' }}</strong>
             <span>Rating ⭐</span>
           </div>
         </div>
 
-            <!-- Habits & Lifestyle -->
-<div class="section" v-if="formattedHabits && formattedHabits.length">
-
-  <h4 class="section-title">Habits</h4>
-
-<div class="habit-card">
-  <!-- <span class="habit-icon">🌿</span> -->
-  <span class="habit-text">🌿 {{ formattedHabits }}</span>
-</div>
-
-</div>
-
-
-
+        <!-- Habits -->
+        <div class="section" v-if="formattedHabits && formattedHabits.length">
+          <h4 class="section-title">Habits</h4>
+          <div class="habit-card">
+            <span class="habit-text">🌿 {{ formattedHabits }}</span>
+          </div>
+        </div>
 
         <!-- Photo Gallery -->
         <div class="section">
           <h4 class="section-title">More Photos</h4>
-
           <div class="photo-gallery">
             <div
               v-for="(img, index) in person.photo_gallery"
@@ -155,105 +153,18 @@
       <!-- Bottom Bar -->
       <div class="bottom-bar">
         <div class="price">
-          <span></span>
-          <!-- <strong>₹{{ animatedPrice }} / hour</strong> -->
           <strong></strong>
-
         </div>
 
-       <button class="checkout" @click="showChat = true">
-  Start Messaging
-</button>
-
-      </div>
-
-      <!-- Payment Sheet -->
-      <div class="payment-sheet" :class="{ open: showPayment }">
-        <h3>Select Payment Method</h3>
-
-        <div class="duration-box">
-          <div class="duration-header">
-            <span>Duration</span>
-            <strong>{{ hours }} hrs</strong>
-          </div>
-
-          <input
-            type="range"
-            min="1"
-            max="12"
-            step="1"
-            v-model.number="hours"
-          />
-        </div>
-
-        <div class="pay-summary">
-          <div class="row">
-            <span>Rate</span>
-            <strong>₹{{ person.rate }} / hr</strong>
-          </div>
-
-          <div class="row total">
-            <span>Total</span>
-            <strong>₹{{ animatedPrice }}</strong>
-          </div>
-        </div>
-
-        <button class="pay-btn" @click="confirmBooking">
-          Pay Securely
+        <!-- Only Button, Chat moved to separate component -->
+        <button class="checkout" @click="showChat = true">
+          Start Messaging
         </button>
-
-        <p class="cancel" @click="showPayment = false">Cancel</p>
       </div>
-<!-- CHAT POPUP -->
-<!-- CHAT POPUP -->
-<div v-if="showChat">
-  <div class="chat-sheet open">
-    <div class="chat-header">
-      <span class="close" @click="showChat = false">✕</span>
-      <h3>Start a Conversation 💬</h3>
-    </div>
-
-    <div class="chat-body">
-      <div class="chat-bubble received">
-        Hi {{ person.first_name }} 😊  
-        I came across your profile and felt we might vibe well.  
-        Looking forward to getting to know you better 💕
-      </div>
-
-      <div class="chat-bubble sent">
-        👋 Hey! Thanks for reaching out.  
-        That’s really sweet — tell me more about yourself 🙂
-      </div>
-    </div>
-
-    <div class="chat-footer">
-      <input
-        type="text"
-        placeholder="Type your message..."
-        disabled
-      />
-      <button disabled>Send</button>
-    </div>
-  </div>
-
-  <!-- OVERLAY -->
-  <div class="overlay" @click="showChat = false"></div>
-</div>
-
-
-<!-- OVERLAY -->
-<div
-  class="overlay"
-  v-if="showChat"
-  @click="showChat = false"
-></div>
-
-      <!-- Overlay -->
-      <div class="overlay" v-if="showPayment" @click="showPayment = false"></div>
 
       <!-- Image Viewer -->
       <div v-if="viewerOpen" class="viewer" @click="viewerOpen = false">
-         <span class="close" @click="viewerOpen = false">✕</span>
+        <span class="close" @click="viewerOpen = false">✕</span>
         <img
           :src="person.photo_gallery[currentIndex]"
           class="viewer-img"
@@ -261,40 +172,41 @@
         />
       </div>
 
-      <!-- Success -->
-      <div v-if="showSuccess" class="success-overlay">
-        <div class="success-card">
-          <h2>Booked Successfully 🎉</h2>
-          <button @click="closeSuccess">Done</button>
-        </div>
-      </div>
+      <!-- Success Overlay -->
+     
     </div>
+
+    <!-- Include Chat Popup Component -->
+    <ChatPopup
+      :person="person"
+      :showChat="showChat"
+      @close="showChat = false"
+    />
   </div>
 </template>
 
 
 <script>
 import axios from "axios"
+import ChatPopup from '@/components/ChatPopup.vue'
+import { useNotificationStore } from '@/stores/notification'
 
 export default {
   name: "Details",
+   components: {
+    ChatPopup
+  },
 
   data() {
     return {
-      showChat: false,
-
-     // 👇 FOLLOW STATE
-    isFollowing: false,
-    followLoading: false,
-      person: null,
-      hours: 1,
-      animatedPrice: 0,
-      timer: null,
-      loading: true,
-      showPayment: false,
-      showSuccess: false,
-      viewerOpen: false,
-      currentIndex: 0
+       notificationStore: useNotificationStore(),
+      showChat: false,         // controls chat popup
+      isFollowing: null,       // follow state
+      followLoading: false,    // follow/unfollow API loading
+      person: null,            // user details
+      loading: true,           // skeleton loader
+      viewerOpen: false,       // photo viewer
+      currentIndex: 0          // photo viewer index
     }
   },
 
@@ -302,136 +214,159 @@ export default {
     this.fetchPerson()
   },
 
-computed: {
-formattedHabits() {
-  if (!this.person || !this.person.habits) return null
+  computed: {
+    // Format habits nicely
+    formattedHabits() {
+      if (!this.person || !this.person.habits) return null
 
-  let habits = this.person.habits
+      let habits = this.person.habits
 
-  // Array already? Easy.
-  if (Array.isArray(habits)) {
-    return habits.length ? habits.join(" • ") : null
-  }
+      if (Array.isArray(habits)) {
+        return habits.length ? habits.join(" • ") : null
+      }
 
-  if (typeof habits !== "string") return null
+      if (typeof habits !== "string") return null
 
-  habits = habits.trim()
-  if (!habits || habits === "[]" || habits.toLowerCase() === "null") {
-    return null
-  }
+      habits = habits.trim()
+      if (!habits || habits === "[]" || habits.toLowerCase() === "null") return null
 
-  // 🔥 Decode JSON up to 2 times
-  for (let i = 0; i < 2; i++) {
-    try {
-      habits = JSON.parse(habits)
-    } catch {
-      break
-    }
-  }
+      for (let i = 0; i < 2; i++) {
+        try {
+          habits = JSON.parse(habits)
+        } catch {
+          break
+        }
+      }
 
-  // If array after decode
-  if (Array.isArray(habits)) {
-    return habits.length ? habits.join(" • ") : null
-  }
+      if (Array.isArray(habits)) return habits.length ? habits.join(" • ") : null
 
-  // If string after decode
-  if (typeof habits === "string") {
-    // 💥 REMOVE wrapping quotes if present
-    habits = habits.replace(/^"+|"+$/g, "")
+      if (typeof habits === "string") {
+        habits = habits.replace(/^"+|"+$/g, "")
+        if (habits.includes(",")) {
+          return habits
+            .split(",")
+            .map(h => h.trim())
+            .filter(Boolean)
+            .join(" • ")
+        }
+        return habits
+      }
 
-    // CSV support
-    if (habits.includes(",")) {
-      return habits
-        .split(",")
-        .map(h => h.trim())
-        .filter(Boolean)
-        .join(" • ")
-    }
+      return null
+    },
 
-    return habits
-  }
+    // Calculate age
+    age() {
+      if (!this.person || !this.person.dob) return null
 
-  return null
-},
+      const dob = new Date(this.person.dob)
+      const today = new Date()
 
+      let age = today.getFullYear() - dob.getFullYear()
+      const monthDiff = today.getMonth() - dob.getMonth()
+      if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < dob.getDate())) {
+        age--
+      }
 
+      return age
+    },
 
+    // Auto-generated intro message
+    introMessage() {
+      if (!this.person) return ""
 
-  totalPrice() {
-    return this.person ? this.person.rate * this.hours : 0
-  },
+      const name = this.person.first_name || ""
+      const city = this.person.city || ""
+      const status = this.person.status || ""
+      const age = this.age
 
-  age() {
-    if (!this.person || !this.person.dob) return null
-
-    const dob = new Date(this.person.dob)
-    const today = new Date()
-
-    let age = today.getFullYear() - dob.getFullYear()
-    const monthDiff = today.getMonth() - dob.getMonth()
-
-    if (
-      monthDiff < 0 ||
-      (monthDiff === 0 && today.getDate() < dob.getDate())
-    ) {
-      age--
-    }
-
-    return age
-  },
-  introMessage() {
-  if (!this.person) return ""
-
-  const name = this.person.first_name || ""
-  const city = this.person.city || ""
-  const status = this.person.status || ""
-  const age = this.age
-
-  return `Hi, my name is ${name}. I’m ${age} years old and I live in ${city}. I’m ${status} and here to find a genuine and meaningful connection. Looking forward to meeting the right companion and seeing where things go 😊.`
-}
-
-},
-
-
-  watch: {
-    totalPrice() {
-      this.animatePrice()
+      return `Hi, my name is ${name}. I’m ${age} years old and I live in ${city}. I’m ${status} and here to find a genuine and meaningful connection. Looking forward to meeting the right companion and seeing where things go 😊.`
     }
   },
 
   methods: {
- async toggleFollow() {
-    if (this.followLoading) return
-
-    this.followLoading = true
-
-    // 🔥 Optimistic UI (instant toggle)
-    this.isFollowing = !this.isFollowing
-
-    try {
-      await axios.post(
-        "https://companion.ajaywatpade.in/api/follow-toggle",
-        {
-          user_id: this.person.id
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`
+    // Fetch user details
+    async fetchPerson() {
+      try {
+        const res = await axios.get(
+          `https://companion.ajaywatpade.in/api/users/${this.$route.params.id}`,
+          {
+            headers: {
+              Authorization: `Bearer ${localStorage.getItem("token")}`
+            }
           }
+        )
+
+        const data = res.data
+        if (data.success && data.user) {
+          const user = data.user
+
+          const profilePhoto = user.profile_photo
+            ? `https://companion.ajaywatpade.in/${user.profile_photo}`
+            : null
+
+          let gallery = []
+          if (Array.isArray(user.photo_gallery)) {
+            gallery = user.photo_gallery.map(
+              img => `https://companion.ajaywatpade.in/${img}`
+            )
+          }
+
+          this.person = {
+            ...user,
+            profile_photo: profilePhoto,
+            photo_gallery: gallery
+          }
+
+          await this.checkFollowStatus()
+          this.loading = false
         }
-      )
-    } catch (e) {
-      // ❌ rollback if API fails
-      this.isFollowing = !this.isFollowing
-      console.error("Follow failed", e)
-    } finally {
-      this.followLoading = false
-    }
-  },
-async fetchPerson() {
+      } catch (e) {
+        console.error(e)
+        this.$router.push("/")
+      }
+    },
+
+    // Check if current user is following this person
+    async checkFollowStatus() {
+      if (!this.person) return
+      try {
+        const res = await axios.post(
+          "https://companion.ajaywatpade.in/api/follow-status",
+          { following_id: this.person.id },
+          {
+            headers: {
+              Authorization: `Bearer ${localStorage.getItem("token")}`
+            }
+          }
+        )
+        this.isFollowing = res.data.following
+      } catch (e) {
+        console.error("Follow status check failed", e)
+      }
+    },
+
+    // Follow/Unfollow user
+   async toggleFollow() {
+  if (this.followLoading || !this.person) return
+  this.followLoading = true
+
+  const wasFollowing = this.isFollowing
+  this.isFollowing = !wasFollowing
+
+  if (!wasFollowing) {
+    this.person.followers_count = (this.person.followers_count || 0) + 1
+  } else {
+    this.person.followers_count = Math.max(
+      (this.person.followers_count || 1) - 1,
+      0
+    )
+  }
+
   try {
-    const res = await axios.get(
-      `https://companion.ajaywatpade.in/api/users/${this.$route.params.id}`,
+    await axios.post(
+      "https://companion.ajaywatpade.in/api/follow-toggle",
+      { user_id: this.person.id },
       {
         headers: {
           Authorization: `Bearer ${localStorage.getItem("token")}`
@@ -439,84 +374,27 @@ async fetchPerson() {
       }
     )
 
-    const data = res.data
-
-    if (data.success && data.user) {
-      const user = data.user
-
-      // ✅ SAFE DEBUG
-      console.log("RAW HABITS FROM API 👉", user.habits)
-
-      const profilePhoto = user.profile_photo
-        ? `https://companion.ajaywatpade.in/${user.profile_photo}`
-        : null
-
-      let gallery = []
-      if (Array.isArray(user.photo_gallery)) {
-        gallery = user.photo_gallery.map(
-          img => `https://companion.ajaywatpade.in/${img}`
-        )
-      }
-
-      this.person = {
-        ...user,
-        profile_photo: profilePhoto,
-        photo_gallery: gallery
-      }
-
-      this.loading = false
-      this.animatePrice()
-      
+    // 🔔 INCREMENT NOTIFICATION ONLY WHEN FOLLOWING
+    if (!wasFollowing) {
+      this.notificationStore.increment()
     }
+
   } catch (e) {
-    console.error(e)
-    this.$router.push("/")
+    // Rollback on failure
+    this.isFollowing = wasFollowing
+    if (!wasFollowing) this.person.followers_count--
+    else this.person.followers_count++
+    console.error("Follow failed", e)
+  } finally {
+    this.followLoading = false
   }
 },
 
 
-
-
-    animatePrice() {
-      clearInterval(this.timer)
-      let current = this.animatedPrice
-      const end = this.totalPrice
-
-      this.timer = setInterval(() => {
-        current += Math.ceil((end - current) / 5)
-        this.animatedPrice = current
-
-        if (current >= end) {
-          this.animatedPrice = end
-          clearInterval(this.timer)
-        }
-      }, 30)
-    },
-
+    // Open photo viewer
     openViewer(index) {
       this.currentIndex = index
       this.viewerOpen = true
-    },
-
-    confirmBooking() {
-      let bookings = JSON.parse(localStorage.getItem("bookings") || "[]")
-
-      bookings.push({
-        id: this.person.id,
-        name: this.person.first_name,
-        hours: this.hours,
-        total: this.totalPrice,
-        image: this.person.profile_photo
-      })
-
-      localStorage.setItem("bookings", JSON.stringify(bookings))
-      this.showSuccess = true
-    },
-
-    closeSuccess() {
-      this.showSuccess = false
-      this.showPayment = false
-      this.$router.push("/my-bookings")
     }
   }
 }
@@ -543,10 +421,10 @@ async fetchPerson() {
 
 .back {
   position: absolute;
-  top: 18px;
+  top: 55px;
   left: 16px;
-  font-size: 26px;
-  color: rgb(0, 0, 0);
+  font-size: 32px;
+  color: rgb(236, 3, 73);
   cursor: pointer;
 }
 
@@ -937,13 +815,13 @@ async fetchPerson() {
   top: 18px;
   right: 18px;
   font-size: 32px;
-  background-color: #ff2e63;
+  /* background-color: #ff2e63;/ */
   
-    justify-self: right;
+    justify-self: left;
   border-radius: 18px;
 
       width: 31px;
-  color: white;
+  color: rgb(236, 3, 73);
   cursor: pointer;
   z-index: 3000; /* 🔥 THIS FIXES IT */
 }
@@ -1582,7 +1460,7 @@ font-size: 14px;
   display: flex;
   align-items: center;
   gap: 18px;
-  margin-top: 10px;
+  margin-top: -30px;
 }
 
 /* Avatar */
@@ -1633,16 +1511,16 @@ font-size: 14px;
   border: none;
   font-size: 14px;
   font-weight: 600;
-  background: #0095f6;
+  background: linear-gradient(135deg, #ff4d6d, #ff2e63);
   color: #fff;
   cursor: pointer;
   transition: all 0.2s ease;
 }
 
 .insta-follow-btn.following {
-  background: #efefef;
-  color: #111;
-  border: 1px solid #ddd;
+background: #ff346529;
+    color: #ff3465;
+    border: 1px solid #ff376694;
 }
 
 .insta-follow-btn:active {
@@ -1804,6 +1682,7 @@ font-size: 14px;
 .chat-header {
   padding: 16px;
   text-align: center;
+      margin-top: 54px;
   border-bottom: 1px solid #eee;
   position: relative;
 }
@@ -1815,9 +1694,10 @@ font-size: 14px;
 
 .chat-header .close {
   position: absolute;
-  left: 16px;
-  top: 8px;
-  font-size: 12px;
+  left: 5px;
+    top: 5px;
+
+  font-size: 23px;
   cursor: pointer;
 }
 
@@ -1871,6 +1751,230 @@ font-size: 14px;
   color: #fff;
   border: none;
   opacity: 0.6;
+}
+
+/* ===============================
+   SKELETON BASE
+================================ */
+.details-skeleton {
+  min-height: 100vh;
+  background: #fff;
+  padding-bottom: 90px;
+}
+
+.shimmer {
+  background: linear-gradient(
+    90deg,
+    #eee 25%,
+    #ddd 50%,
+    #eee 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+/* ===============================
+   HEADER
+================================ */
+.skeleton-header {
+  height: 150px;
+  border-bottom-left-radius: 60px;
+  border-bottom-right-radius: 60px;
+  background: #f2f2f2;
+}
+
+/* ===============================
+   CARD
+================================ */
+.skeleton-card {
+  margin: -120px 16px 0;
+  padding: 16px;
+  border-radius: 28px;
+  background: #fff;
+}
+
+/* ===============================
+   INSTAGRAM PROFILE
+================================ */
+.skeleton-insta {
+  display: flex;
+  gap: 18px;
+  align-items: center;
+}
+
+.skeleton-avatar {
+  width: 86px;
+  height: 86px;
+  border-radius: 50%;
+}
+
+.skeleton-right {
+  flex: 1;
+}
+
+.skeleton-line.name {
+  width: 120px;
+  height: 14px;
+  border-radius: 8px;
+  margin-bottom: 10px;
+}
+
+.skeleton-stats {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.skeleton-stat {
+  width: 40px;
+  height: 12px;
+  border-radius: 6px;
+}
+
+.skeleton-btn {
+  width: 100%;
+  height: 32px;
+  border-radius: 8px;
+}
+
+/* ===============================
+   INTRO
+================================ */
+.skeleton-intro {
+  margin-top: 18px;
+}
+
+.skeleton-line.full {
+  width: 100%;
+  height: 12px;
+  border-radius: 8px;
+  margin-bottom: 8px;
+}
+
+.skeleton-line.half {
+  width: 60%;
+  height: 12px;
+  border-radius: 8px;
+}
+
+/* ===============================
+   HABITS
+================================ */
+.skeleton-habit {
+  height: 40px;
+  border-radius: 18px;
+  margin-top: 16px;
+}
+
+/* ===============================
+   GALLERY
+================================ */
+.skeleton-gallery {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.skeleton-photo {
+  height: 110px;
+  border-radius: 14px;
+}
+
+/* ===============================
+   BOTTOM BAR
+================================ */
+.skeleton-bottom {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  padding: 14px 16px;
+  display: flex;
+  justify-content: space-between;
+  background: #fff;
+}
+
+.skeleton-price {
+  width: 80px;
+  height: 14px;
+  border-radius: 8px;
+}
+
+.skeleton-action {
+  width: 140px;
+  height: 36px;
+  border-radius: 12px;
+}
+
+/* ===============================
+   ANIMATION
+================================ */
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+/* CHAT HEADER */
+.insta-chat-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border-bottom: 1px solid #eee;
+  background: #fff;
+}
+
+/* Back Arrow */
+.insta-chat-header .close {
+  font-size: 31px;
+  cursor: pointer;
+}
+
+/* User Row */
+.chat-user {
+  display: flex;
+  align-items: center;
+      margin-left: 43px;
+  gap: 10px;
+}
+
+/* Avatar */
+.chat-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+/* Info */
+.chat-user-info {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
+}
+
+/* Name + badge */
+.chat-name-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.chat-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: #111;
+}
+
+.chat-verified {
+  width: 14px;
+  height: 14px;
+}
+
+/* Status */
+.chat-status {
+  font-size: 11px;
+  color: #8e8e8e;
 }
 
 </style>

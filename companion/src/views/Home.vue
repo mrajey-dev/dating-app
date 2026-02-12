@@ -17,7 +17,9 @@
         <li>❤️ Matches</li>
         <li>💬 Chats</li>
         <li @click="goToBookings">📅 Bookings</li>
-        <li>⭐ Favorites</li>
+       <li @click="showFavourites">❤️ Favorites</li>
+<li @click="showAllUsers">🌐 All Users</li>
+
         <li>⚙️ Settings</li>
         <li class="logout" @click="logout">🚪 Logout</li>
       </ul>
@@ -25,10 +27,7 @@
 
     <!-- Header -->
     <div class="header">
-      <div class="top-bar">
-        <span class="menu" @click="toggleMenu">☰</span>
-        <img class="avatar" :src="user.profile_photo" />
-      </div>
+     
 
    <h1 class="page-title">Choose a Companion</h1>
 
@@ -44,18 +43,26 @@
     <!-- Results -->
     <div class="content">
       <div v-if="people.length">
-        <div class="deal-card" v-for="person in filteredPeople" :key="person.id">
+       <div
+  class="deal-card"
+  v-for="person in filteredPeople"
+  :key="person.id"
+  :data-id="person.id"
+  ref="cards"
+>
+
 
           <!-- Top -->
           <div class="deal-top">
             <div class="deal-rating">⭐ {{ person.rating || 0 }}</div>
-            <button
-              class="fav-btn"
-              :class="{ active: isFavourite(person.id) }"
-              @click.stop="toggleFavourite(person.id)"
-            >
-              {{ isFavourite(person.id) ? "❤️" : "🤍" }}
-            </button>
+           <button
+  class="fav-btn"
+  :class="{ active: person.liked }"
+  @click.stop="toggleFavourite(person)"
+>
+  {{ person.liked ? "❤️" : "🤍" }}
+</button>
+
           </div>
 
           <!-- Image -->
@@ -75,7 +82,7 @@
               />
             </h3>
             <p class="sub">{{ person.status || '' }}</p>
-            <p class="price">₹{{ person.rate || 0 }} / hour</p>
+            <!-- <p class="price">₹{{ person.rate || 0 }} / hour</p> -->
           </div>
 
           <!-- Arrow -->
@@ -88,7 +95,31 @@
         No companions available. Make sure you are logged in!
       </div>
     </div>
+ 
+    <!-- Instagram Style Footer -->
+<div class="bottom-footer">
+ <div class="footer-item" @click="$router.push('/home')">
+  <img src="@/assets/home.png" class="footer-icon" />
+</div>
+<div class="footer-item">
+  <img src="@/assets/search.png" class="footer-icon" />
+</div>
+
+<div class="footer-item">
+  <img src="@/assets/golden.png" class="footer-icon" />
+</div>
+
+<div class="footer-item" @click="$router.push('/notifications')">
+  <img src="@/assets/heart.png" class="footer-icon" />
+</div>
+
+
+  <div class="footer-item" @click="$router.push('/profile')">
+    <img :src="user.profile_photo" class="footer-avatar" />
   </div>
+</div>
+
+ </div>
 </template>
 
 <script>
@@ -98,25 +129,49 @@ export default {
   name: "Home",
   data() {
     return {
+      showOnlyFavourites: false,
       isMenuOpen: false,
-      favourites: [],
+        refreshInterval: null,
+     
       people: [],
         search: "",
+         visibleUsers: new Set(), 
+          observer: null,
       user: { first_name: "", last_name: "", city: "", profile_photo: "" },
     }
   },
-  async mounted() {
-    await this.loadUser()
-    this.favourites = JSON.parse(localStorage.getItem("favourites") || "[]")
-    await this.loadUsers()
-  },
+async mounted() {
+  await this.loadUser()
+  // this.favourites = JSON.parse(localStorage.getItem("favourites") || "[]")
+  await this.loadUsers()
+
+  this.setupObserver()
+
+  this.refreshInterval = setInterval(() => {
+    this.refreshVisibleUsers()
+  }, 2000)
+},
+
+beforeUnmount() {
+  if (this.refreshInterval) clearInterval(this.refreshInterval)
+  if (this.observer) this.observer.disconnect()
+},
+
+
   computed: {
-  filteredPeople() {
-    if (!this.search) return this.people
+ filteredPeople() {
+    let list = this.people;
 
-    const q = this.search.toLowerCase()
+    // If "Favorites" clicked, filter only liked users
+    if (this.showOnlyFavourites) {
+      list = list.filter(user => user.liked);
+    }
 
-    return this.people.filter(person => {
+    if (!this.search) return list;
+
+    const q = this.search.toLowerCase();
+
+    return list.filter(person => {
       return (
         (person.first_name && person.first_name.toLowerCase().includes(q)) ||
         (person.last_name && person.last_name.toLowerCase().includes(q)) ||
@@ -133,6 +188,69 @@ export default {
 },
 
   methods: {
+    showFavourites() {
+    this.isMenuOpen = false; // close sidebar
+    this.showOnlyFavourites = true;
+  },
+
+  showAllUsers() {
+    this.showOnlyFavourites = false;
+  },
+    setupObserver() {
+    this.observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          const id = Number(entry.target.dataset.id)
+
+          if (entry.isIntersecting) {
+            this.visibleUsers.add(id)
+          } else {
+            this.visibleUsers.delete(id)
+          }
+        })
+      },
+      { threshold: 0.3 } // 30% visible
+    )
+
+    this.$nextTick(() => {
+      this.$refs.cards?.forEach((el) => {
+        this.observer.observe(el)
+      })
+    })
+  },
+  async refreshVisibleUsers() {
+  if (!this.visibleUsers.size) return
+
+  const token = localStorage.getItem("token")
+  if (!token) return
+
+  try {
+    const res = await axios.get(
+      "https://companion.ajaywatpade.in/api/users",
+      { headers: { Authorization: `Bearer ${token}` } }
+    )
+
+    res.data.forEach((updated) => {
+  if (this.visibleUsers.has(updated.id)) {
+    const index = this.people.findIndex(p => p.id === updated.id)
+    if (index !== -1) {
+      this.people[index] = {
+        ...this.people[index],
+        rating: updated.rating,
+        like_count: updated.like_count,
+        status: updated.status,
+        rate: updated.rate,
+        liked: updated.liked, // <-- add this
+      }
+    }
+  }
+})
+
+  } catch (e) {
+    console.error("Visible refresh failed", e)
+  }
+},
+
     goToProfile() {
     this.isMenuOpen = false
     this.$router.push("/profile")
@@ -153,12 +271,21 @@ async loadUsers() {
         profile_photo: person.profile_photo
           ? `https://companion.ajaywatpade.in/${person.profile_photo}`
           : "https://via.placeholder.com/200",
+        liked: person.liked || false, // <-- keep this
       }))
       .sort((a, b) => b.id - a.id)
+
+    // ❌ REMOVE the old favourites line entirely
+    // this.favourites = this.people
+    //   .filter(p => p.liked || storedFavourites.includes(p.id))
+    //   .map(p => p.id)
+
   } catch (err) {
     console.error("Failed to load users:", err.response || err)
   }
 },
+
+
 
 
     logout() {
@@ -173,7 +300,6 @@ async loadUsers() {
         .catch(() => {})
 
       localStorage.removeItem("token")
-      localStorage.removeItem("favourites")
       localStorage.removeItem("user")
       this.isMenuOpen = false
       this.$router.replace("/")
@@ -201,31 +327,26 @@ async loadUser() {
 
 
     /* ================= FAVOURITES ================= */
-    async toggleFavourite(id) {
-      const token = localStorage.getItem("token")
-      if (!token) return
+async toggleFavourite(person) {
+  const token = localStorage.getItem("token")
+  if (!token) return
 
-      try {
-        const res = await axios.post(
-          `https://companion.ajaywatpade.in/api/users/${id}/toggle-like`,
-          {},
-          { headers: { Authorization: `Bearer ${token}` } }
-        )
+  try {
+    const res = await axios.post(
+      `https://companion.ajaywatpade.in/api/users/${person.id}/toggle-like`,
+      {},
+      { headers: { Authorization: `Bearer ${token}` } }
+    )
 
-        const person = this.people.find((p) => p.id === id)
-        if (res.data.liked) {
-          if (!this.favourites.includes(id)) this.favourites.push(id)
-          if (person) person.like_count = (person.like_count || 0) + 1
-        } else {
-          this.favourites = this.favourites.filter((f) => f !== id)
-          if (person) person.like_count = Math.max((person.like_count || 1) - 1, 0)
-        }
+    // Update like status from backend
+    person.liked = res.data.liked
+    person.like_count = res.data.like_count
+  } catch (err) {
+    console.error(err)
+  }
+},
 
-        localStorage.setItem("favourites", JSON.stringify(this.favourites))
-      } catch (err) {
-        console.error("Toggle failed", err.response || err)
-      }
-    },
+
 
     isFavourite(id) {
       return this.favourites.includes(id)
@@ -268,7 +389,7 @@ async loadUser() {
         .header {
         /* background-image: url(https://img.freepik.com/free-vector/wave-gradient-blue-background-modern-design_343694-3814.jpg); */
         background-image: url(https://png.pngtree.com/thumb_back/fh260/background/20241126/pngtree-abstract-pink-background-vector-image_16667423.jpg);
-        padding: 24px 20px 80px;
+        padding: 7px 48px 63px;
         border-bottom-left-radius: 40px;
         border-bottom-right-radius: 40px;
         color: white;
@@ -610,12 +731,63 @@ async loadUser() {
 }
 .search-input {
   width: 100%;
-  padding: 12px 14px;
+  padding:9px 14px;
   margin: 10px 0 16px;
   border-radius: 30px;
   border: 1px solid #ddd;
   font-size: 14px;
 }
 
- </style>
+/* Bottom Instagram Style Footer */
+.bottom-footer {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 60px;
+  background: #ffffff;
+  border-top: 1px solid #eee;
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  z-index: 20;
+}
+
+.footer-item {
+  font-size: 22px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.footer-item:active {
+  transform: scale(0.85);
+}
+
+/* Profile avatar */
+.footer-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+.content {
+  padding: 20px;
+  margin-top: -101px;
+  padding-bottom: 80px; /* important */
+}
+.footer-icon {
+  width: 24px;
+  height: 24px;
+  object-fit: contain;
+}
+.footer-icon {
+  width: 24px;
+  height: 24px;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+</style>
 

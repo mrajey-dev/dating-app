@@ -1,7 +1,19 @@
 <template>
   <div class="profile-page">
     <div class="profile-card">
+      <div class="top-actions">
       <h1>Edit Profile</h1>
+<!-- TOP ACTION BAR -->
+
+  <button type="button" @click="logout" class="btn-logout-top">
+    Logout
+
+  </button>
+
+  <!-- <button type="button" @click="confirmDelete" class="btn-delete-top">
+    Delete
+  </button> -->
+</div>
 
       <!-- PROFILE PHOTO -->
       <div class="profile-photo">
@@ -17,19 +29,25 @@
       <!-- PHOTO GALLERY -->
       <div class="photo-gallery">
         <h3>Gallery</h3>
-        <div class="gallery-scroll">
-        <div
+        <div class="gallery-scroll" @click.stop>  
+ <div
   v-for="(photo, i) in previewPhoto.photo_gallery || []"
   :key="i"
   class="gallery-item"
+  @click="togglePhoto(i)"
 >
   <img :src="photo" class="gallery-img" />
 
-  <!-- REMOVE BUTTON -->
-  <button class="remove-photo" @click="removeGalleryPhoto(i)">
+  <!-- REMOVE BUTTON (only when selected) -->
+  <button
+    v-if="selectedPhotoIndex === i"
+    class="remove-photo"
+    @click.stop="removeGalleryPhoto(i)"
+  >
     ✕
   </button>
 </div>
+
 
           <label class="add-photo">
             +
@@ -157,11 +175,11 @@
 </div>
 
 <!-- DELETE ACCOUNT -->
-<div class="delete-account">
+<!-- <div class="delete-account">
   <button @click="confirmDelete" class="btn-delete">
     Delete My Account
   </button>
-</div>
+</div> -->
 
       <!-- Sticky Save Bar -->
 <div class="save-bar">
@@ -201,10 +219,12 @@
 import axios from "axios"
 import Cropper from "cropperjs"
 import "cropperjs/dist/cropper.min.css"
+import '@fortawesome/fontawesome-free/css/all.min.css'
 
 export default {
   data() {
     return {
+      selectedPhotoIndex: null,
         showCropper: false,
 cropper: null,
 cropImageUrl: null,
@@ -272,6 +292,8 @@ async mounted() {
     ...storedUser,
     profile_photo: profilePhoto
   }
+  document.addEventListener("click", this.closePhotoSelection)
+
   this.user.verified_badge =
   storedUser.verified_badge === 1 ||
   storedUser.verified_badge === "1" ||
@@ -320,15 +342,34 @@ async mounted() {
     this.user.photo_gallery = galleryArr
   }
 },
-
+beforeUnmount() {
+  document.removeEventListener("click", this.closePhotoSelection)
+},
 
 
 
   methods: {
+    closePhotoSelection() {
+  this.selectedPhotoIndex = null
+},
+    togglePhoto(index) {
+  if (this.selectedPhotoIndex === index) {
+    this.selectedPhotoIndex = null
+  } else {
+    this.selectedPhotoIndex = index
+  }
+},
+
+    logout() {
+  localStorage.removeItem("token")
+  localStorage.removeItem("user")
+  window.location.href = "/"
+},
+
     async removeGalleryPhoto(index) {
   const confirmed = confirm("Remove this photo from your gallery?")
   if (!confirmed) return
-
+  this.selectedPhotoIndex = null
   const token = localStorage.getItem("token")
   if (!token) return
 
@@ -1096,6 +1137,50 @@ img {
 
 .remove-photo:hover {
   transform: scale(1.1);
+}
+/* TOP ACTION BAR */
+.top-actions {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 15px;
+}
+
+/* LOGOUT */
+.btn-logout-top {
+  padding: 6px 14px;
+  border-radius: 20px;
+  border: 1px solid #ddd;
+      height: 35px;
+    width: auto;
+      background: #ff0000;
+    color: #ffffff;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: 0.3s;
+}
+
+.btn-logout-top:hover {
+  background: #f3f3f3;
+}
+
+/* DELETE */
+.btn-delete-top {
+  padding: 6px 14px;
+  border-radius: 20px;
+  border: none;
+  background: #ffe5e5;
+  color: #ff3b3b;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: 0.3s;
+}
+
+.btn-delete-top:hover {
+  background: #ff3b3b;
+  color: #fff;
 }
 
 </style>
