@@ -68,39 +68,52 @@
           </div>
 
           <!-- RIGHT COLUMN -->
-          <div class="insta-right">
-            <div class="insta-name-row">
-              <span class="insta-name">{{ person.first_name }}</span>
-              <img
-                v-if="person.verified_badge == 1"
-                src="@/assets/verified1.png"
-                class="verified"
-              />
-            </div>
-            <div class="insta-stats">
-              <div class="insta-stat">
-                <strong>{{ person.photo_gallery?.length || 0 }}</strong>
-                <span>Posts</span>
-              </div>
-              <div class="insta-stat">
-                <strong>{{ person.followers_count || 0 }}</strong>
-                <span>Followers</span>
-              </div>
-              <div class="insta-stat">
-                <strong>{{ person.following_count || 0 }}</strong>
-                <span>Following</span>
-              </div>
-            </div>
+        <div class="insta-right">
+  <div class="insta-name-row">
+    <span class="insta-name">{{ person.first_name }}</span>
+    <img
+      v-if="person.verified_badge == 1"
+      src="@/assets/verified1.png"
+      class="verified"
+    />
+  </div>
 
-            <button
-              v-if="isFollowing !== null"
-              class="insta-follow-btn"
-              :class="{ following: isFollowing }"
-              @click="toggleFollow"
-            >
-              {{ isFollowing ? "Following" : "Follow" }}
-            </button>
-          </div>
+  <div class="insta-stats">
+    <div class="insta-stat">
+      <strong>{{ person.photo_gallery?.length || 0 }}</strong>
+      <span>Posts</span>
+    </div>
+    <div class="insta-stat">
+      <strong>{{ person.followers_count || 0 }}</strong>
+      <span>Followers</span>
+    </div>
+    <div class="insta-stat">
+      <strong>{{ person.following_count || 0 }}</strong>
+      <span>Following</span>
+    </div>
+  </div>
+
+  <!-- Buttons Row -->
+  <div class="insta-btn-row">
+    <button
+      v-if="isFollowing !== null"
+      class="insta-follow-btn"
+      :class="{ following: isFollowing }"
+      @click="toggleFollow"
+    >
+      {{ isFollowing ? "Following" : "Follow" }}
+    </button>
+
+    <button
+      class="insta-match-btn"
+      :class="{ matched: isMatched }"
+      @click="toggleMatch"
+    >
+      {{ isMatched ? "Matched" : "Match" }}
+    </button>
+  </div>
+</div>
+
         </div>
 
         <!-- Self Introduction -->
@@ -1511,6 +1524,7 @@ font-size: 14px;
   border: none;
   font-size: 14px;
   font-weight: 600;
+  
   background: linear-gradient(135deg, #ff4d6d, #ff2e63);
   color: #fff;
   cursor: pointer;
@@ -1975,6 +1989,36 @@ background: #ff346529;
 .chat-status {
   font-size: 11px;
   color: #8e8e8e;
+}
+
+.insta-btn-row {
+  display: flex;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.insta-match-btn {
+width: 100%;
+  padding: 8px 0;
+  border-radius: 8px;
+  border: none;
+  font-size: 14px;
+  font-weight: 600;
+  background: linear-gradient(135deg, #05c2da, #02acbc);
+  color: #fff;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.insta-match-btn.matched {
+  background: #e0e0e0;
+  color: #1e3cff;
+  border: 1px solid #1e3cff;
+  box-shadow: none;
+}
+
+.insta-match-btn:active {
+  transform: scale(0.97);
 }
 
 </style>

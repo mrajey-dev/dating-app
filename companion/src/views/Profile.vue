@@ -1,30 +1,46 @@
 <template>
   <div class="profile-page">
     <div class="profile-card">
-      <div class="top-actions">
-      <h1>Edit Profile</h1>
-<!-- TOP ACTION BAR -->
 
-  <button type="button" @click="logout" class="btn-logout-top">
-    Logout
 
-  </button>
+  <!-- USER STATS -->
+<div class="profile-card insta-profile">
+  <!-- PROFILE HEADER -->
+  <div class="profile-header">
+    <div class="profile-photo">
+      <img :src="previewPhoto.profile_photo || user.profile_photo" class="avatar" />
+    </div>
 
-  <!-- <button type="button" @click="confirmDelete" class="btn-delete-top">
-    Delete
-  </button> -->
+    <div class="profile-info">
+     <h2 class="username">
+  {{ user.first_name }} {{ user.last_name }}
+  <img
+    v-if="user.verified_badge"
+    src="/verified1.png"
+    alt="Verified Badge"
+    class="verified-icon"
+  />
+</h2>
+
+
+      <div class="profile-stats">
+        <div class="stat">
+          <div class="count">{{ user.posts || 0 }}</div>
+          <div class="label">Posts</div>
+        </div>
+        <div class="stat">
+          <div class="count">{{ user.followers || 0 }}</div>
+          <div class="label">Followers</div>
+        </div>
+        <div class="stat">
+          <div class="count">{{ user.following || 0 }}</div>
+          <div class="label">Following</div>
+        </div>
+      </div>
+    </div>
+  </div>
 </div>
 
-      <!-- PROFILE PHOTO -->
-      <div class="profile-photo">
-        <img :src="previewPhoto.profile_photo || user.profile_photo" class="avatar" />
-        <label class="upload-btn">
-          Change Photo
-         <input type="file" accept="image/*" @change="onProfilePhotoSelect" hidden />
-
-
-        </label>
-      </div>
 
       <!-- PHOTO GALLERY -->
       <div class="photo-gallery">
@@ -156,7 +172,7 @@
   </div>
 </div>
 
-          <div class="form-group"><label>Rate (₹/hour)</label><input type="number" v-model="user.rate" min="0" /></div>
+          <!-- <div class="form-group"><label>Rate (₹/hour)</label><input type="number" v-model="user.rate" min="0" /></div> -->
         </div>
 
      <!-- HABITS FIELD -->
@@ -182,9 +198,14 @@
 </div> -->
 
       <!-- Sticky Save Bar -->
+<!-- Sticky Save & Logout Bar -->
 <div class="save-bar">
+  <button class="btn-logout-bottom" @click="logout">
+    Logout
+  </button>
   <button type="submit" class="btn-save">Save Changes</button>
 </div>
+
 
       </form>
     </div>
@@ -279,6 +300,7 @@ selectedProfileFile: null,
   },
 async mounted() {
   const storedUser = JSON.parse(localStorage.getItem("user"))
+  console.log(storedUser)
   if (!storedUser) return
 
   // Profile photo
@@ -290,7 +312,14 @@ async mounted() {
 
   this.user = {
     ...storedUser,
-    profile_photo: profilePhoto
+    profile_photo: profilePhoto,
+     verified_badge:
+    storedUser.verified_badge === 1 ||
+    storedUser.verified_badge === "1" ||
+    storedUser.verified_badge === true,
+   
+  followers: Number(storedUser.followers_count || 0),
+  following: Number(storedUser.following_count || 0),
   }
   document.addEventListener("click", this.closePhotoSelection)
 
@@ -631,7 +660,7 @@ async onFileChange(field, e) {
   background: #fff;
   border-radius: 20px;
       margin-bottom: 39px;
-  padding: 25px;
+  padding: 8px;
   box-shadow: 0 12px 30px rgba(0, 0, 0, 0.1);
 }
 
@@ -877,6 +906,7 @@ select:focus {
     font-size: 10px;
   font-weight: 600;
   margin-bottom: 6px;
+  height: 28px;
   color: #444;
 }
 
@@ -929,8 +959,8 @@ select:focus {
   position: absolute;
  height: 15px;
     width: 15px;
-  left: 3px;
-  top: 3px;
+  left: 6px;
+  top: 7px;
   background: #fff;
   border-radius: 50%;
   transition: transform 0.3s ease;
@@ -940,10 +970,12 @@ select:focus {
 /* Active state */
 .toggle-switch input:checked + .toggle-slider {
   background: linear-gradient(135deg, #ff5864, #ff2e44);
+  height: 28px;
 }
 
 .toggle-switch input:checked + .toggle-slider::before {
   transform: translateX(24px);
+  
 }
 img {
   width: 16px;
@@ -952,11 +984,13 @@ img {
 }
 .verified-icon {
   width: 16px;
-  height: 11px;
-  margin-left: 1px;
+  height: 16px;
+  margin-left: 4px;
+  vertical-align: middle;
   object-fit: contain;
   animation: badgeFade 0.3s ease;
 }
+
 
 @keyframes badgeFade {
   from {
@@ -967,30 +1001,6 @@ img {
     opacity: 1;
     transform: scale(1);
   }
-}
-.save-bar {
-  position: sticky;
-  bottom: 0;
-  background: #fff;
-  padding: 12px 0;
-  margin-top: 15px;
-  box-shadow: 0 -8px 20px rgba(0, 0, 0, 0.08);
-  z-index: 10;
-}
-
-/* Make button full-width for mobile UX */
-.save-bar .btn-save {
-  width: 100%;
-}
-.save-bar {
-  position: fixed;
-  bottom: 10px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: calc(100% - 30px);
-  max-width: 470px;
-  background: #ffffff;
-  box-shadow: none;
 }
 /* TOAST */
 .toast-container {
@@ -1181,6 +1191,133 @@ img {
 .btn-delete-top:hover {
   background: #ff3b3b;
   color: #fff;
+}
+
+.profile-stats {
+  display: flex;
+  justify-content: space-around;
+  margin: 15px 0;
+  padding: 10px 0;
+  border-bottom: 1px solid #eee;
+}
+
+.profile-stats .stat {
+  text-align: center;
+}
+
+.profile-stats .count {
+  font-weight: bold;
+  font-size: 16px;
+  color: #333;
+}
+
+.profile-stats .label {
+  font-size: 12px;
+  color: #777;
+}
+
+/* Instagram-style profile header */
+.insta-profile .profile-header {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  margin-bottom: 20px;
+}
+
+.insta-profile .profile-photo .avatar {
+  width: 81px;
+  height: 81px;
+  border-radius: 50%;
+  border: 2px solid #ddd;
+  object-fit: cover;
+  transition: all 0.3s ease;
+}
+
+.insta-profile .profile-info {
+  flex: 1;
+}
+
+.insta-profile .username {
+font-size: 15px;
+    font-weight: 600;
+    margin-bottom: -19px;
+  color: #111;
+}
+
+.insta-profile .profile-stats {
+  display: flex;
+  gap: 25px;
+}
+
+.insta-profile .profile-stats .stat {
+  text-align: center;
+}
+
+.insta-profile .profile-stats .count {
+  font-weight: 600;
+  font-size: 16px;
+  color: #111;
+}
+
+.insta-profile .profile-stats .label {
+  font-size: 12px;
+  color: #555;
+}
+.save-bar {
+  position: fixed;
+  bottom: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: calc(100% - 30px);
+  max-width: 470px;
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  background: #fff;
+  padding: 10px;
+  border-radius: 9px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+  z-index: 10;
+}
+
+.save-bar .btn-save {
+  flex: 1;
+  background: linear-gradient(135deg, #ff5864, #ff2e44);
+  color: #fff;
+  font-weight: bold;
+  border: none;
+  border-radius: 9px;
+  padding: 12px;
+  cursor: pointer;
+}
+
+.save-bar .btn-logout-bottom {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #ff0000;
+  color: #fff;
+  font-weight: 600;
+  border: none;
+  border-radius: 9px;
+  padding: 12px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.save-bar .btn-logout-bottom:hover {
+  background: #d10000;
+}
+
+.save-bar .btn-save:hover {
+  opacity: 0.9;
+}
+
+.profile-form {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  padding-bottom: 40px; /* add extra space equal or slightly more than the save-bar height */
 }
 
 </style>
