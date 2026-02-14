@@ -8,18 +8,16 @@
       <div class="menu-header">
         <img :src="user.profile_photo" class="menu-avatar" />
         <h3>{{ user.first_name }} {{ user.last_name }}</h3>
-
         <p>{{ user.city }}</p>
       </div>
 
       <ul class="menu-list">
-       <li @click="goToProfile">👤 My Profile</li>
+        <li @click="goToProfile">👤 My Profile</li>
         <li>❤️ Matches</li>
         <li>💬 Chats</li>
         <li @click="goToBookings">📅 Bookings</li>
-       <li @click="showFavourites">❤️ Favorites</li>
-<li @click="showAllUsers">🌐 All Users</li>
-
+        <li @click="showFavourites">❤️ Favorites</li>
+        <li @click="showAllUsers">🌐 All Users</li>
         <li>⚙️ Settings</li>
         <li class="logout" @click="logout">🚪 Logout</li>
       </ul>
@@ -27,42 +25,35 @@
 
     <!-- Header -->
     <div class="header">
-     
-
-   <h1 class="page-title">Choose a Companion</h1>
-
-<input
-  type="text"
-  v-model="search"
-  placeholder="Search"
-  class="search-input"
-/>
-
+      <h1 class="page-title">Choose a Companion</h1>
+      <input
+        type="text"
+        v-model="search"
+        placeholder="Search"
+        class="search-input"
+      />
     </div>
 
     <!-- Results -->
     <div class="content">
       <div v-if="people.length">
-       <div
-  class="deal-card"
-  v-for="person in filteredPeople"
-  :key="person.id"
-  :data-id="person.id"
-  ref="cards"
->
-
-
+        <div
+          class="deal-card"
+          v-for="person in filteredPeople"
+          :key="person.id"
+          :data-id="person.id"
+          ref="cards"
+        >
           <!-- Top -->
           <div class="deal-top">
             <div class="deal-rating">⭐ {{ person.rating || 0 }}</div>
-           <button
-  class="fav-btn"
-  :class="{ active: person.liked }"
-  @click.stop="toggleFavourite(person)"
->
-  {{ person.liked ? "❤️" : "🤍" }}
-</button>
-
+            <button
+              class="fav-btn"
+              :class="{ active: person.liked }"
+              @click.stop="toggleFavourite(person)"
+            >
+              {{ person.liked ? "❤️" : "🤍" }}
+            </button>
           </div>
 
           <!-- Image -->
@@ -82,7 +73,6 @@
               />
             </h3>
             <p class="sub">{{ person.status || '' }}</p>
-            <!-- <p class="price">₹{{ person.rate || 0 }} / hour</p> -->
           </div>
 
           <!-- Arrow -->
@@ -95,31 +85,26 @@
         No companions available. Make sure you are logged in!
       </div>
     </div>
- 
+
     <!-- Instagram Style Footer -->
-<div class="bottom-footer">
- <div class="footer-item" @click="$router.push('/home')">
-  <img src="@/assets/home.png" class="footer-icon" />
-</div>
-<div class="footer-item">
-  <img src="@/assets/search.png" class="footer-icon" />
-</div>
-
-<div class="footer-item">
-  <img src="@/assets/golden.png" class="footer-icon" />
-</div>
-
-<div class="footer-item" @click="$router.push('/notifications')">
-  <img src="@/assets/heart.png" class="footer-icon" />
-</div>
-
-
-  <div class="footer-item" @click="$router.push('/profile')">
-    <img :src="user.profile_photo" class="footer-avatar" />
+    <div class="bottom-footer">
+      <div class="footer-item" @click="$router.push('/home')">
+        <img src="@/assets/home.png" class="footer-icon" />
+      </div>
+      <div class="footer-item">
+        <img src="@/assets/search.png" class="footer-icon" />
+      </div>
+      <div class="footer-item">
+        <img src="@/assets/golden.png" class="footer-icon" />
+      </div>
+      <div class="footer-item" @click="$router.push('/notifications')">
+        <img src="@/assets/heart.png" class="footer-icon" />
+      </div>
+      <div class="footer-item" @click="$router.push('/profile')">
+        <img :src="user.profile_photo" class="footer-avatar" />
+      </div>
+    </div>
   </div>
-</div>
-
- </div>
 </template>
 
 <script>
@@ -131,173 +116,161 @@ export default {
     return {
       showOnlyFavourites: false,
       isMenuOpen: false,
-        refreshInterval: null,
-     
+      refreshInterval: null,
       people: [],
-        search: "",
-         visibleUsers: new Set(), 
-          observer: null,
+      search: "",
+      visibleUsers: new Set(),
+      observer: null,
       user: { first_name: "", last_name: "", city: "", profile_photo: "" },
     }
   },
-async mounted() {
-  await this.loadUser()
-  // this.favourites = JSON.parse(localStorage.getItem("favourites") || "[]")
-  await this.loadUsers()
 
-  this.setupObserver()
-
-  this.refreshInterval = setInterval(() => {
+  async mounted() {
+    await this.loadUser()
+    await this.loadUsers()
+    this.setupObserver()
     this.refreshVisibleUsers()
-  }, 2000)
-},
 
-beforeUnmount() {
-  if (this.refreshInterval) clearInterval(this.refreshInterval)
-  if (this.observer) this.observer.disconnect()
-},
+    // Auto-refresh every 2 seconds
+    this.refreshInterval = setInterval(() => {
+      this.refreshVisibleUsers()
+    }, 2000)
+  },
 
+  beforeUnmount() {
+    if (this.refreshInterval) clearInterval(this.refreshInterval)
+    if (this.observer) this.observer.disconnect()
+  },
+
+  // 🔹 Ensure user reloads on route enter / update
+  beforeRouteEnter(to, from, next) {
+    next(vm => {
+      vm.loadUser()
+    })
+  },
+
+  beforeRouteUpdate(to, from, next) {
+    this.loadUser()
+    next()
+  },
 
   computed: {
- filteredPeople() {
-    let list = this.people;
-
-    // If "Favorites" clicked, filter only liked users
-    if (this.showOnlyFavourites) {
-      list = list.filter(user => user.liked);
-    }
-
-    if (!this.search) return list;
-
-    const q = this.search.toLowerCase();
-
-    return list.filter(person => {
-      return (
-        (person.first_name && person.first_name.toLowerCase().includes(q)) ||
-        (person.last_name && person.last_name.toLowerCase().includes(q)) ||
-        (person.status && person.status.toLowerCase().includes(q)) ||
-        (person.subtitle && person.subtitle.toLowerCase().includes(q)) ||
-        (person.city && person.city.toLowerCase().includes(q)) ||
-        (person.state && person.state.toLowerCase().includes(q)) ||
-        (person.country && person.country.toLowerCase().includes(q)) ||
-        (person.address && person.address.toLowerCase().includes(q)) ||
-        (person.rate && person.rate.toString().includes(q))
+    filteredPeople() {
+      let list = this.people
+      if (this.showOnlyFavourites) list = list.filter(u => u.liked)
+      if (!this.search) return list
+      const q = this.search.toLowerCase()
+      return list.filter(p =>
+        (p.first_name && p.first_name.toLowerCase().includes(q)) ||
+        (p.last_name && p.last_name.toLowerCase().includes(q)) ||
+        (p.status && p.status.toLowerCase().includes(q)) ||
+        (p.subtitle && p.subtitle.toLowerCase().includes(q)) ||
+        (p.city && p.city.toLowerCase().includes(q)) ||
+        (p.state && p.state.toLowerCase().includes(q)) ||
+        (p.country && p.country.toLowerCase().includes(q)) ||
+        (p.address && p.address.toLowerCase().includes(q)) ||
+        (p.rate && p.rate.toString().includes(q))
       )
-    })
-  }
-},
+    }
+  },
 
   methods: {
     showFavourites() {
-    this.isMenuOpen = false; // close sidebar
-    this.showOnlyFavourites = true;
-  },
+      this.isMenuOpen = false
+      this.showOnlyFavourites = true
+    },
+    showAllUsers() {
+      this.showOnlyFavourites = false
+    },
 
-  showAllUsers() {
-    this.showOnlyFavourites = false;
-  },
     setupObserver() {
-    this.observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          const id = Number(entry.target.dataset.id)
+      if (this.observer) this.observer.disconnect()
 
-          if (entry.isIntersecting) {
-            this.visibleUsers.add(id)
-          } else {
-            this.visibleUsers.delete(id)
+      this.observer = new IntersectionObserver(
+        entries => {
+          entries.forEach(entry => {
+            const id = Number(entry.target.dataset.id)
+            if (entry.isIntersecting) this.visibleUsers.add(id)
+            else this.visibleUsers.delete(id)
+          })
+        },
+        { threshold: 0.3 }
+      )
+
+      this.$nextTick(() => {
+        this.$refs.cards?.forEach(el => this.observer.observe(el))
+      })
+    },
+
+    async refreshVisibleUsers() {
+      if (!this.visibleUsers.size) return
+      const token = localStorage.getItem("token")
+      if (!token) return
+
+      try {
+        const res = await axios.get("https://companion.ajaywatpade.in/api/users", {
+          headers: { Authorization: `Bearer ${token}` }
+        })
+
+        res.data.forEach(updated => {
+          if (this.visibleUsers.has(updated.id)) {
+            const index = this.people.findIndex(p => p.id === updated.id)
+            if (index !== -1) {
+              this.people.splice(index, 1, {
+                ...this.people[index],
+                rating: updated.rating,
+                like_count: updated.like_count,
+                status: updated.status,
+                rate: updated.rate,
+                liked: updated.liked
+              })
+            }
           }
         })
-      },
-      { threshold: 0.3 } // 30% visible
-    )
 
-    this.$nextTick(() => {
-      this.$refs.cards?.forEach((el) => {
-        this.observer.observe(el)
-      })
-    })
-  },
-  async refreshVisibleUsers() {
-  if (!this.visibleUsers.size) return
-
-  const token = localStorage.getItem("token")
-  if (!token) return
-
-  try {
-    const res = await axios.get(
-      "https://companion.ajaywatpade.in/api/users",
-      { headers: { Authorization: `Bearer ${token}` } }
-    )
-
-    res.data.forEach((updated) => {
-  if (this.visibleUsers.has(updated.id)) {
-    const index = this.people.findIndex(p => p.id === updated.id)
-    if (index !== -1) {
-      this.people[index] = {
-        ...this.people[index],
-        rating: updated.rating,
-        like_count: updated.like_count,
-        status: updated.status,
-        rate: updated.rate,
-        liked: updated.liked, // <-- add this
+        // Re-observe updated DOM elements
+        this.$nextTick(() => {
+          this.$refs.cards?.forEach(el => this.observer.observe(el))
+        })
+      } catch (e) {
+        console.error("Visible refresh failed", e)
       }
-    }
-  }
-})
-
-  } catch (e) {
-    console.error("Visible refresh failed", e)
-  }
-},
+    },
 
     goToProfile() {
-    this.isMenuOpen = false
-    this.$router.push("/profile")
-  },
-async loadUsers() {
-  const token = localStorage.getItem("token")
-  if (!token) return
+      this.isMenuOpen = false
+      this.$router.push("/profile")
+    },
 
-  try {
-    const res = await axios.get(
-      "https://companion.ajaywatpade.in/api/users",
-      { headers: { Authorization: `Bearer ${token}` } }
-    )
+    async loadUsers() {
+      const token = localStorage.getItem("token")
+      if (!token) return
+      try {
+        const res = await axios.get("https://companion.ajaywatpade.in/api/users", {
+          headers: { Authorization: `Bearer ${token}` }
+        })
 
-    this.people = res.data
-      .map((person) => ({
-        ...person,
-        profile_photo: person.profile_photo
-          ? `https://companion.ajaywatpade.in/${person.profile_photo}`
-          : "https://via.placeholder.com/200",
-        liked: person.liked || false, // <-- keep this
-      }))
-      .sort((a, b) => b.id - a.id)
+        this.people = res.data.map(person => ({
+          ...person,
+          profile_photo: person.profile_photo
+            ? `https://companion.ajaywatpade.in/${person.profile_photo}`
+            : "https://via.placeholder.com/200",
+          liked: person.liked || false
+        })).sort((a, b) => b.id - a.id)
 
-    // ❌ REMOVE the old favourites line entirely
-    // this.favourites = this.people
-    //   .filter(p => p.liked || storedFavourites.includes(p.id))
-    //   .map(p => p.id)
-
-  } catch (err) {
-    console.error("Failed to load users:", err.response || err)
-  }
-},
-
-
-
+        // Observe after initial load
+        this.$nextTick(() => {
+          this.$refs.cards?.forEach(el => this.observer.observe(el))
+        })
+      } catch (err) {
+        console.error("Failed to load users:", err.response || err)
+      }
+    },
 
     logout() {
-      axios
-        .post(
-          "https://companion.ajaywatpade.in/api/logout",
-          {},
-          {
-            headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
-          }
-        )
-        .catch(() => {})
+      axios.post("https://companion.ajaywatpade.in/api/logout", {}, {
+        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` }
+      }).catch(() => {})
 
       localStorage.removeItem("token")
       localStorage.removeItem("user")
@@ -305,54 +278,41 @@ async loadUsers() {
       this.$router.replace("/")
     },
 
-    /* ================= USERS ================= */
-async loadUser() {
-  const storedUser = JSON.parse(localStorage.getItem("user"))
-  if (!storedUser || !localStorage.getItem("token")) {
-    this.$router.replace("/")
-    return
-  }
+    async loadUser() {
+      const storedUser = JSON.parse(localStorage.getItem("user"))
+      if (!storedUser || !localStorage.getItem("token")) {
+        this.$router.replace("/")
+        return
+      }
 
-  this.user = {
-    first_name: storedUser.first_name || "",
-    last_name: storedUser.last_name || "",
-    city: storedUser.city || "Unknown",
-    profile_photo: storedUser.profile_photo
-      ? `https://companion.ajaywatpade.in/dating-backend/public/storage/${storedUser.profile_photo}`
-      : "https://via.placeholder.com/100",
-  }
-},
-
-
-
-
-    /* ================= FAVOURITES ================= */
-async toggleFavourite(person) {
-  const token = localStorage.getItem("token")
-  if (!token) return
-
-  try {
-    const res = await axios.post(
-      `https://companion.ajaywatpade.in/api/users/${person.id}/toggle-like`,
-      {},
-      { headers: { Authorization: `Bearer ${token}` } }
-    )
-
-    // Update like status from backend
-    person.liked = res.data.liked
-    person.like_count = res.data.like_count
-  } catch (err) {
-    console.error(err)
-  }
-},
-
-
-
-    isFavourite(id) {
-      return this.favourites.includes(id)
+      this.user = {
+        first_name: storedUser.first_name || "",
+        last_name: storedUser.last_name || "",
+        city: storedUser.city || "Unknown",
+        profile_photo: storedUser.profile_photo
+          ? `https://companion.ajaywatpade.in/dating-backend/public/storage/${storedUser.profile_photo}`
+          : "https://via.placeholder.com/100",
+      }
     },
 
-    /* ================= NAV ================= */
+    async toggleFavourite(person) {
+      const token = localStorage.getItem("token")
+      if (!token) return
+
+      try {
+        const res = await axios.post(
+          `https://companion.ajaywatpade.in/api/users/${person.id}/toggle-like`,
+          {},
+          { headers: { Authorization: `Bearer ${token}` } }
+        )
+
+        person.liked = res.data.liked
+        person.like_count = res.data.like_count
+      } catch (err) {
+        console.error(err)
+      }
+    },
+
     goToDetails(id) {
       this.$router.push(`/details/${id}`)
     },
@@ -369,10 +329,9 @@ async toggleFavourite(person) {
     closeMenu() {
       this.isMenuOpen = false
     },
-  },
+  }
 }
 </script>
-
 
 
 

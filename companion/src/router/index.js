@@ -6,6 +6,12 @@ import Profile from "@/views/Profile.vue";
 import Notifications from "@/views/Notifications.vue";
 
 const routes = [
+  {
+  path: '/user/:userId',
+  name: 'Details',
+  component: () => import('@/views/Details.vue'),
+  props: true // pass route param as prop
+},
   { path: "/", name: "AuthPage", component: () => import('@/views/AuthPage.vue') },
   { path: "/home", component: Home },
   { path: "/details/:id", component: Details },

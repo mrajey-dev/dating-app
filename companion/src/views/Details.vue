@@ -104,13 +104,20 @@
       {{ isFollowing ? "Following" : "Follow" }}
     </button>
 
-    <button
-      class="insta-match-btn"
-      :class="{ matched: isMatched }"
-      @click="toggleMatch"
-    >
-      {{ isMatched ? "Matched" : "Match" }}
-    </button>
+   <button
+  class="insta-match-btn"
+  :class="{
+    requested: matchStatus === 'requested',
+    matched: matchStatus === 'matched'
+  }"
+  :disabled="matchStatus === 'matched' || matchLoading"
+  @click="handleMatch"
+>
+  <span v-if="matchStatus === null">Match</span>
+  <span v-else-if="matchStatus === 'requested'">Requested</span>
+  <span v-else>Matched</span>
+</button>
+
   </div>
 </div>
 
@@ -219,7 +226,11 @@ export default {
       person: null,            // user details
       loading: true,           // skeleton loader
       viewerOpen: false,       // photo viewer
-      currentIndex: 0          // photo viewer index
+      currentIndex: 0,          // photo viewer index
+        // MATCH STATES
+    matchStatus: null, // null | 'requested' | 'matched'
+    matchLoading: false,
+    refreshInterval: null,
     }
   },
 
@@ -298,6 +309,70 @@ export default {
   },
 
   methods: {
+async handleMatch() {
+  if (this.matchLoading || !this.person) return
+  this.matchLoading = true
+
+  try {
+    if (this.matchStatus === null) {
+      // Send match request
+      const res = await axios.post(
+        "https://companion.ajaywatpade.in/api/send-match-request",
+        { user_id: this.person.id },
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`
+          }
+        }
+      )
+
+      if (res.data.success) {
+        this.matchStatus = 'requested'
+        this.notificationStore.increment()
+      }
+    } else if (this.matchStatus === 'requested') {
+      // Cancel match request
+      const res = await axios.post(
+        "https://companion.ajaywatpade.in/api/cancel-match-request",
+        { user_id: this.person.id },
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`
+          }
+        }
+      )
+
+      if (res.data.success) {
+        this.matchStatus = null
+      }
+    }
+  } catch (e) {
+    console.error("Match action failed", e)
+  } finally {
+    this.matchLoading = false
+  }
+},
+
+
+    // Check match status
+async checkMatchStatus() {
+  if (!this.person) return
+  try {
+    const res = await axios.post(
+      "https://companion.ajaywatpade.in/api/match-status",
+      { user_id: this.person.id },
+      {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`
+        }
+      }
+    )
+  this.matchStatus = res.data.status ?? null
+  } catch (e) {
+    console.error("Match status failed", e)
+  }
+},
+
     // Fetch user details
     async fetchPerson() {
       try {
@@ -332,6 +407,7 @@ export default {
           }
 
           await this.checkFollowStatus()
+          await this.checkMatchStatus()
           this.loading = false
         }
       } catch (e) {

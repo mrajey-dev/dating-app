@@ -9,23 +9,24 @@
 
       <!-- App Name -->
       <div class="app-name">
-      𑣲𝐼𝑛𝑡𝑖𝑚𝑎𝑡𝑒<strong>𝑀𝑎𝑡𝑐ℎ</strong>
+        𑣲𝐼𝑛𝑡𝑖𝑚𝑎𝑡𝑒<strong>𝑀𝑎𝑡𝑐ℎ</strong>
       </div>
 
       <!-- Heart Notification Icon -->
-  <div class="heart-notification" @click="openNotifications">
-  <i class="fa-regular fa-bell"></i>
+      <div class="heart-notification" @click="openNotifications">
+        <i class="fa-regular fa-bell"></i>
 
-  <span 
-    v-if="notificationStore.count > 0"
-    class="badge"
-  >
-    {{ notificationStore.count > 99 ? '99+' : notificationStore.count }}
-  </span>
-</div>
-
-
+        <span 
+          v-if="notificationStore.count > 0"
+          class="badge"
+        >
+          {{ notificationStore.count > 99 ? '99+' : notificationStore.count }}
+        </span>
+      </div>
     </header>
+
+    <!-- Hidden audio for notifications -->
+    <audio ref="notificationSound" src="/sounds/notification.mp3" preload="auto"></audio>
 
     <!-- Loader -->
     <div v-if="loading" class="loader">
@@ -40,41 +41,60 @@
 <script>
 import { useNotificationStore } from '@/stores/notification'
 import { useRouter } from 'vue-router'
+import { onMounted, onUnmounted, ref, watch } from 'vue'
 
 export default {
   setup() {
     const notificationStore = useNotificationStore()
-    const router = useRouter()   // ✅ use router to navigate
+    const router = useRouter()
+    const notificationSound = ref(null) // audio element
+    const previousCount = ref(0) // track previous notification count
+    const loading = ref(false) // optional loader, you may already have this reactive
 
-    // Fetch count on load
-    notificationStore.fetchCount()
-
+    // Function to open notifications page
     const openNotifications = () => {
-      notificationStore.reset()      // Reset count
-      router.push('/notifications')  // Navigate to notifications page
+      notificationStore.reset()
+      router.push('/notifications')
     }
+
+    let intervalId = null
+    onMounted(() => {
+      loading.value = true
+      notificationStore.fetchCount().finally(() => loading.value = false)
+      previousCount.value = notificationStore.count
+
+      // Poll every 2 seconds
+      intervalId = setInterval(() => {
+        notificationStore.fetchCount()
+      }, 2000)
+    })
+
+    // Watch for new notifications
+    watch(
+      () => notificationStore.count,
+      (newCount, oldCount) => {
+        if (newCount > oldCount) {
+          // Play notification sound
+          if (notificationSound.value) {
+            notificationSound.value.play().catch(() => {})
+          }
+        }
+        previousCount.value = newCount
+      }
+    )
+
+    onUnmounted(() => {
+      if (intervalId) clearInterval(intervalId)
+    })
 
     return {
       notificationStore,
-      openNotifications
+      openNotifications,
+      notificationSound,
+      loading
     }
-  },
-
-  data() {
-    return {
-      loading: true
-    }
-  },
-
-  mounted() {
-    setTimeout(() => {
-      this.loading = false;
-    }, 1000);
   }
 }
-
-
-
 </script>
 
 <style scoped>
@@ -90,13 +110,13 @@ export default {
   left: 0;
   width: 100%;
   height: 60px;
-  background: #fff; /* White background */
+  background: #fff;
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 0 20px;
   box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-  z-index: 9999; /* On top of everything */
+  z-index: 9999;
   font-family: 'Inter', sans-serif;
 }
 
@@ -116,7 +136,7 @@ export default {
 
 /* Heart notification icon */
 .heart-notification {
-  position: relative; /* For badge positioning */
+  position: relative;
   font-size: 24px;
   cursor: pointer;
 }
@@ -124,16 +144,14 @@ export default {
 /* Badge */
 .heart-notification .badge {
   position: absolute;
- top: 0px;
-    right: -3px;
+  top: 0px;
+  right: -3px;
   background: red;
   color: white;
   font-size: 10px;
- min-width: 18px;
-height: 18px;
-padding: 0 5px;
-border-radius: 20px;
-
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
   border-radius: 50%;
   display: flex;
   justify-content: center;
@@ -146,15 +164,16 @@ border-radius: 20px;
   display: flex;
   justify-content: center;
   align-items: center;
-  height: calc(100vh - 60px); /* Adjust for header height */
+  height: calc(100vh - 60px);
   background-color: #fff;
   z-index: 10;
-  margin-top: 60px; /* Ensure it does not cover header */
+  margin-top: 60px;
 }
 .loader img {
   width: 200px;
   height: 200px;
 }
+
 strong {
   color: #ff4081; /* Pink color for "Match" */
   font-weight: bold;
