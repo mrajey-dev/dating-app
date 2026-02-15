@@ -79,14 +79,36 @@
         <button class="outline full" @click="$refs.galleryInput.click()">Upload Photo</button>
       </div>
 
+      <!-- STEP 3 : INTRO VIDEO -->
+<div v-if="currentStep === 3" class="center">
+  <div class="video-preview">
+    <video v-if="videoPreview" :src="videoPreview" controls></video>
+    <span v-else>🎥 No Video Recorded</span>
+  </div>
+
+  <input
+    type="file"
+    accept="video/*"
+    capture="environment"
+    hidden
+    ref="videoInput"
+    @change="handleVideo"
+  />
+
+  <button class="outline full" @click="$refs.videoInput.click()">
+    Take Introduction Video
+  </button>
+</div>
+
+
       <!-- STEP 4 : GENDER -->
-      <div v-if="currentStep === 3" class="grid">
+      <div v-if="currentStep === 4" class="grid">
         <button class="chip" :class="{ active: form.gender==='Male' }" @click="form.gender='Male'">Male</button>
         <button class="chip" :class="{ active: form.gender==='Female' }" @click="form.gender='Female'">Female</button>
       </div>
 
       <!-- STEP 4.1 : DATE OF BIRTH -->
-      <div v-if="currentStep === 4">
+      <div v-if="currentStep === 5">
         <label>Date of Birth</label>
         <input 
           type="date" 
@@ -97,7 +119,7 @@
       </div>
 
       <!-- STEP 5 : STATUS -->
-      <div v-if="currentStep === 5">
+      <div v-if="currentStep === 6">
         <label>Status</label>
         <select v-model="form.status">
           <option disabled value="">Select status</option>
@@ -110,13 +132,21 @@
       </div>
 
       <!-- STEP 6 : SUBTITLE -->
-      <div v-if="currentStep === 6">
+      <div v-if="currentStep === 7">
         <label>Bio</label>
         <input v-model="form.subtitle" placeholder="Student • Singer • Actor" />
       </div>
+<!-- STEP : HABITS -->
+<div v-if="currentStep === 8">
+  <label>Habits (comma separated)</label>
+  <input 
+    v-model="form.habits" 
+    placeholder="Gym, Reading, Traveling"
+  />
+</div>
 
       <!-- STEP 7 : ADD PHOTOS -->
-      <div v-if="currentStep === 7" class="photos">
+      <div v-if="currentStep === 9" class="photos">
         <div v-for="(img,i) in photos" :key="i" class="photo">
           <img :src="img" />
         </div>
@@ -132,7 +162,7 @@
       </div>
 
       <!-- STEP 8 : ADDRESS -->
-      <div v-if="currentStep === 8">
+      <div v-if="currentStep === 10">
         <label>City</label><input v-model="form.city" />
         <label>Address</label><input v-model="form.address" />
         <label>Pincode</label><input v-model="form.pincode" />
@@ -182,6 +212,7 @@ import 'cropperjs/dist/cropper.min.css'
 export default {
   data() {
     return {
+      videoPreview: null,
       toast: { show: false, message: '', seconds: 5, timer: null },
       cropper: null,
       showCropper: false,
@@ -194,10 +225,12 @@ export default {
         'Contact Details',
         'Location Access',
         'Profile Photo',
+         'Introduction Video', 
         'Gender',
         'Date of Birth',
         'Status',
         'Bio',
+         'Habits',
         'Add Photos',
         'Address'
       ],
@@ -225,6 +258,7 @@ export default {
         latitude: '',
         longitude: '',
         profilePhoto: null,
+          introVideo: null, 
         gallery: []
       }
     }
@@ -238,26 +272,39 @@ export default {
       const dd = String(today.getDate()).padStart(2, '0');
       return `${yyyy}-${mm}-${dd}`;
     },
-    isStepValid() {
-      switch (this.currentStep) {
-        case 0: return this.form.email && this.form.mobile && this.form.firstName && this.form.lastName;
-        case 1: return this.locationGranted;
-        case 2: return !!this.form.profilePhoto;
-        case 3: return !!this.form.gender;
-        case 4: 
-          if (!this.form.dob) return false;
-          const dob = new Date(this.form.dob);
-          const age = Math.floor((Date.now() - dob.getTime()) / 31557600000);
-          return age >= 18;
-        case 5: return !!this.form.status;
-        case 6: return !!this.form.subtitle;
-        case 7: return this.form.gallery.length > 0;
-        case 8: return this.form.city && this.form.address && this.form.pincode && this.form.state;
-        default: return true;
-      }
-    }
+  isStepValid() {
+  switch (this.currentStep) {
+    case 0: return this.form.email && this.form.mobile && this.form.firstName && this.form.lastName;
+    case 1: return this.locationGranted;
+    case 2: return !!this.form.profilePhoto;
+    case 3: return !!this.form.introVideo; // 👈 NEW VALIDATION
+    case 4: return !!this.form.gender;
+    case 5:
+      if (!this.form.dob) return false;
+      const dob = new Date(this.form.dob);
+      const age = Math.floor((Date.now() - dob.getTime()) / 31557600000);
+      return age >= 18;
+    case 6: return !!this.form.status;
+    case 7: return !!this.form.subtitle;
+   case 8: return !!this.form.habits;
+case 9: return this.form.gallery.length > 0;
+case 10: return this.form.city && this.form.address && this.form.pincode && this.form.state;
+    default: return true;
+  }
+}
+
   },
   methods: {
+    handleVideo(e) {
+  const file = e.target.files[0]
+  if (!file) return
+
+  this.form.introVideo = file
+  this.videoPreview = URL.createObjectURL(file)
+
+  e.target.value = ''
+},
+
     showToast(message, redirect = false) {
       this.toast.message = message
       this.toast.seconds = 5
@@ -295,14 +342,17 @@ export default {
         this.loading = true;
         const formData = new FormData();
         for (let key in this.form) {
-          if (key === 'gallery') {
-            this.form.gallery.forEach(file => formData.append('gallery[]', file));
-          } else if (key === 'profilePhoto') {
-            if (this.form.profilePhoto) formData.append('profile_photo', this.form.profilePhoto);
-          } else {
-            formData.append(key, this.form[key]);
-          }
-        }
+  if (key === 'gallery') {
+    this.form.gallery.forEach(file => formData.append('gallery[]', file));
+  } else if (key === 'profilePhoto') {
+    if (this.form.profilePhoto) formData.append('profile_photo', this.form.profilePhoto);
+  } else if (key === 'introVideo') {
+    if (this.form.introVideo) formData.append('introduction_video', this.form.introVideo); // 👈 ADD
+  } else {
+    formData.append(key, this.form[key]);
+  }
+}
+
         formData.append('password', '123456');
         fetch('https://companion.ajaywatpade.in/api/register', {
           method: 'POST',
@@ -786,6 +836,25 @@ button.outline.full:active {
   margin-left: 6px;
   opacity: 0.85;
   font-weight: 700;
+}
+
+.video-preview {
+  width: 100%;
+  height: 200px;
+  border-radius: 16px;
+  border: 2px dashed #e5e7eb;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 16px;
+  overflow: hidden;
+}
+
+.video-preview video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 16px;
 }
 
 </style>

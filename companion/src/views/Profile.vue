@@ -7,9 +7,19 @@
 <div class="profile-card insta-profile">
   <!-- PROFILE HEADER -->
   <div class="profile-header">
-    <div class="profile-photo">
-      <img :src="previewPhoto.profile_photo || user.profile_photo" class="avatar" />
-    </div>
+  <div class="profile-photo" @click="triggerProfilePhotoInput">
+  <img :src="previewPhoto.profile_photo || user.profile_photo" class="avatar" />
+  
+  <!-- Hidden file input -->
+  <input
+    type="file"
+    ref="profilePhotoInput"
+    accept="image/*"
+    @change="onProfilePhotoSelect"
+    hidden
+  />
+</div>
+
 
     <div class="profile-info">
      <h2 class="username">
@@ -25,7 +35,10 @@
 
       <div class="profile-stats">
         <div class="stat">
-          <div class="count">{{ user.posts || 0 }}</div>
+         <div class="count">
+  {{ user.photo_gallery ? user.photo_gallery.length : 0 }}
+</div>
+
           <div class="label">Posts</div>
         </div>
         <div class="stat">
@@ -38,6 +51,29 @@
         </div>
       </div>
     </div>
+  </div>
+</div>
+<!-- INTRODUCTION VIDEO -->
+<div class="video-section">
+  <h3>Introduction Video</h3>
+
+  <div class="video-preview">
+    <video
+      v-if="previewVideo"
+      :src="previewVideo"
+      controls
+      class="intro-video"
+    ></video>
+
+    <label class="add-video">
+      Upload Video
+      <input
+        type="file"
+        accept="video/*"
+        @change="onVideoSelect"
+        hidden
+      />
+    </label>
   </div>
 </div>
 
@@ -110,14 +146,7 @@
               <!-- <option value="other">Other</option> -->
             </select>
           </div>
-          <div class="form-group">
-            <label>Gender Preference</label>
-            <select v-model="user.gender_preference">
-              <option value="male">Male</option>
-              <option value="female">Female</option>
-              <option value="both">Both</option>
-            </select>
-          </div>
+          
         </div>
 
         <div class="form-group">
@@ -144,9 +173,17 @@
           <label>Bio</label>
           <input v-model="user.subtitle" />
         </div>
-        <div class="form-group">
+        <div class="form-group"> 
           <label>Status</label>
-          <input v-model="user.status" />
+      
+          <select v-model="user.status">
+          <option disabled value="">Select status</option>
+          <option>Single</option>
+          <option>Married</option>
+          <option>Divorced</option>
+          <option>Separated</option>
+          <option>Widowed</option>
+        </select>
         </div>
 
         <div class="form-row">
@@ -245,6 +282,7 @@ import '@fortawesome/fontawesome-free/css/all.min.css'
 export default {
   data() {
     return {
+      previewVideo: null,
       selectedPhotoIndex: null,
         showCropper: false,
 cropper: null,
@@ -309,6 +347,11 @@ async mounted() {
       ? storedUser.profile_photo
       : `https://companion.ajaywatpade.in/dating-backend/public/storage/${storedUser.profile_photo}`
     : ""
+if (storedUser.introduction_video) {
+  this.previewVideo = storedUser.introduction_video.startsWith("http")
+    ? storedUser.introduction_video
+    : `https://companion.ajaywatpade.in/dating-backend/public/storage/${storedUser.introduction_video}`
+}
 
   this.user = {
     ...storedUser,
@@ -378,6 +421,43 @@ beforeUnmount() {
 
 
   methods: {
+    async onVideoSelect(e) {
+  const token = localStorage.getItem("token")
+
+  const file = e.target.files[0]
+  if (!file) return
+
+  // Optional: limit size (50MB example)
+  if (file.size > 50 * 1024 * 1024) {
+    this.showToast("Video must be under 50MB", "error")
+    return
+  }
+
+  const formData = new FormData()
+  formData.append("introduction_video", file)
+
+  try {
+    const res = await axios.post(
+      "https://companion.ajaywatpade.in/api/profile/upload-video",
+      formData,
+      { headers: { Authorization: `Bearer ${token}` } }
+    )
+
+    this.previewVideo = URL.createObjectURL(file)
+    this.user.introduction_video = res.data.introduction_video
+    localStorage.setItem("user", JSON.stringify(res.data))
+
+    this.showToast("Video uploaded successfully")
+  } catch (err) {
+    console.error(err)
+    this.showToast("Failed to upload video", "error")
+  }
+},
+
+    triggerProfilePhotoInput() {
+  this.$refs.profilePhotoInput.click()
+},
+
     closePhotoSelection() {
   this.selectedPhotoIndex = null
 },
@@ -543,32 +623,6 @@ async onFileChange(field, e) {
   const token = localStorage.getItem("token")
   if (!token) return alert("Please login!")
 
-  if (field === "profile_photo") {
-    const file = e.target.files[0]
-    if (!file) return
-
-    // Preview instantly
-    this.previewPhoto.profile_photo = URL.createObjectURL(file)
-
-    const formData = new FormData()
-    formData.append("profile_photo", file)
-
-    try {
-      const res = await axios.post(
-        "https://companion.ajaywatpade.in/api/profile/upload-profile-photo",
-        formData,
-        { headers: { Authorization: `Bearer ${token}` } }
-      )
-
-      // Update user data instantly
-      this.user.profile_photo = res.data.profile_photo
-      localStorage.setItem("user", JSON.stringify(res.data))
-    } catch (err) {
-      console.error(err)
-    this.showToast("Failed to upload profile photo", "error")
-
-    }
-  }
 
   // ---------------- GALLERY ----------------
   if (field === "photo_gallery") {
@@ -1282,7 +1336,7 @@ font-size: 15px;
 
 .save-bar .btn-save {
   flex: 1;
-  background: linear-gradient(135deg, #ff5864, #ff2e44);
+  background:linear-gradient(135deg, #0547ea, #081f87);
   color: #fff;
   font-weight: bold;
   border: none;
@@ -1318,6 +1372,28 @@ font-size: 15px;
   flex-direction: column;
   gap: 15px;
   padding-bottom: 40px; /* add extra space equal or slightly more than the save-bar height */
+}
+
+.video-section {
+  margin-bottom: 20px;
+}
+
+.intro-video {
+  width: 100%;
+  max-height: 300px;
+  border-radius: 10px;
+}
+
+.add-video {
+    display: inline-block;
+    margin-top: 10px;
+    cursor: pointer;
+    padding: 3px 9px;
+    font-size: 13px;
+    border-radius: 11px;
+    background-color: #fd5068;
+    color: #ffffff;
+    font-weight: 600;
 }
 
 </style>

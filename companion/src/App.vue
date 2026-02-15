@@ -9,7 +9,7 @@
 
       <!-- App Name -->
       <div class="app-name">
-        𑣲𝐼𝑛𝑡𝑖𝑚𝑎𝑡𝑒<strong>𝑀𝑎𝑡𝑐ℎ</strong>
+        𑣲𝐻𝑒𝒶𝓇𝓉 <strong>𝐿𝒾𝓃𝓀</strong>
       </div>
 
       <!-- Heart Notification Icon -->

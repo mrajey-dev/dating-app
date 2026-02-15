@@ -197,11 +197,14 @@
     </div>
 
     <!-- Include Chat Popup Component -->
-    <ChatPopup
-      :person="person"
-      :showChat="showChat"
-      @close="showChat = false"
-    />
+<ChatPopup
+  :person="person"
+  :showChat="showChat"
+  :userId="loggedInUserId"
+  @close="showChat = false"
+/>
+
+
   </div>
 </template>
 
@@ -231,11 +234,13 @@ export default {
     matchStatus: null, // null | 'requested' | 'matched'
     matchLoading: false,
     refreshInterval: null,
+      loggedInUserId: 0,
     }
   },
 
   mounted() {
-    this.fetchPerson()
+   this.loggedInUserId = Number(localStorage.getItem("user_id")) || 0;
+  this.fetchPerson();
   },
 
   computed: {
@@ -633,6 +638,7 @@ async checkMatchStatus() {
   color: #fff;
   border: none;
   padding: 12px 20px;
+  width: 100%;
   border-radius: 12px;
   font-size: 15px;
   font-weight: 600;

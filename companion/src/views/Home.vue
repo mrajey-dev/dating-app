@@ -5,11 +5,9 @@
 
     <!-- Side Menu -->
     <div class="side-menu" :class="{ open: isMenuOpen }">
-      <div class="menu-header">
-        <img :src="user.profile_photo" class="menu-avatar" />
-        <h3>{{ user.first_name }} {{ user.last_name }}</h3>
-        <p>{{ user.city }}</p>
-      </div>
+      <!-- Header -->
+
+
 
       <ul class="menu-list">
         <li @click="goToProfile">👤 My Profile</li>
@@ -24,67 +22,197 @@
     </div>
 
     <!-- Header -->
-    <div class="header">
-      <h1 class="page-title">Choose a Companion</h1>
-      <input
-        type="text"
-        v-model="search"
-        placeholder="Search"
-        class="search-input"
-      />
+    <!-- Header -->
+<div class="header">
+  <h1 class="page-title">Choose a Companion</h1>
+
+  <div class="search-filter-wrapper">
+    <input
+      type="text"
+      v-model="search"
+      placeholder="Search"
+      class="search-input"
+    />
+
+   <div class="filter-icon" @click="toggleFilter">
+  <img src="@/assets/filter.png" alt="Filter" class="filter-img" />
+</div>
+
+  </div>
+</div>
+
+
+    <!-- FILTER POPUP -->
+<transition name="slide-down">
+  <div v-if="showFilter" class="filter-popup">
+    <div class="filter-header">
+      <h3>Advanced Filters</h3>
+      <span class="close-btn" @click="toggleFilter">✖</span>
     </div>
+
+    <div class="filter-body">
+
+      <div class="filter-group">
+        <label>Status</label>
+        <input v-model="filters.status" placeholder="Enter status" />
+      </div>
+
+      <div class="filter-group">
+        <label>Subtitle</label>
+        <input v-model="filters.subtitle" placeholder="Enter subtitle" />
+      </div>
+
+      <div class="filter-group">
+        <label>City</label>
+        <input v-model="filters.city" placeholder="Enter city" />
+      </div>
+
+      <div class="filter-group">
+        <label>State</label>
+        <input v-model="filters.state" placeholder="Enter state" />
+      </div>
+
+      <div class="filter-group">
+        <label>Verified Badge</label>
+        <select v-model="filters.verified_badge">
+          <option value="">All</option>
+          <option value="1">Verified Only</option>
+        </select>
+      </div>
+
+      <div class="filter-group">
+        <label>Habits</label>
+        <input v-model="filters.habits" placeholder="Smoking, Gym, etc" />
+      </div>
+
+      <div class="filter-actions">
+        <button class="clear-btn" @click="clearFilters">Clear</button>
+       <button class="apply-btn" @click="closeFilter">Done</button>
+
+      </div>
+
+    </div>
+  </div>
+</transition>
+
 
     <!-- Results -->
-    <div class="content">
-      <div v-if="people.length">
-        <div
-          class="deal-card"
-          v-for="person in filteredPeople"
-          :key="person.id"
-          :data-id="person.id"
-          ref="cards"
+   <div class="content">
+
+  <!-- If users exist -->
+  <div v-if="people.length">
+
+    <div
+      class="deal-card"
+      v-for="person in filteredPeople"
+      :key="person.id"
+      :data-id="person.id"
+      ref="cards"
+    >
+
+      <!-- Top -->
+      <div class="deal-top">
+        <div class="deal-rating">⭐ {{ person.rating || 0 }}</div>
+
+        <button
+          class="fav-btn"
+          :class="{ active: person.liked }"
+          @click.stop="toggleFavourite(person)"
         >
-          <!-- Top -->
-          <div class="deal-top">
-            <div class="deal-rating">⭐ {{ person.rating || 0 }}</div>
-            <button
-              class="fav-btn"
-              :class="{ active: person.liked }"
-              @click.stop="toggleFavourite(person)"
-            >
-              {{ person.liked ? "❤️" : "🤍" }}
-            </button>
-          </div>
-
-          <!-- Image -->
-          <img
-            class="deal-img"
-            :src="person.profile_photo || 'https://via.placeholder.com/200'"
-          />
-
-          <!-- Content -->
-          <div class="deal-content">
-            <h3>
-              {{ person.first_name || person.name }}
-              <img
-                v-if="person.verified_badge == 1"
-                src="@/assets/verified1.png"
-                class="verified"
-              />
-            </h3>
-            <p class="sub">{{ person.status || '' }}</p>
-          </div>
-
-          <!-- Arrow -->
-          <button class="deal-next" @click="goToDetails(person.id)">
-            ››
-          </button>
-        </div>
+          {{ person.liked ? "❤️" : "🤍" }}
+        </button>
       </div>
-      <div v-else>
-        No companions available. Make sure you are logged in!
-      </div>
+
+      <!-- Media Section -->
+      
+      <!-- Show video if available -->
+  <div v-if="person.introduction_video" class="video-wrapper"
+     @click="showControls(person.id)">
+
+ <video
+    :ref="'video-' + person.id"
+    class="deal-img no-fullscreen"
+    :src="person.introduction_video"
+    preload="metadata"
+    loop
+    controls
+    playsinline
+    controlsList="nodownload noplaybackrate noremoteplayback"
+    disablePictureInPicture
+    @click.stop="toggleVideo(person.id)"
+  ></video>
+
+
+  <!-- Controls Wrapper -->
+  <div v-if="controlsVisible[person.id]" class="video-controls">
+
+    <!-- Play Button -->
+    <div class="play-btn" @click.stop="toggleVideo(person.id)">
+      {{ playingVideo === person.id ? '||' : '▶' }}
     </div>
+
+    <!-- Sound Button -->
+    <div class="sound-btn" @click.stop="toggleSound(person.id)">
+  {{ videoMuted[person.id] ? '🔇' : '🔊' }}
+</div>
+
+
+  </div>
+</div>
+
+
+
+
+      <!-- Otherwise show image -->
+      <img
+        v-else
+        class="deal-img"
+        :src="person.profile_photo || 'https://via.placeholder.com/200'"
+        alt="Profile"
+      />
+
+      <!-- Content -->
+      <div class="deal-content">
+        <h3>
+          {{ person.first_name || person.name }}
+
+          <img
+            v-if="person.verified_badge == 1"
+            src="@/assets/verified1.png"
+            class="verified"
+            alt="Verified"
+          />
+        </h3>
+
+        <p class="sub">
+          {{ person.status || '' }}
+        </p>
+      </div>
+
+      <!-- Arrow -->
+      <button
+        class="deal-next"
+        @click="goToDetails(person.id)"
+      >
+        ››
+      </button>
+
+    </div>
+
+    <!-- ✅ Loading more (ONLY when fetching next page) -->
+    <div v-if="loadingMore" class="loading-more">
+      Loading more companions...
+    </div>
+
+  </div>
+
+  <!-- ✅ Empty state -->
+  <div v-else class="empty-state">
+    No companions available. Make sure you are logged in!
+  </div>
+
+</div>
+
 
     <!-- Instagram Style Footer -->
     <div class="bottom-footer">
@@ -109,11 +237,30 @@
 
 <script>
 import axios from "axios"
+import _ from "lodash"
 
 export default {
   name: "Home",
+  
   data() {
     return {
+      videoMuted: {},            // track mute state per video
+      controlsVisible: {},       // track controls visibility per video
+      controlTimeouts: {},       // timeout for controls hide
+      playingVideo: null,        // currently playing video ID
+      currentPage: 1,
+      lastPage: 1,
+      loadingMore: false,
+      scrollHandler: null,
+      showFilter: false,
+      filters: {
+        status: "",
+        subtitle: "",
+        city: "",
+        state: "",
+        verified_badge: "",
+        habits: ""
+      },
       showOnlyFavourites: false,
       isMenuOpen: false,
       refreshInterval: null,
@@ -127,26 +274,23 @@ export default {
 
   async mounted() {
     await this.loadUser()
-    await this.loadUsers()
+    await this.loadUsers(1)
     this.setupObserver()
     this.refreshVisibleUsers()
 
-    // Auto-refresh every 2 seconds
-    this.refreshInterval = setInterval(() => {
-      this.refreshVisibleUsers()
-    }, 2000)
+    // Infinite scroll listener
+    this.scrollHandler = this.handleScroll
+    window.addEventListener("scroll", this.scrollHandler)
   },
 
   beforeUnmount() {
     if (this.refreshInterval) clearInterval(this.refreshInterval)
     if (this.observer) this.observer.disconnect()
+    window.removeEventListener("scroll", this.scrollHandler)
   },
 
-  // 🔹 Ensure user reloads on route enter / update
   beforeRouteEnter(to, from, next) {
-    next(vm => {
-      vm.loadUser()
-    })
+    next(vm => vm.loadUser())
   },
 
   beforeRouteUpdate(to, from, next) {
@@ -156,45 +300,176 @@ export default {
 
   computed: {
     filteredPeople() {
-      let list = this.people
-      if (this.showOnlyFavourites) list = list.filter(u => u.liked)
-      if (!this.search) return list
-      const q = this.search.toLowerCase()
-      return list.filter(p =>
-        (p.first_name && p.first_name.toLowerCase().includes(q)) ||
-        (p.last_name && p.last_name.toLowerCase().includes(q)) ||
-        (p.status && p.status.toLowerCase().includes(q)) ||
-        (p.subtitle && p.subtitle.toLowerCase().includes(q)) ||
-        (p.city && p.city.toLowerCase().includes(q)) ||
-        (p.state && p.state.toLowerCase().includes(q)) ||
-        (p.country && p.country.toLowerCase().includes(q)) ||
-        (p.address && p.address.toLowerCase().includes(q)) ||
-        (p.rate && p.rate.toString().includes(q))
-      )
+      return this.people
+    }
+  },
+
+  watch: {
+    search() {
+      this.debounceSearch()
+    },
+    filters: {
+      handler() {
+        this.debounceFilter()
+      },
+      deep: true
     }
   },
 
   methods: {
+
+    // Show video controls for 2 seconds
+    showControls(id) {
+      this.controlsVisible[id] = true
+      if (this.controlTimeouts[id]) clearTimeout(this.controlTimeouts[id])
+      this.controlTimeouts[id] = setTimeout(() => {
+        this.controlsVisible[id] = false
+      }, 2000)
+    },
+
+    // Toggle play/pause manually
+    toggleVideo(id) {
+      this.showControls(id)
+      const currentRef = this.$refs['video-' + id]
+      if (!currentRef) return
+      const video = Array.isArray(currentRef) ? currentRef[0] : currentRef
+
+      // Pause if same video clicked
+      if (this.playingVideo === id) {
+        video.pause()
+        this.playingVideo = null
+        return
+      }
+
+      // Pause all other videos
+      Object.keys(this.$refs).forEach(key => {
+        if (key.startsWith('video-')) {
+          const refItem = this.$refs[key]
+          const v = Array.isArray(refItem) ? refItem[0] : refItem
+          if (v && typeof v.pause === 'function') {
+            const otherId = Number(key.replace('video-', ''))
+            if (otherId !== id) {
+              v.pause()
+              v.currentTime = 0
+              this.videoMuted[otherId] = true
+            }
+          }
+        }
+      })
+
+      // Play selected video
+      video.play()
+        .then(() => {
+          this.playingVideo = id
+          this.videoMuted[id] = video.muted
+        })
+        .catch(err => console.log("Play blocked:", err))
+    },
+
+    // Toggle sound
+    toggleSound(id) {
+      const currentRef = this.$refs['video-' + id]
+      if (!currentRef) return
+      const video = Array.isArray(currentRef) ? currentRef[0] : currentRef
+      video.muted = !video.muted
+      this.videoMuted[id] = video.muted
+    },
+
+    // Infinite scroll
+    handleScroll() {
+      const scrollTop = window.scrollY
+      const windowHeight = window.innerHeight
+      const fullHeight = document.documentElement.scrollHeight
+
+      if (
+        scrollTop + windowHeight >= fullHeight - 200 &&
+        !this.loadingMore &&
+        this.currentPage < this.lastPage
+      ) {
+        this.loadingMore = true
+        this.loadUsers(this.currentPage + 1)
+      }
+    },
+
+    toggleFilter() {
+      this.showFilter = !this.showFilter
+      if (!this.showFilter) this.loadUsers()
+    },
+
+    clearFilters() {
+      this.filters = {
+        status: "",
+        subtitle: "",
+        city: "",
+        state: "",
+        verified_badge: "",
+        habits: ""
+      }
+    },
+
+    closeFilter() {
+      this.showFilter = false
+    },
+
+    debounceSearch: _.debounce(function () {
+      this.currentPage = 1
+      this.lastPage = 1
+      this.loadUsers(1)
+    }, 500),
+
+    debounceFilter: _.debounce(function () {
+      this.currentPage = 1
+      this.lastPage = 1
+      this.loadUsers(1)
+    }, 500),
+
     showFavourites() {
       this.isMenuOpen = false
       this.showOnlyFavourites = true
     },
+
     showAllUsers() {
       this.showOnlyFavourites = false
     },
 
+    // IntersectionObserver to auto-play top visible video
     setupObserver() {
       if (this.observer) this.observer.disconnect()
 
       this.observer = new IntersectionObserver(
         entries => {
+          const visibleEntries = entries
+            .filter(entry => entry.isIntersecting)
+            .sort((a, b) => a.target.getBoundingClientRect().top - b.target.getBoundingClientRect().top)
+
+          // Pause videos not visible
           entries.forEach(entry => {
             const id = Number(entry.target.dataset.id)
-            if (entry.isIntersecting) this.visibleUsers.add(id)
-            else this.visibleUsers.delete(id)
+            const videoRef = this.$refs['video-' + id]
+            const video = Array.isArray(videoRef) ? videoRef[0] : videoRef
+            if (!entry.isIntersecting && video) {
+              video.pause()
+              video.currentTime = 0
+              if (this.playingVideo === id) this.playingVideo = null
+            }
           })
+
+          // Auto-play top visible video if none is manually playing
+          if (visibleEntries.length > 0 && this.playingVideo === null) {
+            const topVisible = visibleEntries[0]
+            const id = Number(topVisible.target.dataset.id)
+            const videoRef = this.$refs['video-' + id]
+            const video = Array.isArray(videoRef) ? videoRef[0] : videoRef
+            if (video) {
+              video.muted = false
+              this.videoMuted[id] = false
+              video.play()
+                .then(() => { this.playingVideo = id })
+                .catch(err => console.log("Auto-play blocked:", err))
+            }
+          }
         },
-        { threshold: 0.3 }
+        { threshold: 0.5 }
       )
 
       this.$nextTick(() => {
@@ -212,7 +487,7 @@ export default {
           headers: { Authorization: `Bearer ${token}` }
         })
 
-        res.data.forEach(updated => {
+        res.data.data.forEach(updated => {
           if (this.visibleUsers.has(updated.id)) {
             const index = this.people.findIndex(p => p.id === updated.id)
             if (index !== -1) {
@@ -228,7 +503,6 @@ export default {
           }
         })
 
-        // Re-observe updated DOM elements
         this.$nextTick(() => {
           this.$refs.cards?.forEach(el => this.observer.observe(el))
         })
@@ -242,28 +516,46 @@ export default {
       this.$router.push("/profile")
     },
 
-    async loadUsers() {
+    async loadUsers(page = 1) {
       const token = localStorage.getItem("token")
       if (!token) return
+
       try {
         const res = await axios.get("https://companion.ajaywatpade.in/api/users", {
-          headers: { Authorization: `Bearer ${token}` }
+          headers: { Authorization: `Bearer ${token}` },
+          params: {
+            page,
+            search: this.search,
+            status: this.filters.status,
+            subtitle: this.filters.subtitle,
+            city: this.filters.city,
+            state: this.filters.state,
+            verified_badge: this.filters.verified_badge,
+            habits: this.filters.habits
+          }
         })
 
-        this.people = res.data.map(person => ({
+        const newUsers = res.data.data.map(person => ({
           ...person,
           profile_photo: person.profile_photo
             ? `https://companion.ajaywatpade.in/${person.profile_photo}`
             : "https://via.placeholder.com/200",
+          introduction_video: person.introduction_video
+            ? `https://companion.ajaywatpade.in/dating-backend/public/storage/${person.introduction_video}`
+            : null,
           liked: person.liked || false
-        })).sort((a, b) => b.id - a.id)
+        }))
 
-        // Observe after initial load
-        this.$nextTick(() => {
-          this.$refs.cards?.forEach(el => this.observer.observe(el))
-        })
+        if (page === 1) this.people = newUsers
+        else this.people = [...this.people, ...newUsers]
+
+        this.currentPage = res.data.current_page
+        this.lastPage = res.data.last_page
+
       } catch (err) {
-        console.error("Failed to load users:", err.response || err)
+        console.error("Failed to load users:", err)
+      } finally {
+        this.loadingMore = false
       }
     },
 
@@ -332,6 +624,7 @@ export default {
   }
 }
 </script>
+
 
 
 
@@ -747,6 +1040,143 @@ export default {
   user-select: none;
   -webkit-user-drag: none;
 }
+.deal-img {
+  width: 100%;
+  height: auto;
+  object-fit: cover;
+  border-radius: 15px;
+}
 
+.search-filter-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+
+
+/* Popup */
+.filter-popup {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  background: rgba(255,255,255,0.95);
+  backdrop-filter: blur(10px);
+  padding: 20px;
+  z-index: 999;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+  border-bottom-left-radius: 20px;
+  border-bottom-right-radius: 20px;
+}
+
+.filter-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.filter-body {
+  margin-top: 15px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 15px;
+}
+
+.filter-group label {
+  font-size: 12px;
+  font-weight: bold;
+  color: #555;
+}
+
+.filter-group input,
+.filter-group select {
+  width: 100%;
+  padding: 8px;
+  border-radius: 8px;
+  border: 1px solid #ddd;
+}
+
+.filter-actions {
+  grid-column: 1 / -1;
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.apply-btn {
+  background: #ff4d6d;
+  color: white;
+  padding: 8px 18px;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  transition: 0.3s;
+}
+
+.apply-btn:hover {
+  background: #e63c5d;
+}
+
+.clear-btn {
+  background: #ddd;
+  padding: 8px 18px;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+}
+
+/* Animation */
+.slide-down-enter-active,
+.slide-down-leave-active {
+  transition: all 0.4s ease;
+}
+
+.slide-down-enter-from {
+  transform: translateY(-100%);
+  opacity: 0;
+}
+
+.slide-down-leave-to {
+  transform: translateY(-100%);
+  opacity: 0;
+}
+.filter-icon {
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.filter-img {
+  width: 22px;
+  height: 22px;
+  object-fit: contain;
+}
+.loading-more {
+  text-align: center;
+  padding: 20px;
+  font-weight: 600;
+}
+.video-wrapper {
+  position: relative;
+}
+
+
+/* Hide the fullscreen button in WebKit browsers (Chrome, Safari) */
+video.no-fullscreen::-webkit-media-controls-fullscreen-button {
+  display: none;
+}
+
+/* Hide the fullscreen button in Firefox */
+video.no-fullscreen::-moz-fullscreen-button {
+  display: none;
+}
+
+/* Hide the fullscreen button in Edge / IE (experimental) */
+video.no-fullscreen::-ms-fullscreen-button {
+  display: none;
+}
 </style>
 

@@ -8,7 +8,7 @@
       <!-- Only show these when login tab is active -->
       <template v-if="activeTab === 'login'">
         <img src="/banner.png" alt="" class="login-img">
-        <h1 class="logo">Intimate<strong>Match</strong></h1>
+        <h1 class="logo"><strong>Heart</strong>Link</h1>
 
         <!-- Tabs -->
         <div class="tabs">
