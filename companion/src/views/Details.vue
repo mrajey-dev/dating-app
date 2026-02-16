@@ -177,9 +177,15 @@
         </div>
 
         <!-- Only Button, Chat moved to separate component -->
-        <button class="checkout" @click="showChat = true">
-          Start Messaging
-        </button>
+       <button 
+  class="checkout"
+  :disabled="matchStatus !== 'matched'"
+  :class="{ disabledBtn: matchStatus !== 'matched' }"
+  @click="openChat"
+>
+  {{ matchStatus === 'matched' ? 'Start Messaging' : 'Match to Message' }}
+</button>
+
       </div>
 
       <!-- Image Viewer -->
@@ -201,8 +207,10 @@
   :person="person"
   :showChat="showChat"
   :userId="loggedInUserId"
+  :canChat="matchStatus === 'matched'"
   @close="showChat = false"
 />
+
 
 
   </div>
@@ -222,6 +230,7 @@ export default {
 
   data() {
     return {
+      
        notificationStore: useNotificationStore(),
       showChat: false,         // controls chat popup
       isFollowing: null,       // follow state
@@ -314,6 +323,15 @@ export default {
   },
 
   methods: {
+    openChat() {
+  if (this.matchStatus !== 'matched') {
+    alert("You can message only after matching 💕")
+    return
+  }
+
+  this.showChat = true
+},
+
 async handleMatch() {
   if (this.matchLoading || !this.person) return
   this.matchLoading = true
@@ -643,7 +661,7 @@ async checkMatchStatus() {
   font-size: 15px;
   font-weight: 600;
   cursor: pointer;
-  box-shadow: 0 8px 20px rgba(255, 46, 99, 0.35);
+  /* box-shadow: 0 8px 20px rgba(255, 46, 99, 0.35); */
   transition: all 0.2s ease;
 }
 
@@ -2101,6 +2119,12 @@ width: 100%;
 
 .insta-match-btn:active {
   transform: scale(0.97);
+}
+
+.disabledBtn {
+  background: #3a3737 !important;
+  cursor: not-allowed;
+  opacity: 0.7;
 }
 
 </style>

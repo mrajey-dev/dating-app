@@ -27,12 +27,15 @@
   <h1 class="page-title">Choose a Companion</h1>
 
   <div class="search-filter-wrapper">
-    <input
-      type="text"
-      v-model="search"
-      placeholder="Search"
-      class="search-input"
-    />
+   <input
+  v-if="showSearchBar"
+  ref="searchInput"
+  type="text"
+  v-model="search"
+  placeholder="Search"
+  class="search-input"
+/>
+
 
    <div class="filter-icon" @click="toggleFilter">
   <img src="@/assets/filter.png" alt="Filter" class="filter-img" />
@@ -112,7 +115,7 @@
 
       <!-- Top -->
       <div class="deal-top">
-        <div class="deal-rating">⭐ {{ person.rating || 0 }}</div>
+        <div class="deal-rating">🥇 {{ person.rating || 0 }}</div>
 
         <button
           class="fav-btn"
@@ -219,9 +222,10 @@
       <div class="footer-item" @click="$router.push('/home')">
         <img src="@/assets/home.png" class="footer-icon" />
       </div>
-      <div class="footer-item">
-        <img src="@/assets/search.png" class="footer-icon" />
-      </div>
+     <div class="footer-item" @click="openSearch">
+  <img src="@/assets/search.png" class="footer-icon" />
+</div>
+
       <div class="footer-item">
         <img src="@/assets/golden.png" class="footer-icon" />
       </div>
@@ -244,6 +248,7 @@ export default {
   
   data() {
     return {
+      showSearchBar: true,
       videoMuted: {},            // track mute state per video
       controlsVisible: {},       // track controls visibility per video
       controlTimeouts: {},       // timeout for controls hide
@@ -317,6 +322,15 @@ export default {
   },
 
   methods: {
+openSearch() {
+  this.showSearchBar = true
+
+  this.$nextTick(() => {
+    if (this.$refs.searchInput) {
+      this.$refs.searchInput.focus()
+    }
+  })
+},
 
     // Show video controls for 2 seconds
     showControls(id) {
@@ -793,6 +807,7 @@ export default {
 
 .deal-content h3 {
   font-size: 16px;
+  color: #000000;
   font-weight: 600;
   display: flex;
   align-items: center;

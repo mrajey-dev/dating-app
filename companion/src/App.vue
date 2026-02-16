@@ -123,6 +123,7 @@ export default {
 /* Menu Icon */
 .menu-icon {
   font-size: 31px;
+  color: black;
   cursor: pointer;
 }
 
@@ -130,6 +131,7 @@ export default {
 .app-name {
   font-size: 20px;
   font-weight: bold;
+  color: black;
   text-align: center;
   flex: 1;
 }
@@ -177,5 +179,8 @@ export default {
 strong {
   color: #ff4081; /* Pink color for "Match" */
   font-weight: bold;
+}
+.fa-bell{
+  color: rgb(0, 0, 0)!important;
 }
 </style>

@@ -55,7 +55,7 @@
 </div>
 <!-- INTRODUCTION VIDEO -->
 <div class="video-section">
-  <h3>Introduction Video</h3>
+  <h3 class="introduction">Introduction Video</h3>
 
   <div class="video-preview">
     <video
@@ -66,7 +66,7 @@
     ></video>
 
     <label class="add-video">
-      Upload Video
+      🗁 Upload Video
       <input
         type="file"
         accept="video/*"
@@ -108,8 +108,34 @@
           </label>
         </div>
       </div>
+<div class="edit-bar">
+   <button class="btn-logout" @click="logout">
+   ⏻ Logout
+  </button>
+  <button
+    type="button"
+    class="btn-edit"
+    v-if="!showPersonalDetails"
+    @click="showPersonalDetails = true"
+  >
+    ✎ Edit Personal Details
+  </button>
 
-      <form class="profile-form" @submit.prevent="updateProfile">
+  <button
+    type="button"
+    class="btn-cancel"
+    v-if="showPersonalDetails"
+    @click="showPersonalDetails = false"
+  >
+    Hide
+  </button>
+</div>
+
+    <form
+  v-if="showPersonalDetails"
+  class="profile-form"
+  @submit.prevent="updateProfile"
+>
         <!-- BASIC INFO -->
         <div class="form-row">
           <div class="form-group">
@@ -237,9 +263,7 @@
       <!-- Sticky Save Bar -->
 <!-- Sticky Save & Logout Bar -->
 <div class="save-bar">
-  <button class="btn-logout-bottom" @click="logout">
-    Logout
-  </button>
+ 
   <button type="submit" class="btn-save">Save Changes</button>
 </div>
 
@@ -282,6 +306,7 @@ import '@fortawesome/fontawesome-free/css/all.min.css'
 export default {
   data() {
     return {
+      showPersonalDetails: false,
       previewVideo: null,
       selectedPhotoIndex: null,
         showCropper: false,
@@ -621,7 +646,6 @@ async cropAndUpload() {
 
 async onFileChange(field, e) {
   const token = localStorage.getItem("token")
-  if (!token) return alert("Please login!")
 
 
   // ---------------- GALLERY ----------------
@@ -653,10 +677,11 @@ async onFileChange(field, e) {
   }
 },
 
- async updateProfile() {
+async updateProfile() {
   const token = localStorage.getItem("token")
-  if (!token) return alert("Please login!")
+  if (!token) return
 
+  // Convert habits text to array
   this.user.habits = this.habitsText
     .split(",")
     .map(h => h.trim())
@@ -666,16 +691,17 @@ async onFileChange(field, e) {
 
   Object.keys(this.user).forEach((key) => {
     if (["profile_photo", "photo_gallery"].includes(key)) return
-   Object.keys(this.user).forEach((key) => {
-  if (["profile_photo", "photo_gallery"].includes(key)) return
 
-  if (key === "verified_badge") {
-    formData.append(key, this.user.verified_badge ? 1 : 0)
-  } else {
-    formData.append(key, this.user[key])
-  }
-})
-
+    if (key === "verified_badge") {
+      formData.append(key, this.user.verified_badge ? 1 : 0)
+    } else if (Array.isArray(this.user[key])) {
+      // Handle array fields like habits
+      this.user[key].forEach(value => {
+        formData.append(`${key}[]`, value)
+      })
+    } else {
+      formData.append(key, this.user[key] ?? "")
+    }
   })
 
   try {
@@ -688,11 +714,15 @@ async onFileChange(field, e) {
     localStorage.setItem("user", JSON.stringify(res.data))
     this.showToast("Profile updated successfully")
 
+    // Optional: hide form after save
+    this.showPersonalDetails = false
+
   } catch (err) {
     console.error(err)
     this.showToast("Failed to update profile", "error")
   }
-}
+},
+
 
   },
 }
@@ -853,9 +883,9 @@ textarea {
 
 .habit-chip {
   background: #ffe0e6;
-  color: #ff5864;
+  color: #96040e;
   padding: 4px 10px;
-  border-radius: 20px;
+  border-radius: 2px;
   font-size: 12px;
 }
 
@@ -1336,7 +1366,7 @@ font-size: 15px;
 
 .save-bar .btn-save {
   flex: 1;
-  background:linear-gradient(135deg, #0547ea, #081f87);
+  background:linear-gradient(135deg, #E91E63, #E91E63);
   color: #fff;
   font-weight: bold;
   border: none;
@@ -1349,7 +1379,7 @@ font-size: 15px;
   display: flex;
   align-items: center;
   gap: 6px;
-  background: #ff0000;
+  background: #e92d60;
   color: #fff;
   font-weight: 600;
   border: none;
@@ -1379,21 +1409,67 @@ font-size: 15px;
 }
 
 .intro-video {
-  width: 100%;
-  max-height: 300px;
-  border-radius: 10px;
+     width: 100%;
+    max-height: 300px;
+    padding: 15px;
+    background-color: var(--vt-c-white-mute);
+    border-radius: 10px;
 }
 
 .add-video {
     display: inline-block;
     margin-top: 10px;
     cursor: pointer;
-    padding: 3px 9px;
+    padding: 5px 18px;
     font-size: 13px;
-    border-radius: 11px;
-    background-color: #fd5068;
+    border-radius: 7px;
+    background-color: #007584;
     color: #ffffff;
     font-weight: 600;
 }
 
+.edit-bar {
+ text-align: center;
+    display: flex;
+    gap: 3px;
+    margin: 15px 0;
+    justify-content: space-between;
+}
+
+.btn-edit {
+  padding: 10px 18px;
+  width: 100%;
+  background: linear-gradient(135deg, #d8d8d8, #d8d8d8);
+  color: #000000;
+  border: none;
+     border-radius: 7px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.btn-cancel {
+  padding: 10px 18px;
+  background: #ddd;
+  color: #333;
+  width: 100%;
+  border: none;
+      border-radius: 7px;
+  font-weight: 500;
+  cursor: pointer;
+}
+.btn-logout {
+  padding: 10px 18px;
+  background: #ce0000;
+      width: 145px;
+  color: #ffffff;
+  border: none;
+      border-radius: 7px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.introduction{
+  color: rgb(30, 1, 75);
+  font-family: math;
+}
 </style>

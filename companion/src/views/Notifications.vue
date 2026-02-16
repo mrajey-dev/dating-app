@@ -97,7 +97,7 @@
       v-if="notification.type === 'match_request' && notification.status === 'accepted'"
       class="matched-text"
     >
-    You are now matched!
+     {{ notification.user?.first_name }} and you are now matched!
     </div>
 
     <!-- Rejected -->
@@ -105,7 +105,7 @@
       v-if="notification.type === 'match_request' && notification.status === 'rejected'"
       class="rejected-text"
     >
-      Request rejected
+       {{ notification.user?.first_name }}  rejected your request.
     </div>
 
     <div
