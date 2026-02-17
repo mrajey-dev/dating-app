@@ -1,4 +1,5 @@
 <template>
+   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
   <div class="app">
     <!-- Side Menu Overlay -->
     <div class="overlay" v-if="isMenuOpen" @click="closeMenu"></div>
@@ -36,9 +37,8 @@
   class="search-input"
 />
 
-
    <div class="filter-icon" @click="toggleFilter">
-  <img src="@/assets/filter.png" alt="Filter" class="filter-img" />
+<i class="fa fa-sliders" style="font-size:24px"></i>
 </div>
 
   </div>
@@ -89,8 +89,8 @@
       </div>
 
       <div class="filter-actions">
-        <button class="clear-btn" @click="clearFilters">Clear</button>
-       <button class="apply-btn" @click="closeFilter">Done</button>
+        <button class="clear-btn" @click="clearFilters"><i class="fa fa-remove" style="font-size:14px"></i> Clear</button>
+       <button class="apply-btn" @click="closeFilter"><i class="fa fa-check" style="font-size:14px"></i> Done</button>
 
       </div>
 
@@ -220,17 +220,17 @@
     <!-- Instagram Style Footer -->
     <div class="bottom-footer">
       <div class="footer-item" @click="$router.push('/home')">
-        <img src="@/assets/home.png" class="footer-icon" />
+       <i class="fa fa-home" style="font-size:24px"></i>
       </div>
      <div class="footer-item" @click="openSearch">
-  <img src="@/assets/search.png" class="footer-icon" />
+ <i class="fa fa-search" style="font-size:20px"></i>
 </div>
 
       <div class="footer-item">
         <img src="@/assets/golden.png" class="footer-icon" />
       </div>
       <div class="footer-item" @click="$router.push('/notifications')">
-        <img src="@/assets/heart.png" class="footer-icon" />
+       <i class='fa fa-heartbeat' style='font-size:20px'></i>
       </div>
       <div class="footer-item" @click="$router.push('/profile')">
         <img :src="user.profile_photo" class="footer-avatar" />

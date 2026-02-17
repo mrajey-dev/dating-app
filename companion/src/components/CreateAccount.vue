@@ -1,4 +1,5 @@
 <template>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
   <div class="signup-container">
     <!-- Progress -->
     <div class="progress">
@@ -48,7 +49,7 @@
         </p>
         <button class="primary full" @click="requestLocation" :disabled="locationLoading">
           <span v-if="locationLoading">Requesting...</span>
-          <span v-else>{{ locationGranted ? 'Location Enabled' : 'Allow Location' }}</span>
+          <span v-else><i class="fa fa-map-marker" style="font-size:20px"></i> {{ locationGranted ? 'Location Enabled ' : 'Allow Location ' }}</span>
         </button>
       </div>
 
@@ -179,7 +180,7 @@
           :disabled="!isStepValid || loading"
         >
           <span v-if="loading">Processing...</span>
-          <span v-else>{{ currentStep === stepTitles.length-1 ? 'Create Account' : 'Continue' }}</span>
+          <span v-else>{{ currentStep === stepTitles.length-1 ? 'Create Account' : 'Continue' }}<i class="fa fa-angle-double-right" style="font-size:20px"></i></span>
         </button>
       </div>
     </div>

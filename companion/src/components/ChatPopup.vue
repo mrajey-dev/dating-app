@@ -1,10 +1,11 @@
 <template>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
   <div v-if="showChat && person && canChat" class="chat-fullscreen">
 
 
     <!-- Header -->
     <div class="chat-header">
-      <span class="close" style="font-size: 22px;" @click="closeChat">⬅</span>
+      <span class="close" style="font-size: 22px;" @click="closeChat"><i class="fa fa-arrow-circle-left" style="font-size:18px; color:#E91E63"> </i></span>
 
       <div class="chat-user">
         <img :src="person.profile_photo || defaultAvatar" class="chat-avatar" />
@@ -85,7 +86,7 @@
 <div class="chat-footer">
   <input
   type="text"
-  placeholder="Match to start messaging 💕"
+  placeholder="Type your message..."
   v-model="newMessage"
   ref="chatInput"
   :disabled="!canChat"
@@ -96,7 +97,7 @@
   @click="sendMessage"
   :disabled="!canChat || !newMessage.trim()"
 >
-  Send
+ <i class="fa fa-send-o" style="font-size:13px"></i> Send
 </button>
 
 </div>
@@ -536,7 +537,8 @@ if (!this.canChat) {
 .sent {
      gap: 24px;
     align-self: flex-end;
-    display: flex;
+    /* display: flex; */
+    overflow-wrap: anywhere;
     background-color: #ff2e44;
     color: #ffffff;
     border-radius: 16px 0 16px 16px;
@@ -547,7 +549,8 @@ if (!this.canChat) {
 .received {
    gap: 24px;
     align-self: flex-end;
-    display: flex;
+    /* display: flex; */
+    overflow-wrap: anywhere;
   align-self: flex-start;
   background-color: #ffffff;
   color: #000;

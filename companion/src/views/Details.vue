@@ -178,12 +178,20 @@
 
         <!-- Only Button, Chat moved to separate component -->
        <button 
-  class="checkout"
+  class="messaging"
   :disabled="matchStatus !== 'matched'"
   :class="{ disabledBtn: matchStatus !== 'matched' }"
   @click="openChat"
 >
   {{ matchStatus === 'matched' ? 'Start Messaging' : 'Match to Message' }}
+</button>
+ <button 
+  class="dateplan"
+  :disabled="matchStatus !== 'matched'"
+  :class="{ disabledBtn: matchStatus !== 'matched' }"
+    @click="$router.push(`/date-planner/${person.id}`)"
+>
+  {{ matchStatus === 'matched' ? 'Plan a Date ❤️' : 'Match to Date' }}
 </button>
 
       </div>
@@ -620,6 +628,7 @@ async checkMatchStatus() {
   position: fixed;
   bottom: 0;
   left: 0;
+      gap: 12px;
   width: 100%;
   background: #ffffff;
   padding: 14px 16px;
@@ -651,23 +660,41 @@ async checkMatchStatus() {
 }
 
 /* Checkout Button */
-.checkout {
-  background: linear-gradient(135deg, #ff4d6d, #ff2e63);
+.messaging {
+  background: linear-gradient(135deg, #ff4d6d, #66021b);
   color: #fff;
   border: none;
   padding: 12px 20px;
   width: 100%;
   border-radius: 12px;
-  font-size: 15px;
-  font-weight: 600;
+  font-size: 12px;
+  font-weight: 500;
   cursor: pointer;
   /* box-shadow: 0 8px 20px rgba(255, 46, 99, 0.35); */
   transition: all 0.2s ease;
 }
 
-.checkout:active {
+.messaging:active {
   transform: scale(0.96);
 }
+.dateplan {
+  background: linear-gradient(135deg, #0065fd, #0006ba);
+  color: #fff;
+  border: none;
+  padding: 12px 20px;
+  width: 100%;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  /* box-shadow: 0 8px 20px rgba(255, 46, 99, 0.35); */
+  transition: all 0.2s ease;
+}
+
+.plandate:active {
+  transform: scale(0.96);
+}
+
 /* Overlay */
 .overlay {
   position: fixed;

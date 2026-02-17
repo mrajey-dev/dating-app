@@ -1,6 +1,8 @@
 <template>
   <div class="app-container">
     <!-- Header -->
+       <!-- 🔥 ADD THIS -->
+    <AppToast />
     <header class="app-header">
       <!-- Menu Icon -->
       <div class="menu-icon">
@@ -42,8 +44,10 @@
 import { useNotificationStore } from '@/stores/notification'
 import { useRouter } from 'vue-router'
 import { onMounted, onUnmounted, ref, watch } from 'vue'
+import AppToast from '@/components/AppToast.vue'
 
 export default {
+   components: { AppToast },
   setup() {
     const notificationStore = useNotificationStore()
     const router = useRouter()

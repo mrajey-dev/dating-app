@@ -4,6 +4,7 @@ import Details from "@/views/Details.vue";
 import MyBooking from "@/views/MyBooking.vue";
 import Profile from "@/views/Profile.vue";
 import Notifications from "@/views/Notifications.vue";
+import DatePlanner from '@/views/DatePlanner.vue'
 
 const routes = [
   {
@@ -17,7 +18,12 @@ const routes = [
   { path: "/details/:id", component: Details },
   { path: "/my-bookings", name: "MyBooking", component: MyBooking },
   { path: "/profile", name: "Profile", component: () => import('@/views/Profile.vue') },
-  { path: "/notifications", name: "Notifications", component: Notifications }
+  { path: "/notifications", name: "Notifications", component: Notifications },
+  {
+  path: '/date-planner/:id',
+  name: 'DatePlanner',
+  component: DatePlanner
+}
 ];
 
 export default createRouter({

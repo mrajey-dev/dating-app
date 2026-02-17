@@ -1,4 +1,5 @@
 <template>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
   <div class="profile-page">
     <div class="profile-card">
 
@@ -66,7 +67,7 @@
     ></video>
 
     <label class="add-video">
-      🗁 Upload Video
+      <i class="fa fa-folder-open-o" style="font-size:15px"></i> Upload Video
       <input
         type="file"
         accept="video/*"
@@ -110,7 +111,7 @@
       </div>
 <div class="edit-bar">
    <button class="btn-logout" @click="logout">
-   ⏻ Logout
+   <i class="fa fa-sign-out" style="font-size:15px"></i> Logout
   </button>
   <button
     type="button"
@@ -118,7 +119,7 @@
     v-if="!showPersonalDetails"
     @click="showPersonalDetails = true"
   >
-    ✎ Edit Personal Details
+    <i class="fas fa-edit" style="font-size: 13px;"></i> Edit Personal Details
   </button>
 
   <button
@@ -127,7 +128,7 @@
     v-if="showPersonalDetails"
     @click="showPersonalDetails = false"
   >
-    Hide
+   <i class="fa fa-eye-slash" aria-hidden="true"></i> Hide
   </button>
 </div>
 
@@ -264,7 +265,7 @@
 <!-- Sticky Save & Logout Bar -->
 <div class="save-bar">
  
-  <button type="submit" class="btn-save">Save Changes</button>
+  <button type="submit" class="btn-save"><i class="fa fa-save" style="font-size:15px"></i> Save Changes</button>
 </div>
 
 
