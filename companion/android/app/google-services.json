@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "675454563061",
+    "project_id": "heartlink-b120d",
+    "storage_bucket": "heartlink-b120d.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:675454563061:android:39ab3c8e9f918b789e0bbc",
+        "android_client_info": {
+          "package_name": "com.heartlink.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDYxIWqWcTGQbRMtyVnRmjPcGJt4GK8mm8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

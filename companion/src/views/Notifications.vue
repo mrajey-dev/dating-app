@@ -136,8 +136,11 @@ import axios from "@/axios";
 export default {
   data() {
     return {
-      notifications: [],
-      defaultAvatar: "/banner.png", // keep inside public folder
+
+   notifications: [],
+    defaultAvatar: "/banner.png",
+    notificationSound: new Audio("/notification.mp3"),
+    lastNotificationCount: 0,
     };
   },
 
@@ -202,8 +205,7 @@ async rejectMatch(matchId) {
     if (!filename) return this.defaultAvatar;
     return `https://companion.ajaywatpade.in/dating-backend/public/storage/${filename}`;
   },
-  async fetchNotifications() {
-      console.log("fetchNotifications called 🔥");
+async fetchNotifications() {
   try {
     const res = await axios.get("/api/notifications", {
       headers: {
@@ -211,14 +213,21 @@ async rejectMatch(matchId) {
       },
     });
 
-    console.log("API Response:", res.data); // 👈 ADD THIS
+    const newNotifications = res.data.notifications || [];
 
-    this.notifications = res.data.notifications || [];
+    // 🔔 Play sound if new notification added
+    if (newNotifications.length > this.lastNotificationCount) {
+      this.notificationSound.play().catch(() => {});
+    }
+
+    this.lastNotificationCount = newNotifications.length;
+    this.notifications = newNotifications;
 
   } catch (error) {
     console.error("Error fetching notifications:", error);
   }
 },
+
 
 
     timeAgo(time) {

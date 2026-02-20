@@ -45,24 +45,34 @@
   } : {}"
 >
 
- <div
+<div
   v-for="(msg, index) in messages"
   :key="index"
   :class="['chat-bubble', msg.type === 'sender' ? 'sent' : 'received']"
- @touchstart="handleTouchStart(msg, $event)"
-  @touchend="handleTouchEnd"
- @mousedown="handleTouchStart(msg, $event)"
-  @mouseup="handleTouchEnd"
 >
- <div class="chat-text">
-  {{ msg.text }}
-</div>
+  <div class="chat-text">{{ msg.text }}</div>
 
-<div class="chat-time">
+ <div class="chat-time">
   {{ formatTime(msg.created_at) }}
+
+<span v-if="msg.type === 'sender'" class="tick">
+  <template v-if="msg.seen == true">
+    <i class="fa fa-check seen"></i>
+  </template>
+  <template v-else>
+    <i class="fa fa-check"></i>
+  </template>
+
+</span>
+
+
+
+
+
 </div>
 
 </div>
+
 
 </div>
 <!-- Menu Overlay -->
@@ -192,6 +202,22 @@ menuY: 0,
   if (this.showChat) this.$refs.chatInput.focus();
 },
   methods: {
+async markMessagesSeen() {
+  try {
+    const token = localStorage.getItem("token");
+
+    await axios.post(
+      `https://companion.ajaywatpade.in/api/messages/seen/${this.person.id}`,
+      {},
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+
+  } catch (err) {
+    console.error("Failed to mark messages as seen:", err);
+  }
+},
+
+
 showCustomToast(message) {
   this.toastMessage = message;
   this.showToast = true;
@@ -329,24 +355,21 @@ setWallpaper(img) {
       this.$emit("close");
     },
 
-    async startChat() {
-      await this.fetchMessages();
-      this.scrollAtBottom = false;
+async startChat() {
 
-      // Scroll to bottom on open
-      this.scrollToBottom(false);
-      this.scrollAtBottom = true;
+  await this.fetchMessages();
 
-      // Always focus input to keep keyboard open
-      if (!this.showWallpaperModal) {
-  this.focusInput();
-}
+  await this.markMessagesSeen();
 
+  await this.fetchMessages(); // 🔥 very important
 
-      if (!this.refreshInterval) {
-        this.refreshInterval = setInterval(this.fetchMessages, 1000);
-      }
-    },
+  this.scrollToBottom(false);
+
+  if (!this.refreshInterval) {
+    this.refreshInterval = setInterval(this.fetchMessages, 1000);
+  }
+},
+
 
     stopChat() {
       clearInterval(this.refreshInterval);
@@ -363,38 +386,41 @@ setWallpaper(img) {
     }
   });
 },
+async fetchMessages() {
+  if (!this.person?.id) return;
 
-    async fetchMessages() {
-      if (!this.person?.id) return;
-      try {
-        const token = localStorage.getItem("token");
-        const res = await axios.get(
-          `https://companion.ajaywatpade.in/api/messages/${this.person.id}`,
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
+  try {
+    const token = localStorage.getItem("token");
 
-        const data = Array.isArray(res.data) ? res.data : [];
+    const res = await axios.get(
+      `https://companion.ajaywatpade.in/api/messages/${this.person.id}`,
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
 
-        this.messages = data
-          .map(msg => ({
-            id: msg.id,
-            sender_id: Number(msg.sender_id),
-            receiver_id: Number(msg.receiver_id),
-            text: (msg.text ?? "").trim(),
-            type: msg.type,
-            created_at: msg.created_at,
-          }))
-          .filter(msg => msg.text !== "");
+    const data = Array.isArray(res.data) ? res.data : [];
 
-        // Focus input again after fetching messages
-       if (!this.showWallpaperModal) {
-  this.focusInput();
-}
-      } catch (err) {
-        console.error("Failed to fetch messages:", err);
-        this.messages = [];
-      }
-    },
+    this.messages = data.map(msg => ({
+      id: msg.id,
+      sender_id: Number(msg.sender_id),
+      receiver_id: Number(msg.receiver_id),
+      text: (msg.text ?? "").trim(),
+      type: msg.type,
+      created_at: msg.created_at,
+      seen: Boolean(msg.seen)
+
+    }));
+console.log("Fetched messages:", this.messages);
+
+    if (!this.showWallpaperModal) {
+      this.focusInput();
+    }
+
+  } catch (err) {
+    console.error("Failed to fetch messages:", err);
+    this.messages = [];
+  }
+},
+
 
   async sendMessage() {
 
@@ -476,6 +502,8 @@ if (!this.canChat) {
   z-index: 1000;
 }
 
+/* ================= HEADER ================= */
+
 .chat-header {
   margin-top: 59px;
   display: flex;
@@ -515,15 +543,22 @@ if (!this.canChat) {
   height: 15px;
 }
 
+/* ================= BODY ================= */
+
 .chat-body {
   flex: 1;
   padding: 15px;
   overflow-y: auto;
-  background: #ffbade;
-  height: auto;
+  background-image: url(https://i.pinimg.com/736x/5e/b0/5b/5eb05b30bd9d839c647cd548cfd85f3c.jpg);
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  margin-bottom: 70px;
   display: flex;
   flex-direction: column;
 }
+
+/* ================= MESSAGE BUBBLES ================= */
 
 .chat-bubble {
   padding: 10px 14px;
@@ -533,28 +568,67 @@ if (!this.canChat) {
   display: inline-block;
 }
 
-/* Sent messages (right) */
+/* Sent (Right) */
 .sent {
-     gap: 24px;
-    align-self: flex-end;
-    /* display: flex; */
-    overflow-wrap: anywhere;
-    background-color: #ff2e44;
-    color: #ffffff;
-    border-radius: 16px 0 16px 16px;
-    justify-content: space-between;
+  align-self: flex-end;
+  background-color: #ff2e44;
+  color: #ffffff;
+  border-radius: 16px 0 16px 16px;
+  overflow-wrap: anywhere;
 }
 
-/* Received messages (left) */
+/* Received (Left) */
 .received {
-   gap: 24px;
-    align-self: flex-end;
-    /* display: flex; */
-    overflow-wrap: anywhere;
   align-self: flex-start;
   background-color: #ffffff;
   color: #000;
   border-radius: 0 16px 16px 16px;
+  overflow-wrap: anywhere;
+}
+
+/* ================= TIME + TICKS ================= */
+
+.chat-time {
+  font-size: 11px;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 4px;
+  margin-top: 4px;
+}
+
+/* Tick container */
+.tick {
+  display: flex;
+  align-items: center;
+}
+
+/* Default single tick (grey) */
+.tick i {
+  font-size: 11px;
+  margin-left: -2px;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+/* Double blue tick when seen */
+.tick i.seen {
+  color: #34b7f1 !important;
+}
+
+/* ================= FOOTER ================= */
+
+.chat-footer {
+  display: flex;
+  gap: 8px;
+  padding: 12px;
+  border-top: 1px solid #ddd;
+  background: #fafafa;
+  position: fixed;
+  bottom: 20px;
+  left: 0;
+  width: 100%;
+  z-index: 1001;
+  box-sizing: border-box;
 }
 
 .chat-footer input {
@@ -573,68 +647,8 @@ if (!this.canChat) {
   cursor: pointer;
 }
 
-.chat-status {
-  font-size: 12px;
-  color: #f10265;
-  margin-top: 4px;
-}
-.chat-message {
-  max-width: 70%;
-  padding: 8px 12px;
-  margin: 4px 0;
-  border-radius: 12px;
-  word-wrap: break-word;
-}
+/* ================= MENU ================= */
 
-.chat-message.left {
-  background-color: #f1f1f1;
-  align-self: flex-start;
-}
-
-.chat-message.right {
-  background-color: #4CAF50;
-  color: white;
-  align-self: flex-end;
-}
-
-/* Chat Footer fixed at bottom */
-.chat-footer {
-  display: flex;
-  gap: 8px;
-  padding: 12px;
-  border-top: 1px solid #ddd;
-  background: #fafafa;
-
-  /* Fix at bottom */
-  position: fixed;
-  bottom: 20px;
-  left: 0;
-  width: 100%;
-  z-index: 1001;
-
-  /* Optional: prevent footer from shrinking */
-  box-sizing: border-box;
-}
-.chat-body{
-    flex: 1;
-    padding: 15px;
-    overflow-y: auto;
-    background-image: url(https://i.pinimg.com/736x/5e/b0/5b/5eb05b30bd9d839c647cd548cfd85f3c.jpg);
-    background-size: cover;         /* ensures full area is covered */
-    background-position: center;    /* centers the image */
-    background-repeat: no-repeat;   /* prevents tiling */
-    margin-bottom: 70px;
-    display: flex;
-    flex-direction: column;
-}
-
-.chat-time {
-  font-size: 11px;
-  color: #e3dede;
-  text-align: right;
-  margin-top: 4px;
-}
-/* 3 dot menu */
 .chat-menu {
   margin-left: auto;
   position: relative;
@@ -666,71 +680,7 @@ if (!this.canChat) {
   background: #f5f5f5;
 }
 
-/* Wallpaper modal */
-.wallpaper-modal {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  width: 100%;
-  background: white;
-  padding: 15px;
-  z-index: 2000;
-  border-top-left-radius: 20px;
-  border-top-right-radius: 20px;
-}
-
-.wallpaper-container {
-  display: flex;
-  gap: 10px;
-  overflow-x: auto;
-}
-
-.wallpaper-item img {
-  width: 90px;
-  height: 150px;
-  border-radius: 12px;
-  object-fit: cover;
-  cursor: pointer;
-  border: 2px solid transparent;
-}
-
-.wallpaper-item img:hover {
-  border-color: #f10265;
-}
-
-.close-wallpaper {
-  margin-top: 10px;
-  width: 100%;
-  padding: 10px;
-  border-radius: 12px;
-  border: none;
-  background: #f10265;
-  color: white;
-}
-.message-menu {
-  position: fixed;
-  background: white;
-  border-radius: 10px;
-  box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-  z-index: 3000;
-  overflow: hidden;
-  min-width: 120px;
-}
-
-.message-menu .menu-item {
-  padding: 10px 15px;
-  cursor: pointer;
-  font-size: 14px;
-}
-
-.message-menu .menu-item:hover {
-  background: #f5f5f5;
-}
-
-.message-menu .delete {
-  color: red;
-}
-
+/* ================= MESSAGE CONTEXT MENU ================= */
 
 .menu-overlay {
   position: fixed;
@@ -761,14 +711,11 @@ if (!this.canChat) {
   color: #ff2e44;
 }
 
-@keyframes fadeIn {
-  from { transform: scale(0.9); opacity: 0; }
-  to { transform: scale(1); opacity: 1; }
-}
+/* ================= TOAST ================= */
 
 .chat-toast {
   position: fixed;
-  bottom: 110px; /* above footer */
+  bottom: 110px;
   left: 50%;
   transform: translateX(-50%);
   background: #ff2e44;
@@ -786,4 +733,9 @@ if (!this.canChat) {
   to { opacity: 1; transform: translateX(-50%) translateY(0); }
 }
 
+@keyframes fadeIn {
+  from { transform: scale(0.9); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
 </style>
+

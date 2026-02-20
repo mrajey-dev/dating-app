@@ -255,11 +255,16 @@ export default {
     }
   },
 
-  mounted() {
-   this.loggedInUserId = Number(localStorage.getItem("user_id")) || 0;
-  this.fetchPerson();
-  },
+mounted() {
+  this.loggedInUserId = Number(localStorage.getItem("user_id")) || 0
+  this.fetchPerson()
 
+  window.addEventListener("popstate", this.handleBack)
+},
+
+beforeUnmount() {
+  window.removeEventListener("popstate", this.handleBack)
+},
   computed: {
     // Format habits nicely
     formattedHabits() {
@@ -331,14 +336,24 @@ export default {
   },
 
   methods: {
-    openChat() {
+    handleBack(event) {
+  if (this.showChat) {
+    this.showChat = false
+  }
+},
+
+openChat() {
   if (this.matchStatus !== 'matched') {
     alert("You can message only after matching 💕")
     return
   }
 
   this.showChat = true
+
+  // Push fake state into history
+  window.history.pushState({ chat: true }, "")
 },
+
 
 async handleMatch() {
   if (this.matchLoading || !this.person) return
@@ -442,9 +457,11 @@ async checkMatchStatus() {
           this.loading = false
         }
       } catch (e) {
-        console.error(e)
-        this.$router.push("/")
-      }
+  console.error(e)
+  alert("User not found")
+  this.$router.back()
+}
+
     },
 
     // Check if current user is following this person
@@ -661,7 +678,7 @@ async checkMatchStatus() {
 
 /* Checkout Button */
 .messaging {
-  background: linear-gradient(135deg, #ff4d6d, #66021b);
+  background: linear-gradient(135deg, #ff4d6d, #aa0730);
   color: #fff;
   border: none;
   padding: 12px 20px;
@@ -678,7 +695,7 @@ async checkMatchStatus() {
   transform: scale(0.96);
 }
 .dateplan {
-  background: linear-gradient(135deg, #0065fd, #0006ba);
+  background: linear-gradient(135deg, oklch(0.63 0.13 98.39), #e79e00);
   color: #fff;
   border: none;
   padding: 12px 20px;

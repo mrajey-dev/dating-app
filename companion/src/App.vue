@@ -45,6 +45,7 @@ import { useNotificationStore } from '@/stores/notification'
 import { useRouter } from 'vue-router'
 import { onMounted, onUnmounted, ref, watch } from 'vue'
 import AppToast from '@/components/AppToast.vue'
+import { App as CapacitorApp } from '@capacitor/app'
 
 export default {
    components: { AppToast },
@@ -62,16 +63,36 @@ export default {
     }
 
     let intervalId = null
-    onMounted(() => {
-      loading.value = true
-      notificationStore.fetchCount().finally(() => loading.value = false)
-      previousCount.value = notificationStore.count
+   let backPressedOnce = false
 
-      // Poll every 2 seconds
-      intervalId = setInterval(() => {
-        notificationStore.fetchCount()
-      }, 2000)
-    })
+onMounted(() => {
+  loading.value = true
+  notificationStore.fetchCount().finally(() => loading.value = false)
+  previousCount.value = notificationStore.count
+
+  // Poll every 2 seconds
+  intervalId = setInterval(() => {
+    notificationStore.fetchCount()
+  }, 2000)
+
+  // 🔥 HANDLE ANDROID BACK BUTTON
+  CapacitorApp.addListener('backButton', ({ canGoBack }) => {
+    if (router.currentRoute.value.path !== '/') {
+      router.back()
+    } else {
+      if (backPressedOnce) {
+        CapacitorApp.exitApp()
+      } else {
+        backPressedOnce = true
+        alert('Press back again to exit')
+        setTimeout(() => {
+          backPressedOnce = false
+        }, 2000)
+      }
+    }
+  })
+})
+
 
     // Watch for new notifications
     watch(
