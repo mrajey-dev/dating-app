@@ -1,5 +1,13 @@
 {
   "appId": "com.heartlink.app",
   "appName": "HeartLink",
-  "webDir": "dist"
+  "webDir": "dist",
+  "bundledWebRuntime": false,
+  "plugins": {
+    "SplashScreen": {
+      "launchShowDuration": 3000,
+      "backgroundColor": "#ffffff",
+      "showSpinner": false
+    }
+  }
 }

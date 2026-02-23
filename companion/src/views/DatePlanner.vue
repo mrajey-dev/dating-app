@@ -72,12 +72,33 @@
       rows="3"
     ></textarea>
 
-    <button class="confirm-btn" @click="confirmSchedule">
-      Confirm Date 💘
-    </button>
+   <button class="confirm-btn" @click="inviteForDate">
+  Invite for Date 💌
+</button>
 
   </div>
 </div>
+
+<!-- Pending Invitations Section -->
+    <div v-if="pendingInvitations.length" class="pending-invitations">
+      <h3>Pending Date Invitations 💌</h3>
+
+      <div v-for="invite in pendingInvitations" :key="invite.id" class="invite-card">
+        <img :src="imageUrl(invite.place_image)" class="invite-img" />
+        <div class="invite-info">
+          <h4>{{ invite.place_title }} 💖</h4>
+          <p>{{ invite.place_type }} - {{ invite.place_location }}</p>
+          <p>From: {{ invite.planner_name || "User" }}</p>
+          <p>Date: {{ formatDate(invite.schedule_date) }} at {{ invite.schedule_time }}</p>
+          <p v-if="invite.note">Note: {{ invite.note }}</p>
+
+          <div class="invite-actions">
+            <button @click="acceptInvite(invite.id)">Accept ✅</button>
+            <button @click="declineInvite(invite.id)">Decline ❌</button>
+          </div>
+        </div>
+      </div>
+    </div>
  </div>
 </template>
 
@@ -89,6 +110,7 @@ export default {
   name: "DatePlanner",
   data() {
     return {
+       pendingInvitations: [],
          toast: useToastStore(),
         showScheduleModal: false,
 selectedPlace: null,
@@ -143,6 +165,7 @@ schedule: {
   async mounted() {
     await this.fetchPerson()
     await this.checkMatchStatus()
+      this.fetchPendingInvitations()
 
     if (this.matchStatus !== "matched") {
       this.$router.push("/")
@@ -150,6 +173,82 @@ schedule: {
   },
 
   methods: {
+    formatDate(date) {
+    return new Date(date).toLocaleDateString()
+  },
+imageUrl(path) {
+    if (!path) return "/default-avatar.png"
+    if (path.startsWith("http")) return path
+    return 'https://companion.ajaywatpade.in/dating-backend/public/storage/' + path
+  },
+    async fetchPendingInvitations() {
+    const token = localStorage.getItem("token")
+    const res = await axios.get(
+      "https://companion.ajaywatpade.in/api/my-date-invitations",
+      { headers: { Authorization: `Bearer ${token}` } }
+    )
+    this.pendingInvitations = res.data.invitations || []
+  },
+
+  async acceptInvite(id) {
+    const token = localStorage.getItem("token")
+    await axios.post(
+      `https://companion.ajaywatpade.in/api/accept-invitation/${id}`,
+      {},
+      { headers: { Authorization: `Bearer ${token}` } }
+    )
+    this.fetchPendingInvitations() // refresh
+  },
+
+  async declineInvite(id) {
+    const token = localStorage.getItem("token")
+    await axios.post(
+      `https://companion.ajaywatpade.in/api/decline-invitation/${id}`,
+      {},
+      { headers: { Authorization: `Bearer ${token}` } }
+    )
+    this.fetchPendingInvitations() // refresh
+  },
+    async inviteForDate() {
+  const toast = useToastStore()
+
+  if (!this.schedule.date || !this.schedule.time) {
+    toast.show("Please select date & time 💖", "error")
+    return
+  }
+
+  try {
+    // Send invitation to API
+    await axios.post(
+      "https://companion.ajaywatpade.in/api/invite-date",
+      {
+        invitee_id: this.person.id,
+        place_title: this.selectedPlace.title,
+        place_type: this.selectedPlace.type,
+        place_image: this.selectedPlace.image,
+        place_location: this.selectedPlace.location,
+        schedule_date: this.schedule.date,
+        schedule_time: this.schedule.time,
+        note: this.schedule.note
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`
+        }
+      }
+    )
+
+    toast.show(
+      `Invitation sent to ${this.person.first_name} 💌`,
+      "success"
+    )
+
+    this.closeScheduleModal()
+  } catch (error) {
+    console.error(error)
+    toast.show("Failed to send invitation 😢", "error")
+  }
+},
     openScheduleModal(place) {
   this.selectedPlace = place
   this.showScheduleModal = true
@@ -168,12 +267,37 @@ async confirmSchedule() {
     return
   }
 
-  toast.show(
-    `Date scheduled with ${this.person.first_name} 💕`,
-    "success"
-  )
+  try {
+    // Make API request to store date
+    await axios.post(
+      "https://companion.ajaywatpade.in/api/schedule-date",
+      {
+        invitee_id: this.person.id,
+        place_title: this.selectedPlace.title,
+        place_type: this.selectedPlace.type,
+        place_image: this.selectedPlace.image,
+        place_location: this.selectedPlace.location,
+        schedule_date: this.schedule.date,
+        schedule_time: this.schedule.time,
+        note: this.schedule.note
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`
+        }
+      }
+    )
 
-  this.closeScheduleModal()
+    toast.show(
+      `Date scheduled with ${this.person.first_name} 💕`,
+      "success"
+    )
+
+    this.closeScheduleModal()
+  } catch (error) {
+    console.error(error)
+    toast.show("Failed to schedule date 😢", "error")
+  }
 },
 
 
@@ -572,4 +696,120 @@ p{
   to { opacity: 1; }
 }
 
+/* Pending Invitations Section */
+.pending-invitations {
+  margin-top: 30px;
+  padding: 0 10px;
+}
+
+.pending-invitations h3 {
+  text-align: center;
+  font-size: 22px;
+  font-weight: 700;
+  color: #ff4d6d;
+  margin-bottom: 20px;
+}
+
+/* Invitation Card */
+.invite-card {
+  display: flex;
+  gap: 16px;
+  background: #fff;
+  border-radius: 16px;
+  padding: 14px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.06);
+  border: 1px solid #f1f1f1;
+  margin-bottom: 16px;
+  transition: all 0.25s ease;
+}
+
+.invite-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
+}
+
+/* Invite Image */
+.invite-img {
+  width: 100px;
+  height: 100px;
+  border-radius: 14px;
+  object-fit: cover;
+  border: 2px solid #fff;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15);
+}
+
+/* Invite Info */
+.invite-info {
+  flex: 1;
+}
+
+.invite-info h4 {
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 6px;
+  color: #222;
+}
+
+.invite-info p {
+  font-size: 14px;
+  color: #555;
+  margin-bottom: 4px;
+}
+
+/* Actions Buttons */
+.invite-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.invite-actions button {
+  padding: 6px 14px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  transition: all 0.2s ease;
+}
+
+/* Accept Button */
+.invite-actions button:first-child {
+  background: linear-gradient(135deg, #28a745, #61c25f);
+  color: #fff;
+}
+
+.invite-actions button:first-child:hover {
+  transform: scale(1.05);
+  box-shadow: 0 4px 12px rgba(40, 167, 69, 0.4);
+}
+
+/* Decline Button */
+.invite-actions button:last-child {
+  background: linear-gradient(135deg, #dc3545, #ff6b6b);
+  color: #fff;
+}
+
+.invite-actions button:last-child:hover {
+  transform: scale(1.05);
+  box-shadow: 0 4px 12px rgba(220, 53, 69, 0.4);
+}
+
+/* Responsive */
+@media (max-width: 600px) {
+  .invite-card {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+
+  .invite-img {
+    width: 80px;
+    height: 80px;
+  }
+
+  .invite-actions {
+    justify-content: center;
+  }
+}
 </style>

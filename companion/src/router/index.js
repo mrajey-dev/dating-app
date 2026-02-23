@@ -21,7 +21,13 @@ const routes = [
   path: '/date-planner/:id',
   name: 'DatePlanner',
   component: DatePlanner
-}
+},
+
+{
+  path: '/mymatches',
+  name: 'MyMatches',
+  component: () => import('@/pages/MyMatches.vue')
+},
 ];
 
 export default createRouter({

@@ -4,25 +4,6 @@
     <!-- Side Menu Overlay -->
     <div class="overlay" v-if="isMenuOpen" @click="closeMenu"></div>
 
-    <!-- Side Menu -->
-    <div class="side-menu" :class="{ open: isMenuOpen }">
-      <!-- Header -->
-
-
-
-      <ul class="menu-list">
-        <li @click="goToProfile">👤 My Profile</li>
-        <li>❤️ Matches</li>
-        <li>💬 Chats</li>
-        <li @click="goToBookings">📅 Bookings</li>
-        <li @click="showFavourites">❤️ Favorites</li>
-        <li @click="showAllUsers">🌐 All Users</li>
-        <li>⚙️ Settings</li>
-        <li class="logout" @click="logout">🚪 Logout</li>
-      </ul>
-    </div>
-
-    <!-- Header -->
     <!-- Header -->
 <div class="header">
   <h1 class="page-title">Choose a Companion</h1>
@@ -229,8 +210,8 @@
       <div class="footer-item">
         <img src="@/assets/golden.png" class="footer-icon" />
       </div>
-      <div class="footer-item" @click="$router.push('/notifications')">
-       <i class='fa fa-heartbeat' style='font-size:20px'></i>
+      <div class="footer-item" @click="$router.push('/mymatches')">
+       <i class='fa fa-heart' style='font-size:20px'></i>
       </div>
       <div class="footer-item" @click="$router.push('/profile')">
         <img :src="user.profile_photo" class="footer-avatar" />

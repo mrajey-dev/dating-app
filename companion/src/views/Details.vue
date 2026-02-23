@@ -1,5 +1,14 @@
 <template>
   <div>
+    <!-- TOAST NOTIFICATION -->
+<div class="toast-container">
+  <div
+    v-if="toast.show"
+    :class="['toast', toast.type]"
+  >
+    {{ toast.message }}
+  </div>
+</div>
     <!-- SKELETON LOADER -->
     <div v-if="loading" class="details-skeleton">
       <!-- Header -->
@@ -104,13 +113,13 @@
       {{ isFollowing ? "Following" : "Follow" }}
     </button>
 
-   <button
+ <button
   class="insta-match-btn"
   :class="{
     requested: matchStatus === 'requested',
     matched: matchStatus === 'matched'
   }"
-  :disabled="matchStatus === 'matched' || matchLoading"
+  :disabled="matchLoading"
   @click="handleMatch"
 >
   <span v-if="matchStatus === null">Match</span>
@@ -136,13 +145,13 @@
             <strong>{{ person.like_count || 0 }}</strong>
             <span>Likes ❤️</span>
           </div>
-          <div class="stat">
-            <strong>{{ person.comments || 0 }}</strong>
-            <span>Comments 💬</span>
-          </div>
+          <!-- <div class="stat">
+            <strong>{{ totalMatches }}</strong>
+            <span>Matched 🔗</span>
+          </div> -->
           <div class="stat">
             <strong>{{ person.rating || '4.5' }}</strong>
-            <span>Rating ⭐</span>
+            <span>Profile Score ⭐</span>
           </div>
         </div>
 
@@ -238,7 +247,12 @@ export default {
 
   data() {
     return {
-      
+      totalMatches: 0,
+      toast: {
+      show: false,
+      message: "",
+      type: "success", // success | error
+    },
        notificationStore: useNotificationStore(),
       showChat: false,         // controls chat popup
       isFollowing: null,       // follow state
@@ -258,12 +272,15 @@ export default {
 mounted() {
   this.loggedInUserId = Number(localStorage.getItem("user_id")) || 0
   this.fetchPerson()
-
+ this.refreshInterval = setInterval(() => {
+    this.checkMatchStatus()
+  }, 5000)
   window.addEventListener("popstate", this.handleBack)
 },
 
 beforeUnmount() {
   window.removeEventListener("popstate", this.handleBack)
+  clearInterval(this.refreshInterval)
 },
   computed: {
     // Format habits nicely
@@ -336,6 +353,15 @@ beforeUnmount() {
   },
 
   methods: {
+    showToast(message, type = "success") {
+    this.toast.message = message
+    this.toast.type = type
+    this.toast.show = true
+
+    setTimeout(() => {
+      this.toast.show = false
+    }, 3000)
+  },
     handleBack(event) {
   if (this.showChat) {
     this.showChat = false
@@ -344,13 +370,10 @@ beforeUnmount() {
 
 openChat() {
   if (this.matchStatus !== 'matched') {
-    alert("You can message only after matching 💕")
+    this.showToast("You can message only after matching 💕", "error")
     return
   }
-
   this.showChat = true
-
-  // Push fake state into history
   window.history.pushState({ chat: true }, "")
 },
 
@@ -366,9 +389,7 @@ async handleMatch() {
         "https://companion.ajaywatpade.in/api/send-match-request",
         { user_id: this.person.id },
         {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`
-          }
+          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` }
         }
       )
 
@@ -376,21 +397,41 @@ async handleMatch() {
         this.matchStatus = 'requested'
         this.notificationStore.increment()
       }
+
     } else if (this.matchStatus === 'requested') {
       // Cancel match request
       const res = await axios.post(
         "https://companion.ajaywatpade.in/api/cancel-match-request",
         { user_id: this.person.id },
         {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`
-          }
+          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` }
         }
       )
 
       if (res.data.success) {
         this.matchStatus = null
       }
+
+    } else if (this.matchStatus === 'matched') {
+      // Confirm removal
+      const confirmRemove = confirm(
+        `Are you sure you want to remove ${this.person.first_name} from your matches?`
+      )
+      if (!confirmRemove) return
+
+      // Call API to remove match
+      const res = await axios.post(
+        "https://companion.ajaywatpade.in/api/remove-match",
+        { user_id: this.person.id },
+        {
+          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` }
+        }
+      )
+
+    if (res.data.success) {
+  this.matchStatus = null
+  this.showToast(`${this.person.first_name} has been removed from your matches.`, "success")
+}
     }
   } catch (e) {
     console.error("Match action failed", e)
@@ -403,6 +444,7 @@ async handleMatch() {
     // Check match status
 async checkMatchStatus() {
   if (!this.person) return
+
   try {
     const res = await axios.post(
       "https://companion.ajaywatpade.in/api/match-status",
@@ -413,7 +455,15 @@ async checkMatchStatus() {
         }
       }
     )
-  this.matchStatus = res.data.status ?? null
+
+    const status = res.data.status
+
+    if (status === 'accepted') {
+      this.matchStatus = 'matched'
+    } else {
+      this.matchStatus = status ?? null
+    }
+
   } catch (e) {
     console.error("Match status failed", e)
   }
@@ -452,9 +502,14 @@ async checkMatchStatus() {
             photo_gallery: gallery
           }
 
-          await this.checkFollowStatus()
-          await this.checkMatchStatus()
-          this.loading = false
+         await this.checkFollowStatus()
+await this.checkMatchStatus()
+this.loading = false
+
+// OPEN CHAT IF REQUESTED
+if (this.$route.query.chat && this.matchStatus === 'matched') {
+  this.openChat()
+}
         }
       } catch (e) {
   console.error(e)
@@ -2171,4 +2226,25 @@ width: 100%;
   opacity: 0.7;
 }
 
+.toast-container {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 9999;
+}
+.toast {
+  padding: 12px 20px;
+  border-radius: 6px;
+  color: #fff;
+  font-weight: 500;
+  margin-bottom: 10px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+  transition: all 0.3s ease;
+}
+.toast.success {
+  background-color: #28a745;
+}
+.toast.error {
+  background-color: #dc3545;
+}
 </style>
