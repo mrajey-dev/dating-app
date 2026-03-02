@@ -5,26 +5,33 @@
     <AppToast />
     <header class="app-header">
       <!-- Menu Icon -->
-      <div class="menu-icon">
-        +
-      </div>
+     <div
+  v-if="$route.name !== 'AuthPage'"
+  class="menu-icon"
+>
+  +
+</div>
 
       <!-- App Name -->
-      <div class="app-name">
+      <div class="app-name" v-if="$route.name !== 'AuthPage'">
         𑣲𝐻𝑒𝒶𝓇𝓉 <strong>𝐿𝒾𝓃𝓀</strong>
       </div>
 
       <!-- Heart Notification Icon -->
-      <div class="heart-notification" @click="openNotifications">
-        <i class="fa-regular fa-bell"></i>
+      <div
+  v-if="$route.name !== 'AuthPage'"
+  class="heart-notification"
+  @click="openNotifications"
+>
+  <i class="fa-regular fa-bell"></i>
 
-        <span 
-          v-if="notificationStore.count > 0"
-          class="badge"
-        >
-          {{ notificationStore.count > 99 ? '99+' : notificationStore.count }}
-        </span>
-      </div>
+  <span 
+    v-if="notificationStore.count > 0"
+    class="badge"
+  >
+    {{ notificationStore.count > 99 ? '99+' : notificationStore.count }}
+  </span>
+</div>
     </header>
 
     <!-- Hidden audio for notifications -->
@@ -140,7 +147,7 @@ onMounted(() => {
   align-items: center;
   justify-content: space-between;
   padding: 0 20px;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  /* box-shadow: 0 2px 4px rgba(0,0,0,0.1); */
   z-index: 9999;
   font-family: 'Inter', sans-serif;
 }

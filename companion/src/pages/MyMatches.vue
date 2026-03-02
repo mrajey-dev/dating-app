@@ -6,7 +6,16 @@
     <!-- Tabs: Matches / Invitations / Planned Dates -->
     <div class="tabs">
       <button :class="{active: tab==='matches'}" @click="tab='matches'">Matches</button>
-      <button :class="{active: tab==='incoming'}" @click="tab='incoming'">Incoming Invitations 💌</button>
+      <button :class="{active: tab==='incoming'}" @click="tab='incoming'">
+  Incoming Invitations 💌
+
+  <span
+    v-if="incomingInviteCount > 0"
+    class="unread-badge tab-badge"
+  >
+    {{ incomingInviteCount > 12 ? '12+' : incomingInviteCount }}
+  </span>
+</button>
       <button :class="{active: tab==='sent'}" @click="tab='sent'">Sent Invitations 📨</button>
       <button :class="{active: tab==='planned'}" @click="tab='planned'">Planned Dates 💖</button>
     </div>
@@ -21,7 +30,18 @@
           </div>
           <div class="time">Matched {{ formatDate(match.created_at) }}</div>
           <div class="actions">
-            <button class="chat-btn" @click="openChat(match)">Message</button>
+           <div class="chat-wrapper">
+  <span
+    v-if="unreadCounts[match.id]"
+    class="unread-badge"
+  >
+    {{ unreadCounts[match.id] }}
+  </span>
+
+  <button class="chat-btn" @click="openChat(match)">
+    Message
+  </button>
+</div>
             <button class="date-btn" @click="planDate(match)">Date Plan</button>
           </div>
         </div>
@@ -42,8 +62,8 @@
             <p>📅 {{ formatDate(invite.schedule_date) }} ⏰ {{ invite.schedule_time }}</p>
             <p v-if="invite.note">💌 Note: {{ invite.note }}</p>
             <div class="invite-actions">
-              <button @click="acceptInvite(invite.id)">Accept ✅</button>
-              <button @click="declineInvite(invite.id)">Decline ❌</button>
+              <button @click="acceptInvite(invite.id)">Accept</button>
+              <button @click="declineInvite(invite.id)">Decline</button>
             </div>
           </div>
         </div>
@@ -79,7 +99,7 @@
           <div class="planned-card-content">
             <h4>{{ date.place_title }} 💖</h4>
             <p>{{ date.place_type }} • {{ date.place_location }}</p>
-            <p>With: <strong>{{ date.partner_name }}</strong></p>
+            <p>With: <strong>{{ date.invitee_name }}</strong></p>
             <p>📅 {{ formatDate(date.schedule_date) }} ⏰ {{ date.schedule_time }}</p>
             <p v-if="date.note">💌 Note: {{ date.note }}</p>
             <button class="view-map-btn" @click="openMap(date)">View on Map 🗺️</button>
@@ -97,66 +117,133 @@ import axios from "axios"
 export default {
   data() {
     return {
+      incomingInviteCount: 0,
+      unreadCounts: {},
       matches: [],
       incomingInvitations: [],
       sentInvitations: [],
       plannedDates: [],
-      tab: 'matches'
+      tab: 'matches',
+      unreadInterval: null,
+      incomingInviteInterval: null
     }
   },
 
-  async mounted() {
-    await this.getMatches()
-    await this.fetchIncomingInvites()
-    await this.fetchSentInvites()
-     await this.fetchPlannedDates()
-  },
+async mounted() {
+  await this.getMatches()
+  await this.fetchIncomingInvites()
+  await this.fetchSentInvites()
+  await this.fetchUnreadCounts()
+  await this.fetchIncomingInviteCount()
+await this.fetchPlannedDates()
+  // 🔁 Unread counts every 1 sec
+  this.unreadInterval = setInterval(() => {
+    this.fetchUnreadCounts()
+    this.fetchIncomingInviteCount()
+  }, 1000)
 
+  // 💌 Incoming invitations every 5 sec
+  this.incomingInviteInterval = setInterval(() => {
+    if (this.tab === 'incoming') {
+      this.fetchIncomingInvites()
+    }
+  }, 5000)
+},
+watch: {
+  tab(newTab) {
+    if (newTab === 'incoming') {
+      this.incomingInviteCount = 0
+    }
+  }
+},
   methods: {
-async fetchPlannedDates() {
+    async fetchPlannedDates() {
   try {
     const token = localStorage.getItem("token")
-    const userId = localStorage.getItem("user_id") // current logged user id
 
     const res = await axios.get(
       "https://companion.ajaywatpade.in/api/invitations/accepted",
       { headers: { Authorization: `Bearer ${token}` } }
     )
 
-    this.plannedDates = res.data.map(inv => {
-
-      let partner = ""
-
-      if (inv.planner_id == userId) {
-        // I sent the invitation
-        partner = inv.invitee
-          ? inv.invitee.first_name + " " + inv.invitee.last_name
-          : ""
-      } else {
-        // Someone invited me
-        partner = inv.planner
-          ? inv.planner.first_name + " " + inv.planner.last_name
-          : ""
-      }
-
-      return {
-        ...inv,
-        partner_name: partner
-      }
-    })
-
+    this.plannedDates = res.data.map(inv => ({
+      ...inv,
+      invitee_name: inv.invitee
+        ? inv.invitee.first_name + ' ' + inv.invitee.last_name
+        : inv.planner.first_name + ' ' + inv.planner.last_name
+    }))
   } catch (err) {
     console.error(err)
     this.plannedDates = []
   }
 },
-    async getMatches() {
-      try {
-        const token = localStorage.getItem("token")
-        const res = await axios.get("https://companion.ajaywatpade.in/api/my-matches", { headers: { Authorization: `Bearer ${token}` } })
-        this.matches = res.data || []
-      } catch (err) { console.error(err); this.matches = [] }
-    },
+    async fetchIncomingInviteCount() {
+  try {
+    const token = localStorage.getItem("token")
+    const res = await axios.get(
+      "https://companion.ajaywatpade.in/api/invitations/incoming-count",
+      { headers: { Authorization: `Bearer ${token}` } }
+    )
+    this.incomingInviteCount = res.data.count || 0
+  } catch (err) {
+    console.error(err)
+    this.incomingInviteCount = 0
+  }
+},
+    async fetchUnreadCounts() {
+  try {
+    const token = localStorage.getItem("token")
+    const res = await axios.get(
+      "https://companion.ajaywatpade.in/api/messages/unread-counts",
+      { headers: { Authorization: `Bearer ${token}` } }
+    )
+    this.unreadCounts = res.data || {}
+  } catch (err) {
+    console.error(err)
+    this.unreadCounts = {}
+  }
+},
+beforeUnmount() {
+  if (this.unreadInterval) {
+    clearInterval(this.unreadInterval)
+    this.unreadInterval = null
+  }
+
+  if (this.incomingInviteInterval) {
+    clearInterval(this.incomingInviteInterval)
+    this.incomingInviteInterval = null
+  }
+},
+async getMatches() {
+  try {
+    const token = localStorage.getItem("token");
+
+    // 1. Fetch logged-in user info
+    const userRes = await axios.get("https://companion.ajaywatpade.in/api/me", {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    const userGender = userRes.data.gender;
+
+    // 2. Fetch all matches
+    const res = await axios.get("https://companion.ajaywatpade.in/api/my-matches", {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+
+    let matches = res.data || [];
+
+    // 3. Filter matches based on logged-in user's gender
+    if (userGender === "male") {
+      matches = matches.filter(match => match.gender === "female");
+    } else if (userGender === "female") {
+      matches = matches.filter(match => match.gender === "male");
+    }
+
+    this.matches = matches;
+  } catch (err) {
+    console.error(err);
+    this.matches = [];
+  }
+},
 
     async fetchIncomingInvites() {
       try {
@@ -174,22 +261,19 @@ async fetchPlannedDates() {
       } catch (err) { console.error(err); this.sentInvitations = [] }
     },
 
-async acceptInvite(inviteId) {
+ async acceptInvite(inviteId) {
   try {
-    const token = localStorage.getItem("token")
-
+    const token = localStorage.getItem("token");
     await axios.post(
       `https://companion.ajaywatpade.in/api/invitations/${inviteId}/accept`,
       {},
       { headers: { Authorization: `Bearer ${token}` } }
-    )
-
-    this.fetchIncomingInvites()
-    this.fetchPlannedDates() // 👈 refresh planned dates
-
+    );
+    // Refresh incoming invitations after accepting
+    this.fetchIncomingInvites();
   } catch (err) {
-    console.error(err)
-    alert("Failed to accept invitation.")
+    console.error(err);
+    alert("Failed to accept invitation.");
   }
 },
 
@@ -210,7 +294,14 @@ async declineInvite(inviteId) {
 },
 
     goToProfile(user) { this.$router.push('/details/' + user.id) },
-    openChat(user) { this.$router.push({ path:'/details/'+user.id, query:{chat:1} }) },
+    openChat(user) {
+  this.$router.push({ path:'/details/'+user.id, query:{chat:1} })
+
+  // Instantly remove badge (UI)
+  if (this.unreadCounts[user.id]) {
+    this.unreadCounts[user.id] = 0
+  }
+},
     planDate(user) { this.$router.push({ path:'/date-planner/'+user.id }) },
 
     openMap(item) {
@@ -229,7 +320,7 @@ async declineInvite(inviteId) {
 
 <style scoped>
 .matches-page{ padding:20px; background:#fafafa; min-height:100vh; font-family:Arial, Helvetica, sans-serif; }
-.title{ text-align:center; margin-bottom:25px; font-size:19px; font-weight:700; color:#333; }
+.title{ text-align:center; margin-bottom:25px; font-size:24px; font-weight:700; color:#333; }
 
 /* Tabs */
 .tabs{ display:flex; gap:10px; margin-bottom:20px; justify-content:center; flex-wrap:wrap; }
@@ -244,7 +335,7 @@ async declineInvite(inviteId) {
 .info{ flex:1; }
 .name{ font-size:16px; font-weight:600; color:#222; margin-bottom:6px; }
 .time{ font-size:12px; color:#aaa; margin-bottom:6px; }
-.actions{ display:flex; gap:8px; margin-top:6px; flex-wrap:wrap; }
+.actions{ display:flex; gap:18px; margin-top:6px; flex-wrap:wrap; }
 .chat-btn{ background:linear-gradient(135deg,#ff4d6d,#ff758f); color:#fff; }
 .date-btn{ background:linear-gradient(135deg,#2565fc,#1db0ff); color:#fff; }
 .planned-dates-btn{ background:linear-gradient(135deg,#e79e00,#f5a623); color:#fff; }
@@ -273,57 +364,34 @@ async declineInvite(inviteId) {
 .view-map-btn:hover{ transform:scale(1.05); box-shadow:0 4px 12px rgba(255,77,109,.4); }
 
 .empty{ text-align:center; margin-top:40px; color:#888; font-size:18px; font-weight:500; }
-.planned-date-card{
-  background:#fff;
-  border-radius:18px;
-  overflow:hidden;
-  box-shadow:0 10px 30px rgba(0,0,0,0.08);
-  border:1px solid #f3f3f3;
-  transition:all .3s ease;
-  position:relative;
+.chat-wrapper {
+  position: relative;
+  display: inline-block;
 }
 
-.planned-date-card:hover{
-  transform:translateY(-6px);
-  box-shadow:0 20px 40px rgba(0,0,0,0.15);
+.unread-badge {
+  position: absolute;
+      width: 21px;
+    height: 21px;
+  top: -8px;
+  right: -8px;
+  background: #000000;
+  color: white;
+  font-size: 11px;
+  font-weight: bold;
+  padding: 2px 6px;
+  border-radius: 50%;
+  min-width: 18px;
+  text-align: center;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+  z-index: 2;
 }
-
-.planned-card-image{
-  position:relative;
+.tab-badge {
+  position: absolute;
+  top: -6px;
+  right: -6px;
 }
-
-.planned-card-image img{
-  width:100%;
-  height:170px;
-  object-fit:cover;
-}
-
-.planned-card-content{
-  padding:14px;
-}
-
-.planned-card-content h4{
-  font-size:18px;
-  margin-bottom:4px;
-}
-
-.planned-card-content p{
-  font-size:13px;
-  color:#666;
-}
-
-.view-map-btn{
-  margin-top:10px;
-  padding:8px 14px;
-  border-radius:12px;
-  border:none;
-  background:linear-gradient(135deg,#ff4d6d,#ff758f);
-  color:#fff;
-  cursor:pointer;
-  transition:.2s;
-}
-
-.view-map-btn:hover{
-  transform:scale(1.05);
+.tabs button {
+  position: relative;
 }
 </style>

@@ -86,7 +86,8 @@ export default {
 
         // OPTIONAL: store user
         localStorage.setItem('user', JSON.stringify(res.data.user))
-
+        // STORE USER ID FOR UPGRADE PLAN
+        localStorage.setItem('userId', res.data.user.id)
         // REDIRECT
         this.$router.push('/home')
       } catch (err) {

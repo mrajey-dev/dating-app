@@ -146,8 +146,8 @@
             <span>Likes ❤️</span>
           </div>
           <!-- <div class="stat">
-            <strong>{{ totalMatches }}</strong>
-            <span>Matched 🔗</span>
+            <strong>{{ person.comments || 0 }}</strong>
+            <span>Comments 💬</span>
           </div> -->
           <div class="stat">
             <strong>{{ person.rating || '4.5' }}</strong>
@@ -218,7 +218,15 @@
       <!-- Success Overlay -->
      
     </div>
-
+<div v-if="confirmDialog.show" class="confirm-overlay">
+  <div class="confirm-modal">
+    <p>{{ confirmDialog.message }}</p>
+    <div class="confirm-buttons">
+      <button @click="confirmDialog.show = false">Cancel</button>
+      <button @click="confirmDialog.onConfirm()">Yes</button>
+    </div>
+  </div>
+</div>
     <!-- Include Chat Popup Component -->
 <ChatPopup
   :person="person"
@@ -247,7 +255,12 @@ export default {
 
   data() {
     return {
-      totalMatches: 0,
+      confirmDialog: {
+      show: false,
+      message: "",
+      onConfirm: null
+    },
+
       toast: {
       show: false,
       message: "",
@@ -388,11 +401,8 @@ async handleMatch() {
       const res = await axios.post(
         "https://companion.ajaywatpade.in/api/send-match-request",
         { user_id: this.person.id },
-        {
-          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` }
-        }
+        { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } }
       )
-
       if (res.data.success) {
         this.matchStatus = 'requested'
         this.notificationStore.increment()
@@ -403,40 +413,45 @@ async handleMatch() {
       const res = await axios.post(
         "https://companion.ajaywatpade.in/api/cancel-match-request",
         { user_id: this.person.id },
-        {
-          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` }
-        }
+        { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } }
       )
-
       if (res.data.success) {
         this.matchStatus = null
       }
 
     } else if (this.matchStatus === 'matched') {
-      // Confirm removal
-      const confirmRemove = confirm(
-        `Are you sure you want to remove ${this.person.first_name} from your matches?`
-      )
-      if (!confirmRemove) return
-
-      // Call API to remove match
-      const res = await axios.post(
-        "https://companion.ajaywatpade.in/api/remove-match",
-        { user_id: this.person.id },
-        {
-          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` }
+      // SHOW CONFIRMATION MODAL ONLY
+      this.confirmDialog = {
+        show: true,
+        message: `Are you sure you want to remove ${this.person.first_name} from your matches?`,
+        onConfirm: async () => {
+          this.matchLoading = true // set loading while API runs
+          try {
+            const res = await axios.post(
+              "https://companion.ajaywatpade.in/api/remove-match",
+              { user_id: this.person.id },
+              { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } }
+            )
+            if (res.data.success) {
+              this.matchStatus = null
+              this.showToast(`${this.person.first_name} has been removed from your matches.`, "success")
+            }
+          } catch (e) {
+            console.error("Failed to remove match", e)
+          } finally {
+            this.matchLoading = false
+            this.confirmDialog.show = false
+          }
         }
-      )
+      }
 
-    if (res.data.success) {
-  this.matchStatus = null
-  this.showToast(`${this.person.first_name} has been removed from your matches.`, "success")
-}
+      return // STOP here until user confirms
     }
+
   } catch (e) {
     console.error("Match action failed", e)
   } finally {
-    this.matchLoading = false
+    if (this.matchStatus !== 'matched') this.matchLoading = false
   }
 },
 
@@ -539,21 +554,23 @@ if (this.$route.query.chat && this.matchStatus === 'matched') {
     },
 
     // Follow/Unfollow user
-   async toggleFollow() {
+async toggleFollow() {
   if (this.followLoading || !this.person) return
   this.followLoading = true
 
   const wasFollowing = this.isFollowing
   this.isFollowing = !wasFollowing
 
+  // Make sure followers_count is a number
+  let count = Number(this.person.followers_count) || 0
+
   if (!wasFollowing) {
-    this.person.followers_count = (this.person.followers_count || 0) + 1
+    count += 1
   } else {
-    this.person.followers_count = Math.max(
-      (this.person.followers_count || 1) - 1,
-      0
-    )
+    count = Math.max(count - 1, 0)
   }
+
+  this.person.followers_count = count
 
   try {
     await axios.post(
@@ -574,13 +591,14 @@ if (this.$route.query.chat && this.matchStatus === 'matched') {
   } catch (e) {
     // Rollback on failure
     this.isFollowing = wasFollowing
-    if (!wasFollowing) this.person.followers_count--
-    else this.person.followers_count++
+    if (!wasFollowing) count -= 1
+    else count += 1
+    this.person.followers_count = count
     console.error("Follow failed", e)
   } finally {
     this.followLoading = false
   }
-},
+},  
 
 
     // Open photo viewer
@@ -2246,5 +2264,46 @@ width: 100%;
 }
 .toast.error {
   background-color: #dc3545;
+}
+.confirm-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+
+.confirm-modal {
+  background: white;
+  padding: 20px;
+  border-radius: 12px;
+  width: 80%;
+  max-width: 350px;
+  text-align: center;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+}
+
+.confirm-buttons {
+  display: flex;
+  justify-content: space-around;
+  margin-top: 15px;
+}
+
+.confirm-buttons button {
+  padding: 8px 16px;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+}
+
+.confirm-buttons button:first-child {
+  background: #ccc;
+}
+
+.confirm-buttons button:last-child {
+  background: #e63946;
+  color: white;
 }
 </style>

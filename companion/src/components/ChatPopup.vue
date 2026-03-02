@@ -33,6 +33,42 @@
 
         </div>
       </div>
+<!-- ================= CALL UI ================= -->
+<div v-if="callActive && !showIncomingCall" class="call-overlay">
+
+  <div class="call-header">
+    <img :src="localPerson.profile_photo || defaultAvatar" />
+    <h3>{{ localPerson.first_name }}</h3>
+    <p>Audio Call</p>
+    <span class="call-time">{{ formatCallTime }}</span>
+  </div>
+
+
+  <!-- CONTROLS -->
+  <div class="call-controls">
+    <button @click="toggleMute">
+      <i :class="callMuted ? 'fa fa-microphone-slash' : 'fa fa-microphone'"></i>
+    </button>
+
+
+    <button class="end-call" @click="endCall">
+      <i class="fa fa-phone"></i>
+    </button>
+  </div>
+
+</div>
+      <!-- CALL ACTIONS -->
+<div class="chat-actions">
+  <!-- Audio Call -->
+  <i v-if="isPlanOver === false"
+    class="fa fa-phone call-icon"
+    title="Audio Call"
+    @click="startAudioCall"
+  ></i>
+
+
+</div>
+
       <!-- 3 Dots Menu -->
 <div class="chat-menu">
   <span class="menu-icon" @click="toggleMenu">⋮</span>
@@ -44,12 +80,43 @@
   </div>
 </div>
 
+    
+<!-- ================= INCOMING CALL ================= -->
+<div v-if="showIncomingCall" class="incoming-call">
+
+  <div class="incoming-card">
+    <img
+      :src="localPerson.profile_photo || defaultAvatar"
+      class="incoming-avatar"
+    />
+
+    <h2 class="incoming-name">
+      {{ localPerson.first_name }}
+    </h2>
+
+  <p class="incoming-type">Incoming voice call</p>
+
+    <div class="incoming-actions">
+      <!-- Reject -->
+      <button class="reject" @click="rejectCall">
+        <i class="fa fa-phone"></i>
+      </button>
+
+      <!-- Accept -->
+      <button class="accept" @click="acceptCall">
+        <i class="fa fa-phone"></i>
+      </button>
     </div>
+  </div>
+
+</div>
+</div>
 
     <!-- Chat Body -->
-    <div
+<div
   class="chat-body"
   ref="chatBody"
+  @scroll="handleScroll"
   :style="selectedWallpaper ? {
     backgroundImage: `url(${selectedWallpaper})`,
     backgroundSize: 'cover',
@@ -126,29 +193,43 @@
     accept="image/*"
     style="display: none"
   />
-  <button class="image-btn" @click="$refs.imageInput.click()">
+  <button v-if="isPlanOver === false" class="image-btn" @click="$refs.imageInput.click()">
   +
   </button>
 
   <!-- Message Input -->
-  <input
-    type="text"
-    placeholder="Type a message..."
-    v-model="newMessage"
-    @input="handleTyping"
-    @keyup.enter.prevent="sendMessage"
-    ref="chatInput"
-    :disabled="!canChat"
-  />
+<!-- MESSAGE INPUT -->
+<input
+  v-if="!isPlanOver"
+  type="text"
+  placeholder="Type a message..."
+  v-model="newMessage"
+  ref="chatInput"
+  :readonly="!isInputActive"
+  :disabled="!canChat || callActive"
+  @touchstart="activateInput"
+  @mousedown="activateInput"
+  @blur="deactivateInput"
+  @input="handleTyping"
+  @keyup.enter.prevent="sendMessage"
+/>
 
-  <!-- Send Button -->
-  <button
-    class="send-btn"
-    @click="sendMessage"
-    :disabled="!canChat || !newMessage.trim()"
-  >
-    <i class="fa fa-paper-plane" style="font-size: 16px"></i>
+<!-- SEND BUTTON -->
+<button
+  v-if="isPlanOver === false"
+  class="send-btn"
+  @click="sendMessage"
+  :disabled="!canChat || !newMessage.trim()"
+>
+  <i class="fa fa-paper-plane"></i>
+</button>
+
+<!-- UPGRADE PLAN BUTTON -->
+<div v-if="isPlanOver" class="upgrade-box">
+  <button class="upgrade-btn" @click="goToUpgrade">
+    Upgrade Plan 🚀
   </button>
+</div>
 
   <!-- Emoji Picker -->
   <div v-if="showEmojiPicker" class="emoji-picker">
@@ -184,6 +265,7 @@
 </div>
 
     <div class="overlay" @click="closeChat"></div>
+    <audio ref="remoteAudio" autoplay playsinline></audio>
   </div>
 </template>
 
@@ -203,6 +285,21 @@ export default {
   emits: ["close"],
   data() {
     return {
+      isPlanOver: null,
+      iceQueue: [],
+      isInputActive: false,
+      incomingCallData: null,
+showIncomingCall: false,
+    // ===== WEBRTC =====
+peer: null,
+localStream: null,
+remoteStream: null,
+    callActive: false,
+
+callMuted: false,
+
+callTimer: null,
+callDuration: 0,
        showEmojiPicker: false,
     emojis: ["😀","😂","😍","😎","🥰","😢","😡","👍","🙏","💖","🎉","🔥"],
       isTyping: false,
@@ -258,18 +355,25 @@ watch: {
   },
 
   messages() {
-    if (this.scrollAtBottom) {
-      this.scrollToBottom(true);
-    }
+    this.$nextTick(() => {
+      if (this.scrollAtBottom) {
+        this.scrollToBottom(true);
+      }
+    });
   }
 },
   mounted() {
+    this.signalInterval = setInterval(this.fetchSignals, 1000);
      this.startOnlinePing();
     this.showCustomToast("Test toast works!");
-  if (this.showChat) this.$refs.chatInput.focus();
   
 },
 computed: {
+formatCallTime() {
+  const m = Math.floor(this.callDuration / 60);
+  const s = this.callDuration % 60;
+  return `${m}:${s.toString().padStart(2, '0')}`;
+},
   lastSeenText() {
   if (!this.localPerson || !this.localPerson.last_active_at) {
     return "Offline";
@@ -306,6 +410,317 @@ computed: {
   }
 },
   methods: {
+async checkPlanStatus() {
+  try {
+    const token = localStorage.getItem("token");
+    const gender = localStorage.getItem("gender"); // 👈 IMPORTANT
+
+    // ✅ Female users NEVER see upgrade
+    if (gender === "female") {
+      this.isPlanOver = false;
+      return;
+    }
+
+    const res = await axios.get(
+      "https://companion.ajaywatpade.in/api/user/plan-status",
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+
+    this.isPlanOver = res.data.is_plan_over;
+
+  } catch (err) {
+    console.error("Failed to check plan status", err);
+    this.isPlanOver = false; // fail-safe (don't block user)
+  }
+},
+goToUpgrade() {
+  // Redirect to upgrade page and pass the chat user's ID
+  this.$router.push({
+    path: '/upgrade',
+    query: { targetUserId: this.person.id } // 🔑 this is critical
+  });
+},
+    resumeAudioContext() {
+  const AudioContext = window.AudioContext || window.webkitAudioContext;
+  if (!AudioContext) return;
+
+  if (!this.audioContext) {
+    this.audioContext = new AudioContext();
+  }
+
+  if (this.audioContext.state === "suspended") {
+    this.audioContext.resume().then(() => {
+      console.log("AudioContext resumed");
+    });
+  }
+},
+    activateInput() {
+  if (this.callActive) return;
+
+  this.isInputActive = true;
+
+  this.$nextTick(() => {
+    this.$refs.chatInput?.focus();
+  });
+},
+
+deactivateInput() {
+  this.isInputActive = false;
+},
+     onInputFocus() {
+    // keyboard opens ONLY here
+  },
+  onInputBlur() {
+    // nothing needed
+  },
+async acceptCall() {
+  try {
+    this.showIncomingCall = false;
+    this.callActive = true;
+    this.openCallUI();
+
+    this.resumeAudioContext();
+
+    const audioEl = this.$refs.remoteAudio;
+    if (audioEl) {
+      audioEl.muted = false;
+      await audioEl.play().catch(() => {});
+    }
+
+    const offerData = this.incomingCallData.data;
+
+    // 🔑 VERY IMPORTANT: recreate description
+    const offer = new RTCSessionDescription({
+      type: offerData.type,
+      sdp: offerData.sdp
+    });
+
+    await this.initMedia();
+    this.createPeer();
+
+    await this.peer.setRemoteDescription(offer);
+// 🔑 APPLY QUEUED ICE (CRITICAL)
+this.iceQueue.forEach(c => {
+  this.peer.addIceCandidate(new RTCIceCandidate(c));
+});
+this.iceQueue = [];
+    const answer = await this.peer.createAnswer();
+    await this.peer.setLocalDescription(answer);
+
+    this.sendSignal("answer", {
+      type: answer.type,
+      sdp: answer.sdp
+    });
+
+  } catch (err) {
+    console.error("ACCEPT CALL ERROR:", err);
+  }
+},
+rejectCall() {
+  this.showIncomingCall = false;
+  this.incomingCallData = null;
+
+  this.callActive = false; // ✅ make sure video is closed
+  this.sendSignal("reject", {});
+},
+incomingCall(signal) {
+  this.incomingCallData = signal;
+  this.showIncomingCall = true;
+
+  // 🚫 DO NOT start media
+  // 🚫 DO NOT set callActive
+},
+async fetchSignals() {
+  const token = localStorage.getItem("token");
+
+  const res = await axios.get(
+    `https://companion.ajaywatpade.in/api/call/signals`,
+    { headers: { Authorization: `Bearer ${token}` } }
+  );
+
+  res.data.forEach(signal => {
+    if (signal.type === "offer") this.incomingCall(signal);
+    if (signal.type === "answer") this.handleAnswer(signal.data);
+    if (signal.type === "ice") this.handleIce(signal.data);
+
+    // 🔑 NEW: remote call end
+    if (signal.type === "end-call") {
+      this.onRemoteEndCall();
+    }
+  });
+},
+onRemoteEndCall() {
+  console.log("Remote user ended the call");
+
+  this.peer?.close();
+  this.localStream?.getTracks().forEach(t => t.stop());
+
+  this.peer = null;
+  this.localStream = null;
+  this.callActive = false;
+  this.showIncomingCall = false;
+
+  clearInterval(this.callTimer);
+
+  this.showCustomToast("Call ended");
+},
+endCall() {
+  this.sendSignal("end-call", {});
+
+  this.peer?.close();
+  this.localStream?.getTracks().forEach(t => t.stop());
+
+  this.peer = null;
+  this.localStream = null;
+  this.callActive = false;
+
+  clearInterval(this.callTimer);
+  this.callTimer = null;
+  this.callDuration = 0;
+},
+async initMedia() {
+  this.localStream = await navigator.mediaDevices.getUserMedia({
+    audio: {
+      echoCancellation: true,
+      noiseSuppression: true,
+      autoGainControl: true
+    },
+    video: false
+  });
+
+  console.log("LOCAL AUDIO:", this.localStream.getAudioTracks());
+},
+createPeer() {
+  this.peer = new RTCPeerConnection({
+    iceServers: [{ urls: "stun:stun.l.google.com:19302" }]
+  });
+
+  // 🔑 ADD TRACKS FIRST
+  this.localStream.getTracks().forEach(track => {
+    this.peer.addTrack(track, this.localStream);
+  });
+
+  // 🔑 REMOTE AUDIO
+this.peer.ontrack = (event) => {
+  const audioEl = this.$refs.remoteAudio;
+  if (audioEl) {
+    audioEl.srcObject = event.streams[0];
+    audioEl.play().catch(() => {});
+  }
+};
+
+  this.peer.onicecandidate = e => {
+    if (e.candidate) {
+      this.sendSignal("ice", e.candidate);
+    }
+  };
+},
+async startAudioCall() {
+   if (this.isPlanOver) {
+    this.showCustomToast("Upgrade your plan to make calls 📞🚀");
+    return;
+  }
+  this.isInputActive = false;
+  this.$refs.chatInput?.blur();
+
+  this.callActive = true;
+  this.openCallUI(); // 🔑 START TIMER FOR CALLER
+  this.resumeAudioContext();
+
+  await this.initMedia();
+  this.createPeer();
+
+  const offer = await this.peer.createOffer();
+  await this.peer.setLocalDescription(offer);
+
+  this.sendSignal("offer", {
+    type: offer.type,
+    sdp: offer.sdp
+  });
+},
+
+
+async startCall(video) {
+  this.callActive = true;
+
+  await this.initMedia(video);
+  this.createPeer();
+
+  const offer = await this.peer.createOffer();
+  await this.peer.setLocalDescription(offer);
+
+  this.sendSignal("offer", offer);
+},
+async handleAnswer(answerData) {
+  if (!this.peer) return;
+
+  const answer = new RTCSessionDescription({
+    type: answerData.type,
+    sdp: answerData.sdp
+  });
+
+  await this.peer.setRemoteDescription(answer);
+
+  // 🔑 APPLY QUEUED ICE
+  this.iceQueue.forEach(c => {
+    this.peer.addIceCandidate(new RTCIceCandidate(c));
+  });
+  this.iceQueue = [];
+},
+async handleIce(candidate) {
+  if (!this.peer) {
+    console.log("ICE queued");
+    this.iceQueue.push(candidate);
+    return;
+  }
+
+  await this.peer.addIceCandidate(new RTCIceCandidate(candidate));
+},
+sendSignal(type, data) {
+  const token = localStorage.getItem("token");
+
+  axios.post("https://companion.ajaywatpade.in/api/call/signal", {
+    receiver_id: this.person.id,
+    type,
+    data
+  }, {
+    headers: { Authorization: `Bearer ${token}` }
+  });
+},
+
+openCallUI() {
+  if (this.callTimer) return; // 🔒 prevent duplicate timers
+
+  this.callActive = true;
+  this.callDuration = 0;
+
+  this.callTimer = setInterval(() => {
+    this.callDuration++;
+  }, 1000);
+},
+
+toggleMute() {
+  this.callMuted = !this.callMuted;
+
+  if (this.localStream) {
+    this.localStream.getAudioTracks().forEach(track => {
+      track.enabled = !this.callMuted;
+    });
+  }
+},
+
+toggleCamera() {
+  this.cameraOff = !this.cameraOff;
+},
+
+   handleScroll() {
+    const el = this.$refs.chatBody;
+    if (!el) return;
+
+    // user is near bottom (20px tolerance)
+    this.scrollAtBottom =
+      el.scrollTop + el.clientHeight >= el.scrollHeight - 20;
+  },
      toggleEmojiPicker() {
     this.showEmojiPicker = !this.showEmojiPicker;
   },
@@ -318,49 +733,63 @@ computed: {
 
 async sendImage(event) {
   const file = event.target.files[0];
-  if (!file || !this.person?.id) return;
+  if (!file) return;
+
+  if (!this.person?.id) {
+    console.warn("Receiver ID missing");
+    return;
+  }
 
   const formData = new FormData();
   formData.append("receiver_id", this.person.id);
-  formData.append("image", file);
+  formData.append("image", file); // 🔑 key must match backend
 
   try {
     const token = localStorage.getItem("token");
+    if (!token) throw new Error("No auth token");
+
     const res = await axios.post(
       "https://companion.ajaywatpade.in/api/messages/image",
       formData,
       {
         headers: {
           Authorization: `Bearer ${token}`,
-          "Content-Type": "multipart/form-data",
+          // Do NOT set 'Content-Type'; Axios handles it automatically
         },
       }
     );
 
-    // Make sure image URL exists
-    const imgUrl = res?.data?.image;
-    if (!imgUrl) throw new Error("No image returned from server");
+    // 🔑 Safely get image URL from backend response
+    const imgUrl = res.data?.image || res.data?.data?.image || res.data?.url;
+    if (!imgUrl) throw new Error("Image URL missing in response");
 
-    // Add the message locally for instant display
+    // ✅ Push new message to chat
     const newMsg = {
-      id: res.data.id, 
+      id: res.data.id || Date.now(),
       sender_id: Number(this.userId),
       receiver_id: this.person.id,
-      text: "",          // text empty for image
+      text: "",
       image: imgUrl,
       type: "sender",
       seen: false,
       delivered: false,
-      created_at: res.data.created_at,
+      created_at: res.data.created_at || new Date().toISOString(),
     };
 
     this.messages.push(newMsg);
     this.scrollToBottom(true);
 
   } catch (err) {
-    console.error("Image send failed", err);
-    this.showCustomToast("Failed to send image");
+  if (err.response?.status === 403) {
+  this.isPlanOver = true;            // 👈 IMPORTANT
+  this.showCustomToast("Upgrade your plan to continue 🚀");
+} else {
+    console.error("Failed to send image:", err);
+    this.showCustomToast(
+      err.response?.data?.message || "Failed to send image"
+    );
   }
+}
 },
     async stopTyping() {
 
@@ -619,6 +1048,7 @@ setWallpaper(img) {
     },
 
 async startChat() {
+   await this.checkPlanStatus(); 
   this.localPerson = { ...this.person };
   await this.fetchMessages();
   await this.markMessagesSeen();
@@ -643,14 +1073,12 @@ this.typingInterval = setInterval(this.checkTyping, 2000);
   this.stopStatusRefresh();
     },
 
-   focusInput() {
-  if (!this.allowAutoFocus) return;
+focusInput() {
+  if (!this.allowAutoFocus || this.callActive) return;
 
   this.$nextTick(() => {
     const input = this.$refs.chatInput;
-    if (input) {
-      input.focus();
-    }
+    if (input) input.focus();
   });
 },
 async fetchMessages() {
@@ -689,13 +1117,11 @@ async fetchMessages() {
 },
 
 
-  async sendMessage() {
-
-if (!this.canChat) {
-  this.showCustomToast("You can send messages only after matching 💕");
-  return;
-}
-
+async sendMessage() {
+  if (!this.canChat) {
+    this.showCustomToast("You can send messages only after matching 💕");
+    return;
+  }
 
   const trimmedMessage = this.newMessage.trim();
   if (!trimmedMessage || !this.person?.id) return;
@@ -703,51 +1129,58 @@ if (!this.canChat) {
   try {
     const token = localStorage.getItem("token");
 
-    // Optimistically push message
-    const sentMsg = {
-      id: Date.now(),
+    const res = await axios.post(
+      "https://companion.ajaywatpade.in/api/messages",
+      {
+        receiver_id: this.person.id,
+        text: trimmedMessage
+      },
+      {
+        headers: { Authorization: `Bearer ${token}` }
+      }
+    );
+
+    // ✅ push ONLY after success
+    this.messages.push({
+      id: res.data.id,
       sender_id: Number(this.userId),
       receiver_id: this.person.id,
       text: trimmedMessage,
-      type: 'sender',
-        delivered: false, // ✅ Important
-  seen: false,      // ✅ Important
-    };
+      type: "sender",
+      delivered: false,
+      seen: false,
+      created_at: res.data.created_at
+    });
 
-    this.messages.push(sentMsg);
-
-    this.$refs.chatInput?.focus();
     this.newMessage = "";
     this.scrollToBottom(true);
 
-    await axios.post(
-      "https://companion.ajaywatpade.in/api/messages",
-      { receiver_id: this.person.id, text: trimmedMessage },
-      { headers: { Authorization: `Bearer ${token}` } }
-    );
-
   } catch (err) {
-    console.error("Failed to send message:", err);
+    if (err.response?.status === 403) {
+  this.isPlanOver = true;            // 👈 IMPORTANT
+  this.showCustomToast("Upgrade your plan to continue");
+} else {
+      console.error("Failed to send message:", err);
+    }
   }
 },
 
 
-    scrollToBottom(smooth = true) {
-      this.$nextTick(() => {
-        const container = this.$refs.chatBody;
-        if (!container) return;
+   scrollToBottom(smooth = true) {
+  this.$nextTick(() => {
+    const container = this.$refs.chatBody;
+    if (!container) return;
 
-        if (!smooth) {
-          container.scrollTop = container.scrollHeight;
-        } else {
-          const lastMsg = container.lastElementChild;
-          if (lastMsg) {
-            const offset = lastMsg.offsetHeight + 10;
-            container.scrollBy({ top: offset, behavior: 'smooth' });
-          }
-        }
+    if (smooth) {
+      container.scrollTo({
+        top: container.scrollHeight,
+        behavior: "smooth"
       });
-    },
+    } else {
+      container.scrollTop = container.scrollHeight;
+    }
+  });
+}
   },
   beforeUnmount() {
     clearInterval(this.onlineInterval);
@@ -820,6 +1253,7 @@ if (!this.canChat) {
   flex: 1;
   padding: 15px;
   overflow-y: auto;
+  padding-bottom: 80px;
   background-image: url(https://i.pinimg.com/736x/5e/b0/5b/5eb05b30bd9d839c647cd548cfd85f3c.jpg);
   background-size: cover;
   background-position: center;
@@ -1179,6 +1613,242 @@ if (!this.canChat) {
 }
 .chat-status{
   font-size: 12px;
+}
+.chat-actions {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    margin-left: auto;
+    margin-right: -78px;
+}
+
+.call-icon {
+  font-size: 20px;
+  cursor: pointer;
+  margin-left: 83px;
+    margin-top: 8px;
+  color: #075E54;
+}
+
+.call-icon:hover {
+  color: #128C7E;
+}
+/* ================= CALL UI ================= */
+
+.call-overlay {
+  position: fixed;
+  inset: 0;
+  background: #000;
+  color: #fff;
+  z-index: 6000;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.call-header {
+  text-align: center;
+  padding: 40px 20px;
+      margin-top: 44px;
+}
+
+.call-header img {
+  width: 90px;
+  height: 90px;
+  border-radius: 50%;
+  object-fit: cover;
+  margin-bottom: 12px;
+}
+
+.call-header h3 {
+  margin: 5px 0;
+  font-size: 20px;
+}
+
+.call-time {
+  font-size: 14px;
+  opacity: 0.8;
+}
+
+.call-video {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.video-placeholder {
+  width: 80%;
+  height: 70%;
+  background: #222;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #aaa;
+}
+
+.call-controls {
+  display: flex;
+  justify-content: center;
+  gap: 30px;
+  padding: 25px;
+}
+
+.call-controls button {
+  width: 55px;
+  height: 55px;
+  border-radius: 50%;
+  border: none;
+  font-size: 20px;
+  cursor: pointer;
+}
+
+.call-controls button i {
+  color: #fff;
+}
+
+.call-controls .end-call {
+  background: #ff2e44;
+}
+
+.call-controls button:not(.end-call) {
+  background: #333;
+}
+.incoming-call {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.85);
+  z-index: 7000;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  color: white;
+}
+
+.incoming-actions {
+  display: flex;
+  gap: 20px;
+  margin-top: 20px;
+}
+
+.incoming-actions .accept {
+  background: #4caf50;
+  color: white;
+  padding: 14px 22px;
+  border-radius: 50%;
+}
+
+.incoming-actions .reject {
+  background: #f44336;
+  color: white;
+  padding: 14px 22px;
+  border-radius: 50%;
+}
+
+/* ================= WHATSAPP-LIKE INCOMING CALL ================= */
+
+.incoming-call {
+  position: fixed;
+  inset: 0;
+  background: radial-gradient(circle at center, #111 0%, #000 70%);
+  z-index: 8000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.incoming-card {
+  text-align: center;
+  color: white;
+  animation: fadeInScale 0.25s ease;
+}
+
+.incoming-avatar {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  object-fit: cover;
+  margin-bottom: 18px;
+  box-shadow: 0 0 0 6px rgba(255,255,255,0.05);
+}
+
+.incoming-name {
+  font-size: 22px;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+.incoming-type {
+  font-size: 14px;
+  opacity: 0.7;
+  margin-bottom: 40px;
+}
+
+/* CALL BUTTONS */
+.incoming-actions {
+  display: flex;
+  gap: 60px;
+  justify-content: center;
+}
+
+.incoming-actions button {
+  width: 70px;
+  height: 70px;
+  border-radius: 50%;
+  border: none;
+  font-size: 26px;
+  color: white;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Reject */
+.incoming-actions .reject {
+  background: #f44336;
+  transform: rotate(135deg);
+}
+
+/* Accept */
+.incoming-actions .accept {
+  background: #4caf50;
+  animation: pulse 1.6s infinite;
+}
+
+/* Animations */
+@keyframes pulse {
+  0% { box-shadow: 0 0 0 0 rgba(76,175,80,0.6); }
+  70% { box-shadow: 0 0 0 20px rgba(76,175,80,0); }
+  100% { box-shadow: 0 0 0 0 rgba(76,175,80,0); }
+}
+
+@keyframes fadeInScale {
+  from {
+    opacity: 0;
+    transform: scale(0.92);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+.upgrade-box {
+  width: 100%;
+  text-align: center;
+}
+
+.upgrade-btn {
+  width: 100%;
+  padding: 12px;
+  background: linear-gradient(135deg, #ff416c, #ff4b2b);
+  color: white!important;
+  font-weight: 600!important;
+  border-radius: 25px;
+  border: none;
+  font-size: 16px;
 }
 </style>
 

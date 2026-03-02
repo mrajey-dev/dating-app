@@ -200,14 +200,15 @@
 
     <!-- Instagram Style Footer -->
     <div class="bottom-footer">
-      <div class="footer-item" @click="$router.push('/home')">
-       <i class="fa fa-home" style="font-size:24px"></i>
-      </div>
+     <div class="footer-item" @click="goHome">
+  <i class="fa fa-home" style="font-size:24px"></i>
+</div>
      <div class="footer-item" @click="openSearch">
  <i class="fa fa-search" style="font-size:20px"></i>
 </div>
 
-      <div class="footer-item">
+      <div class="footer-item" @click="$router.push('/myplans')">
+         <!-- <i class='fa fa-crown' style='font-size:20px'></i> -->
         <img src="@/assets/golden.png" class="footer-icon" />
       </div>
       <div class="footer-item" @click="$router.push('/mymatches')">
@@ -303,6 +304,10 @@ export default {
   },
 
   methods: {
+    goHome() {
+    // Navigate to /home and refresh the page
+    window.location.href = '/home';
+  },
 openSearch() {
   this.showSearchBar = true
 
@@ -1054,7 +1059,7 @@ openSearch() {
 /* Popup */
 .filter-popup {
   position: fixed;
-  top: 0;
+  top: 58px;
   left: 0;
   width: 100%;
   background: rgba(255,255,255,0.95);

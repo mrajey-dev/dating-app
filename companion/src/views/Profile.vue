@@ -166,13 +166,12 @@
             <input type="password" v-model="user.password" placeholder="Leave blank to keep current" />
           </div>
           <div class="form-group">
-            <label>Gender</label>
-            <select v-model="user.gender">
-              <option value="male">Male</option>
-              <option value="female">Female</option>
-              <!-- <option value="other">Other</option> -->
-            </select>
-          </div>
+  <label>Gender</label>
+  <select v-model="user.gender" disabled>
+    <option value="male">Male</option>
+    <option value="female">Female</option>
+  </select>
+</div>
           
         </div>
 

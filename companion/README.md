@@ -1,3 +1,6 @@
+<<<<<<< HEAD
+# Heart-link
+=======
 # gf-bf-rental
 
 This template should help get you started developing with Vue 3 in Vite.
@@ -36,3 +39,4 @@ npm run dev
 ```sh
 npm run build
 ```
+>>>>>>> 31cd133 (Initial commit)
