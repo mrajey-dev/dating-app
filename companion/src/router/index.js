@@ -22,17 +22,16 @@ const routes = [
   name: 'DatePlanner',
   component: DatePlanner
 },
-{
-  path: "/upgrade",
-  name: "Upgrade",
-  component: () => import("@/views/Upgrade.vue")
-},
-
-{
-  path: "/myplans",
-  name: "MyPlans",
-  component: () => import("@/views/MyPlans.vue")
-},
+ {
+    path: "/upgrade",
+    name: "Upgrade",
+    component: () => import("@/views/Upgrade.vue")
+  },
+  {
+    path: "/myplans",
+    name: "MyPlans",
+    component: () => import("@/views/MyPlans.vue")
+  },
 
 {
   path: '/mymatches',

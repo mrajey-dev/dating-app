@@ -1,21 +1,27 @@
 <template>
-    <!-- <AppToast /> -->
   <div class="date-planner-page" v-if="person">
-
-    <!-- HEADER -->
-   <!-- HEADER -->
-<div class="planner-header">
-  <div class="planner-user">
-    <img :src="person.profile_photo" class="planner-avatar" />
-    <div>
-      <h2>Plan a Perfect Date</h2>
-      <p>with {{ person.first_name }} 💖</p>
+    <!-- PREMIUM HEADER WITH GLASS EFFECT -->
+    <div class="planner-header">
+      <div class="header-glow"></div>
+      <div class="planner-user">
+        <div class="avatar-wrapper">
+          <img :src="person.profile_photo" class="planner-avatar" />
+          <div class="avatar-ring"></div>
+        </div>
+        <div class="user-info">
+          <h2>Plan a Perfect Date</h2>
+          <p>with <span class="highlight">{{ person.first_name }}</span> <span class="heart-beat">💖</span></p>
+        </div>
+      </div>
+      <div class="header-stats">
+        <div class="stat-badge">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          <span>Dream Date</span>
+        </div>
+      </div>
     </div>
-  </div>
-</div>
 
-
-    <!-- CATEGORY FILTER -->
+    <!-- CATEGORY FILTER - MODERN DESIGN -->
     <div class="planner-filters">
       <button 
         v-for="type in categories"
@@ -23,83 +29,132 @@
         :class="{ active: selectedCategory === type }"
         @click="selectedCategory = type"
       >
-        {{ type }}
+        <span class="filter-icon">{{ getFilterIcon(type) }}</span>
+        <span>{{ type }}</span>
       </button>
     </div>
 
-    <!-- DATE SUGGESTIONS -->
+    <!-- DATE SUGGESTIONS GRID -->
     <div class="planner-grid">
       <div 
         v-for="(place, index) in filteredSuggestions"
         :key="index"
         class="planner-card"
+        :style="{ animationDelay: `${index * 0.1}s` }"
       >
-        <img :src="place.image" />
+        <div class="card-image">
+          <img :src="place.image" :alt="place.title" />
+          <div class="card-type-badge">{{ place.type }}</div>
+          <div class="card-overlay"></div>
+        </div>
         <div class="planner-info">
           <h4>{{ place.title }}</h4>
           <p>{{ place.description }}</p>
-     <button class="book-btn" @click="openScheduleModal(place)">
-  Schedule Date
-</button>
-
-
+          <div class="card-location">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+            <span>{{ place.location }}</span>
+          </div>
+          <button class="book-btn" @click="openScheduleModal(place)">
+            <span>Schedule Date</span>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+          </button>
         </div>
       </div>
     </div>
 
-  
- <!-- SCHEDULE DATE MODAL -->
-<div v-if="showScheduleModal" class="modal-overlay" @click.self="closeScheduleModal">
-  <div class="schedule-modal">
-
-    <h3>Schedule Date 💖</h3>
-
-    <p class="selected-place">{{ selectedPlace?.title }}</p>
-
-    <!-- Date -->
-    <label>Select Date</label>
-    <input type="date" v-model="schedule.date" />
-
-    <!-- Time -->
-    <label>Select Time</label>
-    <input type="time" v-model="schedule.time" />
-
-    <!-- Optional Note -->
-    <label>Special Message (Optional)</label>
-    <textarea
-      v-model="schedule.note"
-      placeholder="Add something sweet..."
-      rows="3"
-    ></textarea>
-
-   <button class="confirm-btn" @click="inviteForDate">
-  Invite for Date 💌
-</button>
-
-  </div>
-</div>
-
-<!-- Pending Invitations Section -->
+    <!-- PENDING INVITATIONS SECTION -->
     <div v-if="pendingInvitations.length" class="pending-invitations">
-      <h3>Pending Date Invitations 💌</h3>
-
-      <div v-for="invite in pendingInvitations" :key="invite.id" class="invite-card">
-        <img :src="imageUrl(invite.place_image)" class="invite-img" />
-        <div class="invite-info">
-          <h4>{{ invite.place_title }} 💖</h4>
-          <p>{{ invite.place_type }} - {{ invite.place_location }}</p>
-          <p>From: {{ invite.planner_name || "User" }}</p>
-          <p>Date: {{ formatDate(invite.schedule_date) }} at {{ invite.schedule_time }}</p>
-          <p v-if="invite.note">Note: {{ invite.note }}</p>
-
-          <div class="invite-actions">
-            <button @click="acceptInvite(invite.id)">Accept ✅</button>
-            <button @click="declineInvite(invite.id)">Decline ❌</button>
+      <div class="section-header">
+        <div class="section-icon">💌</div>
+        <h3>Pending Date Invitations</h3>
+        <span class="pending-count">{{ pendingInvitations.length }}</span>
+      </div>
+      <div class="invitations-grid">
+        <div v-for="invite in pendingInvitations" :key="invite.id" class="invite-card">
+          <div class="invite-image">
+            <img :src="imageUrl(invite.place_image)" />
+            <div class="invite-type">{{ invite.place_type }}</div>
+          </div>
+          <div class="invite-content">
+            <h4>{{ invite.place_title }}</h4>
+            <div class="invite-details">
+              <div class="detail-item">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                <span>{{ invite.place_location }}</span>
+              </div>
+              <div class="detail-item">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                <span>{{ formatDate(invite.schedule_date) }} at {{ invite.schedule_time }}</span>
+              </div>
+              <div class="detail-item" v-if="invite.note">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                <span>{{ invite.note }}</span>
+              </div>
+            </div>
+            <div class="invite-actions">
+              <button class="accept-btn" @click="acceptInvite(invite.id)">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+                Accept
+              </button>
+              <button class="decline-btn" @click="declineInvite(invite.id)">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                Decline
+              </button>
+            </div>
           </div>
         </div>
       </div>
     </div>
- </div>
+
+    <!-- SCHEDULE DATE MODAL -->
+    <transition name="modal-fade">
+      <div v-if="showScheduleModal" class="modal-overlay" @click.self="closeScheduleModal">
+        <div class="schedule-modal">
+          <div class="modal-header">
+            <div class="modal-icon">💖</div>
+            <h3>Schedule Your Dream Date</h3>
+            <button class="modal-close" @click="closeScheduleModal">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+          </div>
+          <p class="selected-place">with <strong>{{ person.first_name }}</strong> at <strong>{{ selectedPlace?.title }}</strong></p>
+          
+          <div class="form-group">
+            <label>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+              Select Date
+            </label>
+            <input type="date" v-model="schedule.date" :min="minDate" />
+          </div>
+          
+          <div class="form-group">
+            <label>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+              Select Time
+            </label>
+            <input type="time" v-model="schedule.time" />
+          </div>
+          
+          <div class="form-group">
+            <label>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+              Special Message (Optional)
+            </label>
+            <textarea
+              v-model="schedule.note"
+              placeholder="Write something sweet..."
+              rows="3"
+            ></textarea>
+          </div>
+          
+          <button class="confirm-btn" @click="inviteForDate">
+            <span>Send Invitation 💌</span>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+          </button>
+        </div>
+      </div>
+    </transition>
+  </div>
 </template>
 
 <script>
@@ -110,213 +165,184 @@ export default {
   name: "DatePlanner",
   data() {
     return {
-       pendingInvitations: [],
-         toast: useToastStore(),
-        showScheduleModal: false,
-selectedPlace: null,
-
-schedule: {
-  date: "",
-  time: "",
-  note: ""
-},
-
+      pendingInvitations: [],
+      toast: useToastStore(),
+      showScheduleModal: false,
+      selectedPlace: null,
+      schedule: {
+        date: "",
+        time: "",
+        note: ""
+      },
       person: null,
       matchStatus: null,
       selectedCategory: "All",
       categories: ["All", "Cafe", "Hotel", "Experience"],
-
-    suggestions: [
-  {
-    title: "Romantic Rooftop Café",
-    description: "Candlelight dinner with skyline views.",
-    type: "Cafe",
-    image: "https://images.unsplash.com/photo-1498654896293-37aacf113fd9",
-    location: "Skyline Rooftop Cafe, Mumbai"
-  },
-  {
-    title: "Luxury Boutique Hotel",
-    description: "Private suite with spa and pool access.",
-    type: "Hotel",
-    image: "https://images.unsplash.com/photo-1566073771259-6a8506099945",
-    location: "The Taj Mahal Palace, Mumbai"
-  },
-  {
-    title: "Sunset Yacht Experience",
-    description: "Private sunset cruise with dinner.",
-    type: "Experience",
-    image: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e",
-    location: "Gateway of India, Mumbai"
-  }
-]
-
+      suggestions: [
+        {
+          title: "Romantic Rooftop Café",
+          description: "Candlelight dinner with breathtaking skyline views. Perfect for intimate conversations.",
+          type: "Cafe",
+          image: "https://images.unsplash.com/photo-1498654896293-37aacf113fd9?w=500",
+          location: "Skyline Rooftop Cafe, Mumbai"
+        },
+        {
+          title: "Luxury Boutique Hotel",
+          description: "Private suite with spa access, infinity pool, and world-class dining.",
+          type: "Hotel",
+          image: "https://images.unsplash.com/photo-1566073771259-6a8506099945?w=500",
+          location: "The Taj Mahal Palace, Mumbai"
+        },
+        {
+          title: "Sunset Yacht Experience",
+          description: "Private sunset cruise with champagne dinner and live music.",
+          type: "Experience",
+          image: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=500",
+          location: "Gateway of India, Mumbai"
+        },
+        {
+          title: "Cozy Coffee House",
+          description: "Warm ambiance, artisanal coffee, and delicious pastries.",
+          type: "Cafe",
+          image: "https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?w=500",
+          location: "Blue Tokai, Mumbai"
+        },
+        {
+          title: "Beachside Resort",
+          description: "Luxury beachfront resort with private cabanas and sunset views.",
+          type: "Hotel",
+          image: "https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?w=500",
+          location: "Taj Exotica, Goa"
+        },
+        {
+          title: "Art & Wine Night",
+          description: "Paint and sip experience with live music and fine wine.",
+          type: "Experience",
+          image: "https://images.unsplash.com/photo-1513364776144-60967b0f800f?w=500",
+          location: "Art Guild House, Mumbai"
+        }
+      ]
     }
   },
 
   computed: {
     filteredSuggestions() {
       if (this.selectedCategory === "All") return this.suggestions
-      return this.suggestions.filter(
-        item => item.type === this.selectedCategory
-      )
+      return this.suggestions.filter(item => item.type === this.selectedCategory)
+    },
+    minDate() {
+      const today = new Date()
+      return today.toISOString().split('T')[0]
     }
   },
 
   async mounted() {
     await this.fetchPerson()
     await this.checkMatchStatus()
-      this.fetchPendingInvitations()
-
+    this.fetchPendingInvitations()
     if (this.matchStatus !== "matched") {
       this.$router.push("/")
     }
   },
 
   methods: {
+    getFilterIcon(type) {
+      const icons = {
+        All: "✨",
+        Cafe: "☕",
+        Hotel: "🏨",
+        Experience: "🎨"
+      }
+      return icons[type] || "📍"
+    },
+
     formatDate(date) {
-    return new Date(date).toLocaleDateString()
-  },
-imageUrl(path) {
-    if (!path) return "/default-avatar.png"
-    if (path.startsWith("http")) return path
-    return 'https://companion.ajaywatpade.in/dating-backend/public/storage/' + path
-  },
+      return new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+    },
+
+    imageUrl(path) {
+      if (!path) return "/default-avatar.png"
+      if (path.startsWith("http")) return path
+      return 'https://companion.ajaywatpade.in/dating-backend/public/storage/' + path
+    },
+
     async fetchPendingInvitations() {
-    const token = localStorage.getItem("token")
-    const res = await axios.get(
-      "https://companion.ajaywatpade.in/api/my-date-invitations",
-      { headers: { Authorization: `Bearer ${token}` } }
-    )
-    this.pendingInvitations = res.data.invitations || []
-  },
+      const token = localStorage.getItem("token")
+      const res = await axios.get(
+        "https://companion.ajaywatpade.in/api/my-date-invitations",
+        { headers: { Authorization: `Bearer ${token}` } }
+      )
+      this.pendingInvitations = res.data.invitations || []
+    },
 
-  async acceptInvite(id) {
-    const token = localStorage.getItem("token")
-    await axios.post(
-      `https://companion.ajaywatpade.in/api/accept-invitation/${id}`,
-      {},
-      { headers: { Authorization: `Bearer ${token}` } }
-    )
-    this.fetchPendingInvitations() // refresh
-  },
+    async acceptInvite(id) {
+      const token = localStorage.getItem("token")
+      await axios.post(
+        `https://companion.ajaywatpade.in/api/accept-invitation/${id}`,
+        {},
+        { headers: { Authorization: `Bearer ${token}` } }
+      )
+      this.toast.show("Date invitation accepted! 🎉", "success")
+      this.fetchPendingInvitations()
+    },
 
-  async declineInvite(id) {
-    const token = localStorage.getItem("token")
-    await axios.post(
-      `https://companion.ajaywatpade.in/api/decline-invitation/${id}`,
-      {},
-      { headers: { Authorization: `Bearer ${token}` } }
-    )
-    this.fetchPendingInvitations() // refresh
-  },
+    async declineInvite(id) {
+      const token = localStorage.getItem("token")
+      await axios.post(
+        `https://companion.ajaywatpade.in/api/decline-invitation/${id}`,
+        {},
+        { headers: { Authorization: `Bearer ${token}` } }
+      )
+      this.toast.show("Invitation declined", "info")
+      this.fetchPendingInvitations()
+    },
+
     async inviteForDate() {
-  const toast = useToastStore()
-
-  if (!this.schedule.date || !this.schedule.time) {
-    toast.show("Please select date & time 💖", "error")
-    return
-  }
-
-  try {
-    // Send invitation to API
-    await axios.post(
-      "https://companion.ajaywatpade.in/api/invite-date",
-      {
-        invitee_id: this.person.id,
-        place_title: this.selectedPlace.title,
-        place_type: this.selectedPlace.type,
-        place_image: this.selectedPlace.image,
-        place_location: this.selectedPlace.location,
-        schedule_date: this.schedule.date,
-        schedule_time: this.schedule.time,
-        note: this.schedule.note
-      },
-      {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`
-        }
+      if (!this.schedule.date || !this.schedule.time) {
+        this.toast.show("Please select date & time 💖", "error")
+        return
       }
-    )
 
-    toast.show(
-      `Invitation sent to ${this.person.first_name} 💌`,
-      "success"
-    )
+      try {
+        await axios.post(
+          "https://companion.ajaywatpade.in/api/invite-date",
+          {
+            invitee_id: this.person.id,
+            place_title: this.selectedPlace.title,
+            place_type: this.selectedPlace.type,
+            place_image: this.selectedPlace.image,
+            place_location: this.selectedPlace.location,
+            schedule_date: this.schedule.date,
+            schedule_time: this.schedule.time,
+            note: this.schedule.note
+          },
+          {
+            headers: { Authorization: `Bearer ${localStorage.getItem("token")}` }
+          }
+        )
+        this.toast.show(`Invitation sent to ${this.person.first_name} 💌`, "success")
+        this.closeScheduleModal()
+      } catch (error) {
+        console.error(error)
+        this.toast.show("Failed to send invitation 😢", "error")
+      }
+    },
 
-    this.closeScheduleModal()
-  } catch (error) {
-    console.error(error)
-    toast.show("Failed to send invitation 😢", "error")
-  }
-},
     openScheduleModal(place) {
-  this.selectedPlace = place
-  this.showScheduleModal = true
-},
+      this.selectedPlace = place
+      this.showScheduleModal = true
+    },
 
-closeScheduleModal() {
-  this.showScheduleModal = false
-  this.schedule = { date: "", time: "", note: "" }
-},
-
-async confirmSchedule() {
-  const toast = useToastStore()
-
-  if (!this.schedule.date || !this.schedule.time) {
-    toast.show("Please select date & time 💖", "error")
-    return
-  }
-
-  try {
-    // Make API request to store date
-    await axios.post(
-      "https://companion.ajaywatpade.in/api/schedule-date",
-      {
-        invitee_id: this.person.id,
-        place_title: this.selectedPlace.title,
-        place_type: this.selectedPlace.type,
-        place_image: this.selectedPlace.image,
-        place_location: this.selectedPlace.location,
-        schedule_date: this.schedule.date,
-        schedule_time: this.schedule.time,
-        note: this.schedule.note
-      },
-      {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`
-        }
-      }
-    )
-
-    toast.show(
-      `Date scheduled with ${this.person.first_name} 💕`,
-      "success"
-    )
-
-    this.closeScheduleModal()
-  } catch (error) {
-    console.error(error)
-    toast.show("Failed to schedule date 😢", "error")
-  }
-},
-
-
-    openMap(place) {
-  const query = encodeURIComponent(place.location)
-  const url = `https://www.google.com/maps/search/?api=1&query=${query}`
-  window.open(url, "_blank")
-},
+    closeScheduleModal() {
+      this.showScheduleModal = false
+      this.schedule = { date: "", time: "", note: "" }
+    },
 
     async fetchPerson() {
       const res = await axios.get(
         `https://companion.ajaywatpade.in/api/users/${this.$route.params.id}`,
-        {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`
-          }
-        }
+        { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } }
       )
-
       if (res.data.success) {
         const user = res.data.user
         this.person = {
@@ -330,13 +356,8 @@ async confirmSchedule() {
       const res = await axios.post(
         "https://companion.ajaywatpade.in/api/match-status",
         { user_id: this.$route.params.id },
-        {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`
-          }
-        }
+        { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } }
       )
-
       this.matchStatus = res.data.status
     }
   }
@@ -344,139 +365,132 @@ async confirmSchedule() {
 </script>
 
 <style scoped>
-
 .date-planner-page {
-  padding: 20px;
-  background: #fafafa;
-}
-
-.planner-header {
-  display: flex;
-  align-items: center;
-  gap: 15px;
-  margin-bottom: 25px;
-}
-
-.planner-avatar {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  object-fit: cover;
-}
-
-.planner-filters {
-  display: flex;
-  gap: 10px;
-  margin-bottom: 20px;
-}
-
-.planner-filters button {
-  padding: 8px 16px;
-  border: none;
-  border-radius: 20px;
-  cursor: pointer;
-  background: #eee;
-}
-
-.planner-filters .active {
-  background: #ff4e88;
-  color: white;
-}
-
-.planner-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 20px;
-}
-
-.planner-card {
-  background: white;
-  border-radius: 15px;
-  overflow: hidden;
-  box-shadow: 0 6px 20px rgba(0,0,0,0.08);
-  transition: 0.3s;
-}
-
-.planner-card:hover {
-  transform: translateY(-5px);
-}
-
-.planner-card img {
-  width: 100%;
-  height: 170px;
-  object-fit: cover;
-}
-
-.planner-info {
-  padding: 15px;
-}
-
-.book-btn {
-  margin-top: 10px;
-  background: linear-gradient(135deg, #ff4e88, #ff8c68);
-  border: none;
-  color: white;
-  padding: 8px 14px;
-  border-radius: 20px;
-  cursor: pointer;
-}
-.date-plan-title{
-    font-size: 15px!important;
-}
-p{
-    font-size: 10px;
-}
-.date-planner-page {
-  padding: 20px;
-  background: #f4f6f9;
   min-height: 100vh;
+  background: linear-gradient(180deg, #fdf8f9 0%, #ffffff 100%);
+  padding: 20px;
 }
 
-/* ================= HEADER ================= */
-
+/* ================= PREMIUM HEADER ================= */
 .planner-header {
-  background: linear-gradient(135deg, #ff4e88, #ff8c68);
-  padding: 20px;
-  border-radius: 18px;
-  color: white;
-  margin-bottom: 25px;
-  box-shadow: 0 10px 30px rgba(255, 78, 136, 0.25);
+  background: linear-gradient(135deg, #ff4d6d, #ff2e63, #ff6b8a);
+  border-radius: 32px;
+  padding: 24px;
+  margin-bottom: 28px;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 20px 35px -10px rgba(255, 46, 99, 0.3);
+}
+
+.header-glow {
+  position: absolute;
+  top: -50%;
+  right: -20%;
+  width: 200px;
+  height: 200px;
+  background: radial-gradient(circle, rgba(255,255,255,0.3), transparent);
+  border-radius: 50%;
+  animation: float 6s ease-in-out infinite;
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0) scale(1); }
+  50% { transform: translateY(-15px) scale(1.05); }
 }
 
 .planner-user {
   display: flex;
   align-items: center;
-  gap: 15px;
+  gap: 18px;
+  position: relative;
+  z-index: 2;
+}
+
+.avatar-wrapper {
+  position: relative;
 }
 
 .planner-avatar {
-  width: 55px;
-  height: 55px;
+  width: 65px;
+  height: 65px;
   border-radius: 50%;
   object-fit: cover;
-  border: 2px solid white;
+  border: 3px solid white;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.2);
 }
 
-.planner-header h2 {
-  margin: 0;
+.avatar-ring {
+  position: absolute;
+  top: -3px;
+  left: -3px;
+  right: -3px;
+  bottom: -3px;
+  border-radius: 50%;
+  border: 2px solid rgba(255,255,255,0.5);
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { transform: scale(1); opacity: 0.6; }
+  50% { transform: scale(1.1); opacity: 0.2; }
+}
+
+.user-info h2 {
+  color: white;
   font-size: 18px;
   font-weight: 600;
+  margin: 0 0 4px 0;
 }
 
-.planner-header p {
+.user-info p {
+  color: rgba(255,255,255,0.9);
+  font-size: 14px;
   margin: 0;
-  font-size: 13px;
-  opacity: 0.9;
+}
+
+.highlight {
+  font-weight: 700;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.1);
+}
+
+.heart-beat {
+  display: inline-block;
+  animation: heartbeat 1.2s ease-in-out infinite;
+}
+
+@keyframes heartbeat {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.2); }
+}
+
+.header-stats {
+  position: absolute;
+  bottom: 16px;
+  right: 20px;
+  z-index: 2;
+}
+
+.stat-badge {
+  background: rgba(255,255,255,0.2);
+  backdrop-filter: blur(10px);
+  padding: 6px 14px;
+  border-radius: 30px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: white;
+  font-size: 11px;
+  font-weight: 500;
 }
 
 /* ================= FILTERS ================= */
-
 .planner-filters {
   display: flex;
-  gap: 10px;
-  margin-bottom: 20px;
+  gap: 12px;
+  margin-bottom: 28px;
   overflow-x: auto;
-  padding-bottom: 5px;
+  padding-bottom: 8px;
+  scrollbar-width: none;
 }
 
 .planner-filters::-webkit-scrollbar {
@@ -484,203 +498,339 @@ p{
 }
 
 .planner-filters button {
-  padding: 8px 18px;
-  border: none;
-  border-radius: 30px;
-  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
   background: white;
+  border: none;
+  border-radius: 50px;
   font-size: 13px;
   font-weight: 500;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.06);
-  transition: 0.2s ease;
+  color: #666;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
   white-space: nowrap;
 }
 
 .planner-filters button:hover {
   transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0,0,0,0.1);
 }
 
 .planner-filters .active {
-  background: linear-gradient(135deg, #ff4e88, #ff8c68);
+  background: linear-gradient(135deg, #ff4d6d, #ff2e63);
   color: white;
-  box-shadow: 0 6px 18px rgba(255, 78, 136, 0.35);
+  box-shadow: 0 6px 16px rgba(255, 46, 99, 0.3);
+}
+
+.filter-icon {
+  font-size: 16px;
 }
 
 /* ================= GRID ================= */
-
 .planner-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: 20px;
+  margin-bottom: 30px;
 }
 
 /* ================= CARD ================= */
-
 .planner-card {
   background: white;
-  border-radius: 18px;
+  border-radius: 24px;
   overflow: hidden;
-  box-shadow: 0 10px 25px rgba(0,0,0,0.08);
-  transition: all 0.25s ease;
-  display: flex;
-  flex-direction: column;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+  transition: all 0.3s cubic-bezier(0.23, 1, 0.32, 1);
+  animation: cardFadeIn 0.5s ease-out backwards;
+}
+
+@keyframes cardFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .planner-card:hover {
   transform: translateY(-6px);
-  box-shadow: 0 15px 35px rgba(0,0,0,0.12);
+  box-shadow: 0 20px 35px -12px rgba(255, 46, 99, 0.2);
 }
 
-.planner-card img {
-  width: 100%;
+.card-image {
+  position: relative;
+  overflow: hidden;
   height: 180px;
+}
+
+.card-image img {
+  width: 100%;
+  height: 100%;
   object-fit: cover;
+  transition: transform 0.4s ease;
+}
+
+.planner-card:hover .card-image img {
+  transform: scale(1.08);
+}
+
+.card-type-badge {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  background: rgba(0,0,0,0.7);
+  backdrop-filter: blur(8px);
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 10px;
+  font-weight: 600;
+  color: white;
+  z-index: 2;
+}
+
+.card-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(180deg, transparent 0%, rgba(0,0,0,0.3) 100%);
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.planner-card:hover .card-overlay {
+  opacity: 1;
 }
 
 .planner-info {
   padding: 16px;
-  flex-grow: 1;
-  display: flex;
-  flex-direction: column;
 }
 
 .planner-info h4 {
+  font-size: 16px;
+  font-weight: 700;
   margin: 0 0 6px 0;
-  font-size: 15px;
-  font-weight: 600;
-  color: #222;
+  color: #1a1a2e;
 }
 
 .planner-info p {
   font-size: 12px;
-  color: #666;
-  margin-bottom: 15px;
-  flex-grow: 1;
+  color: #777;
+  line-height: 1.4;
+  margin: 0 0 10px 0;
 }
 
-/* ================= BUTTON ================= */
+.card-location {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  color: #ff4d6d;
+  margin-bottom: 14px;
+}
 
 .book-btn {
-  background: linear-gradient(135deg, #ff4e88, #ff8c68);
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: linear-gradient(135deg, #ff4d6d, #ff2e63);
   border: none;
+  padding: 10px 16px;
+  border-radius: 40px;
   color: white;
-  padding: 9px 14px;
-  border-radius: 25px;
-  cursor: pointer;
   font-size: 12px;
-  font-weight: 500;
-  transition: 0.2s ease;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
 }
 
 .book-btn:hover {
-  transform: scale(1.05);
-  box-shadow: 0 6px 18px rgba(255, 78, 136, 0.3);
+  transform: scale(1.02);
+  box-shadow: 0 6px 18px rgba(255, 46, 99, 0.4);
 }
 
-/* ================= MOBILE POLISH ================= */
-
-@media (max-width: 480px) {
-  .planner-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .planner-header h2 {
-    font-size: 16px;
-  }
-
-  .planner-avatar {
-    width: 48px;
-    height: 48px;
-  }
+/* ================= PENDING INVITATIONS ================= */
+.pending-invitations {
+  margin-top: 40px;
 }
-/* ================= MODAL OVERLAY ================= */
 
-.modal-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,0.5);
-  backdrop-filter: blur(4px);
+.section-header {
   display: flex;
-  justify-content: center;
-  align-items: flex-end;
-  z-index: 999;
-  animation: fadeIn 0.2s ease;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+  padding-bottom: 12px;
+  border-bottom: 2px solid #ffe2ea;
+}
+
+.section-icon {
+  font-size: 28px;
+}
+
+.section-header h3 {
+  font-size: 18px;
+  font-weight: 700;
+  color: #1a1a2e;
+  margin: 0;
+}
+
+.pending-count {
+  background: #ff4d6d;
+  color: white;
+  padding: 2px 10px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.invitations-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.invite-card {
+  background: white;
+  border-radius: 20px;
+  overflow: hidden;
+  display: flex;
+  gap: 16px;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.06);
+  transition: all 0.25s ease;
+  border: 1px solid #f0f0f0;
+}
+
+.invite-card:hover {
+  transform: translateX(4px);
+  box-shadow: 0 10px 25px rgba(255, 46, 99, 0.12);
+}
+
+.invite-image {
+  position: relative;
+  width: 110px;
+  flex-shrink: 0;
+}
+
+.invite-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.invite-type {
+  position: absolute;
+  bottom: 8px;
+  left: 8px;
+  background: rgba(0,0,0,0.7);
+  backdrop-filter: blur(8px);
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 9px;
+  font-weight: 600;
+  color: white;
+}
+
+.invite-content {
+  flex: 1;
+  padding: 14px 14px 14px 0;
+}
+
+.invite-content h4 {
+  font-size: 15px;
+  font-weight: 700;
+  margin: 0 0 8px 0;
+  color: #1a1a2e;
+}
+
+.invite-details {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.detail-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: #666;
+}
+
+.detail-item svg {
+  flex-shrink: 0;
+  color: #ff4d6d;
+}
+
+.invite-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.accept-btn, .decline-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 30px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: none;
+}
+
+.accept-btn {
+  background: linear-gradient(135deg, #28a745, #34ce57);
+  color: white;
+}
+
+.decline-btn {
+  background: linear-gradient(135deg, #dc3545, #ff6b6b);
+  color: white;
+}
+
+.accept-btn:hover, .decline-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
 }
 
 /* ================= MODAL ================= */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.6);
+  backdrop-filter: blur(8px);
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  z-index: 1000;
+}
+
+.modal-fade-enter-active, .modal-fade-leave-active {
+  transition: opacity 0.25s;
+}
+.modal-fade-enter, .modal-fade-leave-to {
+  opacity: 0;
+}
 
 .schedule-modal {
   width: 100%;
-  max-width: 500px;
+  max-width: 480px;
   background: white;
-  border-top-left-radius: 25px;
-  border-top-right-radius: 25px;
-  padding: 25px;
-  animation: slideUp 0.3s ease;
-  box-shadow: 0 -10px 30px rgba(0,0,0,0.15);
+  border-radius: 32px 32px 0 0;
+  padding: 24px;
+  animation: slideUp 0.3s cubic-bezier(0.23, 1, 0.32, 1);
 }
-
-.schedule-modal h3 {
-  margin-top: 0;
-  font-size: 18px;
-  font-weight: 600;
-}
-
-.selected-place {
-  font-size: 13px;
-  color: #888;
-  margin-bottom: 20px;
-}
-
-/* ================= INPUTS ================= */
-
-.schedule-modal label {
-  font-size: 12px;
-  font-weight: 500;
-  margin-top: 12px;
-  display: block;
-}
-
-.schedule-modal input,
-.schedule-modal textarea {
-  width: 100%;
-  padding: 10px;
-  margin-top: 6px;
-  border-radius: 12px;
-  border: 1px solid #ddd;
-  font-size: 13px;
-  outline: none;
-  transition: 0.2s;
-}
-
-.schedule-modal input:focus,
-.schedule-modal textarea:focus {
-  border-color: #ff4e88;
-  box-shadow: 0 0 0 2px rgba(255, 78, 136, 0.2);
-}
-
-/* ================= BUTTON ================= */
-
-.confirm-btn {
-  width: 100%;
-  margin-top: 20px;
-  padding: 12px;
-  border-radius: 30px;
-  border: none;
-  background: linear-gradient(135deg, #ff4e88, #ff8c68);
-  color: white;
-  font-weight: 600;
-  font-size: 14px;
-  cursor: pointer;
-  transition: 0.2s;
-}
-
-.confirm-btn:hover {
-  transform: scale(1.03);
-  box-shadow: 0 8px 25px rgba(255, 78, 136, 0.3);
-}
-
-/* ================= ANIMATIONS ================= */
 
 @keyframes slideUp {
   from {
@@ -691,125 +841,129 @@ p{
   }
 }
 
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
 }
 
-/* Pending Invitations Section */
-.pending-invitations {
-  margin-top: 30px;
-  padding: 0 10px;
+.modal-icon {
+  font-size: 32px;
 }
 
-.pending-invitations h3 {
-  text-align: center;
-  font-size: 22px;
+.modal-header h3 {
+  font-size: 18px;
   font-weight: 700;
-  color: #ff4d6d;
+  margin: 0;
+  color: #1a1a2e;
+}
+
+.modal-close {
+  background: #f0f0f0;
+  border: none;
+  width: 32px;
+  height: 32px;
+  border-radius: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.modal-close:hover {
+  background: #e0e0e0;
+  transform: rotate(90deg);
+}
+
+.selected-place {
+  text-align: center;
+  padding: 12px;
+  background: #fff0f3;
+  border-radius: 20px;
+  font-size: 13px;
+  color: #666;
   margin-bottom: 20px;
 }
 
-/* Invitation Card */
-.invite-card {
-  display: flex;
-  gap: 16px;
-  background: #fff;
-  border-radius: 16px;
-  padding: 14px;
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.06);
-  border: 1px solid #f1f1f1;
+.selected-place strong {
+  color: #ff4d6d;
+}
+
+.form-group {
   margin-bottom: 16px;
-  transition: all 0.25s ease;
 }
 
-.invite-card:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
-}
-
-/* Invite Image */
-.invite-img {
-  width: 100px;
-  height: 100px;
-  border-radius: 14px;
-  object-fit: cover;
-  border: 2px solid #fff;
-  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15);
-}
-
-/* Invite Info */
-.invite-info {
-  flex: 1;
-}
-
-.invite-info h4 {
-  font-size: 18px;
-  font-weight: 600;
-  margin-bottom: 6px;
-  color: #222;
-}
-
-.invite-info p {
-  font-size: 14px;
-  color: #555;
-  margin-bottom: 4px;
-}
-
-/* Actions Buttons */
-.invite-actions {
+.form-group label {
   display: flex;
-  gap: 10px;
-  margin-top: 10px;
-}
-
-.invite-actions button {
-  padding: 6px 14px;
-  border-radius: 10px;
-  font-size: 13px;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
   font-weight: 600;
-  cursor: pointer;
+  color: #555;
+  margin-bottom: 6px;
+}
+
+.form-group input, .form-group textarea {
+  width: 100%;
+  padding: 12px;
+  border: 1.5px solid #eee;
+  border-radius: 16px;
+  font-size: 13px;
+  transition: all 0.2s;
+  outline: none;
+}
+
+.form-group input:focus, .form-group textarea:focus {
+  border-color: #ff4d6d;
+  box-shadow: 0 0 0 3px rgba(255, 77, 109, 0.1);
+}
+
+.confirm-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  background: linear-gradient(135deg, #ff4d6d, #ff2e63);
   border: none;
-  transition: all 0.2s ease;
+  padding: 14px;
+  border-radius: 40px;
+  color: white;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-top: 8px;
 }
 
-/* Accept Button */
-.invite-actions button:first-child {
-  background: linear-gradient(135deg, #28a745, #61c25f);
-  color: #fff;
+.confirm-btn:hover {
+  transform: scale(1.02);
+  box-shadow: 0 8px 25px rgba(255, 46, 99, 0.4);
 }
 
-.invite-actions button:first-child:hover {
-  transform: scale(1.05);
-  box-shadow: 0 4px 12px rgba(40, 167, 69, 0.4);
-}
-
-/* Decline Button */
-.invite-actions button:last-child {
-  background: linear-gradient(135deg, #dc3545, #ff6b6b);
-  color: #fff;
-}
-
-.invite-actions button:last-child:hover {
-  transform: scale(1.05);
-  box-shadow: 0 4px 12px rgba(220, 53, 69, 0.4);
-}
-
-/* Responsive */
+/* ================= RESPONSIVE ================= */
 @media (max-width: 600px) {
+  .date-planner-page {
+    padding: 16px;
+  }
+  
   .invite-card {
     flex-direction: column;
-    align-items: center;
-    text-align: center;
   }
-
-  .invite-img {
-    width: 80px;
-    height: 80px;
+  
+  .invite-image {
+    width: 100%;
+    height: 140px;
   }
-
-  .invite-actions {
-    justify-content: center;
+  
+  .invite-content {
+    padding: 14px;
+  }
+  
+  .planner-grid {
+    grid-template-columns: 1fr;
   }
 }
 </style>

@@ -1,246 +1,237 @@
 <template>
-  <div>
-    <!-- TOAST NOTIFICATION -->
-<div class="toast-container">
-  <div
-    v-if="toast.show"
-    :class="['toast', toast.type]"
-  >
-    {{ toast.message }}
-  </div>
-</div>
-    <!-- SKELETON LOADER -->
-    <div v-if="loading" class="details-skeleton">
-      <!-- Header -->
-      <div class="skeleton-header"></div>
-
-      <!-- Card -->
-      <div class="skeleton-card">
-        <!-- Insta Profile -->
-        <div class="skeleton-insta">
-          <div class="skeleton-avatar shimmer"></div>
-
-          <div class="skeleton-right">
-            <div class="skeleton-line name shimmer"></div>
-
-            <div class="skeleton-stats">
-              <div class="skeleton-stat shimmer"></div>
-              <div class="skeleton-stat shimmer"></div>
-              <div class="skeleton-stat shimmer"></div>
-            </div>
-
-            <div class="skeleton-btn shimmer"></div>
-          </div>
+  <div class="dating-app">
+    <!-- PREMIUM TOAST NOTIFICATION -->
+    <transition name="toast-slide">
+      <div v-if="toast.show" :class="['premium-toast', toast.type]">
+        <div class="toast-icon">
+          <svg v-if="toast.type === 'success'" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+          <svg v-else width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
         </div>
-
-        <!-- Intro -->
-        <div class="skeleton-intro">
-          <div class="skeleton-line full shimmer"></div>
-          <div class="skeleton-line full shimmer"></div>
-          <div class="skeleton-line half shimmer"></div>
-        </div>
-
-        <!-- Habits -->
-        <div class="skeleton-habit shimmer"></div>
-
-        <!-- Gallery -->
-        <div class="skeleton-gallery">
-          <div class="skeleton-photo shimmer"></div>
-          <div class="skeleton-photo shimmer"></div>
-          <div class="skeleton-photo shimmer"></div>
-        </div>
+        <span>{{ toast.message }}</span>
       </div>
+    </transition>
 
-      <!-- Bottom Bar -->
-      <div class="skeleton-bottom">
-        <div class="skeleton-price shimmer"></div>
-        <div class="skeleton-action shimmer"></div>
+    <!-- SKELETON LOADER -->
+    <div v-if="loading" class="skeleton-wrapper">
+      <div class="skeleton-hero shimmer"></div>
+      <div class="skeleton-card">
+        <div class="skeleton-avatar shimmer"></div>
+        <div class="skeleton-line w-50 shimmer"></div>
+        <div class="skeleton-line w-35 shimmer"></div>
+        <div class="skeleton-stats">
+          <div class="skeleton-stat shimmer"></div>
+          <div class="skeleton-stat shimmer"></div>
+          <div class="skeleton-stat shimmer"></div>
+        </div>
+        <div class="skeleton-buttons">
+          <div class="skeleton-btn shimmer"></div>
+          <div class="skeleton-btn shimmer"></div>
+        </div>
+        <div class="skeleton-bio shimmer"></div>
+        <div class="skeleton-habits shimmer"></div>
+        <div class="skeleton-gallery">
+          <div class="skeleton-img shimmer"></div>
+          <div class="skeleton-img shimmer"></div>
+          <div class="skeleton-img shimmer"></div>
+        </div>
       </div>
     </div>
 
-    <!-- ACTUAL CONTENT -->
-    <div v-else-if="person" class="details">
-      <!-- Header -->
-      <div class="details-header">
-     
+    <!-- MAIN PROFILE CONTENT -->
+    <div v-else-if="person" class="profile-page">
+      <!-- HERO SECTION WITH BACKGROUND IMAGE -->
+      <div class="hero-section" :style="{ backgroundImage: `url(${person.profile_photo})` }">
+        <div class="hero-overlay"></div>
+        
+        <!-- Back Button -->
+        <div class="hero-back-btn" @click="$router.back()">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+        </div>
+        
+        <!-- Verified Badge -->
+        <div class="hero-badge" v-if="person.verified_badge == 1">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+          <span>Verified</span>
+        </div>
+        
+        <!-- Hero Info -->
+        <div class="hero-info">
+          <h1 class="hero-name">{{ person.first_name }} <span class="hero-age">{{ age }}</span></h1>
+          <div class="hero-location">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+            <span>{{ person.city || 'Finding Love' }}</span>
+          </div>
+          <div class="hero-quote">"{{ person.subtitle || 'Looking for something real' }}"</div>
+        </div>
+        
+        <!-- Wave SVG (properly displayed) -->
+       
       </div>
 
-      <!-- Card -->
-      <div class="details-card">
-        <div class="insta-profile">
-          <!-- LEFT COLUMN -->
-          <div class="insta-left">
-            <img class="insta-avatar" :src="person.profile_photo" />
-            <p class="insta-subtitle" v-if="person.subtitle">
-              {{ person.subtitle }}
-            </p>
+      <!-- PROFILE CARD -->
+      <div class="profile-card">
+        <!-- Stats Row -->
+        <div class="stats-row">
+          <div class="stat-item">
+            <div class="stat-value">{{ formatNumber(person.followers_count || 0) }}</div>
+            <div class="stat-label">Followers</div>
           </div>
+          <div class="stat-divider"></div>
+          <div class="stat-item">
+            <div class="stat-value">{{ formatNumber(person.following_count || 0) }}</div>
+            <div class="stat-label">Following</div>
+          </div>
+          <div class="stat-divider"></div>
+          <div class="stat-item">
+            <div class="stat-value">{{ person.photo_gallery?.length || 0 }}</div>
+            <div class="stat-label">Posts</div>
+          </div>
+        </div>
 
-          <!-- RIGHT COLUMN -->
-        <div class="insta-right">
-  <div class="insta-name-row">
-    <span class="insta-name">{{ person.first_name }}</span>
-    <img
-      v-if="person.verified_badge == 1"
-      src="@/assets/verified1.png"
-      class="verified"
+        <!-- Action Buttons -->
+        <div class="buttons-row">
+          <button class="btn-follow" :class="{ 'active': isFollowing }" @click="toggleFollow">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" :stroke="isFollowing ? 'white' : '#333'" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            <span>{{ isFollowing ? 'Following' : 'Follow' }}</span>
+          </button>
+          <button class="btn-match" :class="matchClass" :disabled="matchLoading" @click="handleMatch">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+            <span>{{ matchText }}</span>
+          </button>
+        </div>
+
+        <!-- About Section -->
+        <div class="about-section">
+          <div class="section-title">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ff4d6d" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            <h3>About</h3>
+          </div>
+          <div class="about-text">
+            <p>{{ introMessage }}</p>
+          </div>
+          <div class="info-grid">
+            <div class="info-item" v-if="person.dob">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ff4d6d" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+              <span>Born</span>
+              <strong>{{ formatDate(person.dob) }}</strong>
+            </div>
+            <div class="info-item" v-if="person.status">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ff4d6d" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+              <span>Status</span>
+              <strong>{{ person.status }}</strong>
+            </div>
+            <div class="info-item" v-if="person.city">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ff4d6d" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+              <span>Lives in</span>
+              <strong>{{ person.city }}</strong>
+            </div>
+          </div>
+        </div>
+
+        <!-- Habits Section -->
+        <div class="habits-section" v-if="formattedHabits && formattedHabits.length">
+          <div class="section-title">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ff4d6d" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+            <h3>Habits & Interests</h3>
+          </div>
+          <div class="habits-container">
+            <div v-for="habit in getHabitsArray" :key="habit" class="habit-pill">
+              <span class="habit-dot"></span>
+              {{ habit }}
+            </div>
+          </div>
+        </div>
+
+        <!-- Gallery Section -->
+        <div class="gallery-section">
+          <div class="section-title">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ff4d6d" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="2.5"/><polyline points="21 15 16 10 5 21"/></svg>
+            <h3>Gallery</h3>
+            <span class="gallery-count">{{ person.photo_gallery?.length || 0 }} photos</span>
+          </div>
+          <div class="gallery-grid">
+            <div
+              v-for="(img, idx) in person.photo_gallery.slice(0, 6)"
+              :key="idx"
+              class="gallery-item"
+              :class="{ 'grid-span-2': idx === 0 && person.photo_gallery.length >= 3 }"
+              @click="openViewer(idx)"
+            >
+              <img :src="img" :alt="`Gallery ${idx + 1}`" />
+              <div class="gallery-hover">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- BOTTOM ACTION BAR -->
+      <div class="bottom-action-bar">
+        <button class="action-chat" :disabled="matchStatus !== 'matched'" :class="{ 'disabled': matchStatus !== 'matched' }" @click="openChat">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          <span>Message</span>
+          <div class="action-glow" v-if="matchStatus === 'matched'"></div>
+        </button>
+        <button class="action-date" :disabled="matchStatus !== 'matched'" :class="{ 'disabled': matchStatus !== 'matched' }" @click="planDate">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><path d="M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01M16 18h.01"/></svg>
+          <span>Plan Date</span>
+        </button>
+      </div>
+
+      <!-- IMAGE VIEWER MODAL -->
+      <transition name="viewer-fade">
+        <div v-if="viewerOpen" class="image-viewer" @click="viewerOpen = false">
+          <div class="viewer-top">
+            <button class="viewer-close" @click.stop="viewerOpen = false">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+            <div class="viewer-counter">{{ currentIndex + 1 }} / {{ person.photo_gallery.length }}</div>
+          </div>
+          <div class="viewer-main">
+            <button v-if="currentIndex > 0" class="viewer-nav prev" @click.stop="currentIndex--">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+            </button>
+            <img :src="person.photo_gallery[currentIndex]" class="viewer-image" @click.stop />
+            <button v-if="currentIndex < person.photo_gallery.length - 1" class="viewer-nav next" @click.stop="currentIndex++">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+            </button>
+          </div>
+          <div class="viewer-bottom">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="#ff4d6d" stroke="none"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+            <span>{{ person.first_name }}'s moment</span>
+          </div>
+        </div>
+      </transition>
+    </div>
+
+    <!-- CONFIRMATION MODAL -->
+    <transition name="modal-pop">
+      <div v-if="confirmDialog.show" class="modal-backdrop">
+        <div class="confirm-modal">
+          <div class="modal-heart">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="#ff4d6d" stroke="none"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+          </div>
+          <h3>Remove Connection?</h3>
+          <p>{{ confirmDialog.message }}</p>
+          <div class="modal-buttons">
+            <button class="modal-cancel" @click="confirmDialog.show = false">Cancel</button>
+            <button class="modal-confirm" @click="confirmDialog.onConfirm()">Yes, Remove</button>
+          </div>
+        </div>
+      </div>
+    </transition>
+
+    <!-- CHAT POPUP COMPONENT -->
+    <ChatPopup
+      :person="person"
+      :showChat="showChat"
+      :userId="loggedInUserId"
+      :canChat="matchStatus === 'matched'"
+      @close="showChat = false"
     />
   </div>
-
-  <div class="insta-stats">
-    <div class="insta-stat">
-      <strong>{{ person.photo_gallery?.length || 0 }}</strong>
-      <span>Posts</span>
-    </div>
-    <div class="insta-stat">
-      <strong>{{ person.followers_count || 0 }}</strong>
-      <span>Followers</span>
-    </div>
-    <div class="insta-stat">
-      <strong>{{ person.following_count || 0 }}</strong>
-      <span>Following</span>
-    </div>
-  </div>
-
-  <!-- Buttons Row -->
-  <div class="insta-btn-row">
-    <button
-      v-if="isFollowing !== null"
-      class="insta-follow-btn"
-      :class="{ following: isFollowing }"
-      @click="toggleFollow"
-    >
-      {{ isFollowing ? "Following" : "Follow" }}
-    </button>
-
- <button
-  class="insta-match-btn"
-  :class="{
-    requested: matchStatus === 'requested',
-    matched: matchStatus === 'matched'
-  }"
-  :disabled="matchLoading"
-  @click="handleMatch"
->
-  <span v-if="matchStatus === null">Match</span>
-  <span v-else-if="matchStatus === 'requested'">Requested</span>
-  <span v-else>Matched</span>
-</button>
-
-  </div>
-</div>
-
-        </div>
-
-        <!-- Self Introduction -->
-        <div class="section intro-section">
-          <div class="intro-card">
-            <p class="intro-text">{{ introMessage }}</p>
-          </div>
-        </div>
-
-        <!-- Stats -->
-        <div class="stats">
-          <div class="stat">
-            <strong>{{ person.like_count || 0 }}</strong>
-            <span>Likes ❤️</span>
-          </div>
-          <!-- <div class="stat">
-            <strong>{{ person.comments || 0 }}</strong>
-            <span>Comments 💬</span>
-          </div> -->
-          <div class="stat">
-            <strong>{{ person.rating || '4.5' }}</strong>
-            <span>Profile Score ⭐</span>
-          </div>
-        </div>
-
-        <!-- Habits -->
-        <div class="section" v-if="formattedHabits && formattedHabits.length">
-          <h4 class="section-title">Habits</h4>
-          <div class="habit-card">
-            <span class="habit-text">🌿 {{ formattedHabits }}</span>
-          </div>
-        </div>
-
-        <!-- Photo Gallery -->
-        <div class="section">
-          <h4 class="section-title">More Photos</h4>
-          <div class="photo-gallery">
-            <div
-              v-for="(img, index) in person.photo_gallery"
-              :key="index"
-              class="photo-card"
-              @click="openViewer(index)"
-            >
-              <img :src="img" />
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Bottom Bar -->
-      <div class="bottom-bar">
-        <div class="price">
-          <strong></strong>
-        </div>
-
-        <!-- Only Button, Chat moved to separate component -->
-       <button 
-  class="messaging"
-  :disabled="matchStatus !== 'matched'"
-  :class="{ disabledBtn: matchStatus !== 'matched' }"
-  @click="openChat"
->
-  {{ matchStatus === 'matched' ? 'Start Messaging' : 'Match to Message' }}
-</button>
- <button 
-  class="dateplan"
-  :disabled="matchStatus !== 'matched'"
-  :class="{ disabledBtn: matchStatus !== 'matched' }"
-    @click="$router.push(`/date-planner/${person.id}`)"
->
-  {{ matchStatus === 'matched' ? 'Plan a Date ❤️' : 'Match to Date' }}
-</button>
-
-      </div>
-
-      <!-- Image Viewer -->
-      <div v-if="viewerOpen" class="viewer" @click="viewerOpen = false">
-        <span class="close" @click="viewerOpen = false">✕</span>
-        <img
-          :src="person.photo_gallery[currentIndex]"
-          class="viewer-img"
-          @click.stop
-        />
-      </div>
-
-      <!-- Success Overlay -->
-     
-    </div>
-<div v-if="confirmDialog.show" class="confirm-overlay">
-  <div class="confirm-modal">
-    <p>{{ confirmDialog.message }}</p>
-    <div class="confirm-buttons">
-      <button @click="confirmDialog.show = false">Cancel</button>
-      <button @click="confirmDialog.onConfirm()">Yes</button>
-    </div>
-  </div>
-</div>
-    <!-- Include Chat Popup Component -->
-<ChatPopup
-  :person="person"
-  :showChat="showChat"
-  :userId="loggedInUserId"
-  :canChat="matchStatus === 'matched'"
-  @close="showChat = false"
-/>
-
-
-
-  </div>
 </template>
-
 
 <script>
 import axios from "axios"
@@ -249,155 +240,139 @@ import { useNotificationStore } from '@/stores/notification'
 
 export default {
   name: "Details",
-   components: {
-    ChatPopup
-  },
+  components: { ChatPopup },
 
   data() {
     return {
-      confirmDialog: {
-      show: false,
-      message: "",
-      onConfirm: null
-    },
-
-      toast: {
-      show: false,
-      message: "",
-      type: "success", // success | error
-    },
-       notificationStore: useNotificationStore(),
-      showChat: false,         // controls chat popup
-      isFollowing: null,       // follow state
-      followLoading: false,    // follow/unfollow API loading
-      person: null,            // user details
-      loading: true,           // skeleton loader
-      viewerOpen: false,       // photo viewer
-      currentIndex: 0,          // photo viewer index
-        // MATCH STATES
-    matchStatus: null, // null | 'requested' | 'matched'
-    matchLoading: false,
-    refreshInterval: null,
+      confirmDialog: { show: false, message: "", onConfirm: null },
+      toast: { show: false, message: "", type: "success" },
+      notificationStore: useNotificationStore(),
+      showChat: false,
+      isFollowing: null,
+      followLoading: false,
+      person: null,
+      loading: true,
+      viewerOpen: false,
+      currentIndex: 0,
+      matchStatus: null,
+      matchLoading: false,
+      refreshInterval: null,
       loggedInUserId: 0,
     }
   },
 
-mounted() {
-  this.loggedInUserId = Number(localStorage.getItem("user_id")) || 0
-  this.fetchPerson()
- this.refreshInterval = setInterval(() => {
-    this.checkMatchStatus()
-  }, 5000)
-  window.addEventListener("popstate", this.handleBack)
-},
+  mounted() {
+    this.loggedInUserId = Number(localStorage.getItem("user_id")) || 0
+    this.fetchPerson()
+    this.refreshInterval = setInterval(() => this.checkMatchStatus(), 5000)
+    window.addEventListener("popstate", this.handleBack)
+  },
 
-beforeUnmount() {
-  window.removeEventListener("popstate", this.handleBack)
-  clearInterval(this.refreshInterval)
-},
+  beforeUnmount() {
+    window.removeEventListener("popstate", this.handleBack)
+    clearInterval(this.refreshInterval)
+  },
+
   computed: {
-    // Format habits nicely
+    getHabitsArray() {
+      if (!this.formattedHabits) return []
+      return this.formattedHabits.split(' • ').filter(h => h.trim())
+    },
+
     formattedHabits() {
       if (!this.person || !this.person.habits) return null
-
       let habits = this.person.habits
-
-      if (Array.isArray(habits)) {
-        return habits.length ? habits.join(" • ") : null
-      }
-
+      if (Array.isArray(habits)) return habits.length ? habits.join(" • ") : null
       if (typeof habits !== "string") return null
-
       habits = habits.trim()
       if (!habits || habits === "[]" || habits.toLowerCase() === "null") return null
-
       for (let i = 0; i < 2; i++) {
-        try {
-          habits = JSON.parse(habits)
-        } catch {
-          break
-        }
+        try { habits = JSON.parse(habits) } catch { break }
       }
-
       if (Array.isArray(habits)) return habits.length ? habits.join(" • ") : null
-
       if (typeof habits === "string") {
         habits = habits.replace(/^"+|"+$/g, "")
         if (habits.includes(",")) {
-          return habits
-            .split(",")
-            .map(h => h.trim())
-            .filter(Boolean)
-            .join(" • ")
+          return habits.split(",").map(h => h.trim()).filter(Boolean).join(" • ")
         }
         return habits
       }
-
       return null
     },
 
-    // Calculate age
     age() {
       if (!this.person || !this.person.dob) return null
-
       const dob = new Date(this.person.dob)
       const today = new Date()
-
       let age = today.getFullYear() - dob.getFullYear()
       const monthDiff = today.getMonth() - dob.getMonth()
-      if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < dob.getDate())) {
-        age--
-      }
-
+      if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < dob.getDate())) age--
       return age
     },
 
-    // Auto-generated intro message
     introMessage() {
       if (!this.person) return ""
+      return `${this.person.first_name} is a ${this.age}-year-old soul seeking genuine connections. With a heart full of dreams and a spirit for adventure, they believe in the magic of authentic relationships.`
+    },
 
-      const name = this.person.first_name || ""
-      const city = this.person.city || ""
-      const status = this.person.status || ""
-      const age = this.age
+    matchClass() {
+      if (this.matchStatus === 'requested') return 'requested'
+      if (this.matchStatus === 'matched') return 'matched'
+      return ''
+    },
 
-      return `Hi, my name is ${name}. I’m ${age} years old and I live in ${city}. I’m ${status} and here to find a genuine and meaningful connection. Looking forward to meeting the right companion and seeing where things go 😊.`
+    matchText() {
+      if (this.matchStatus === null) return 'Connect'
+      if (this.matchStatus === 'requested') return 'Requested'
+      return 'Connected'
     }
   },
 
   methods: {
+    formatNumber(num) {
+      if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M'
+      if (num >= 1000) return (num / 1000).toFixed(1) + 'K'
+      return num.toString()
+    },
+
+    formatDate(dateStr) {
+      if (!dateStr) return ''
+      const date = new Date(dateStr)
+      return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+    },
+
     showToast(message, type = "success") {
-    this.toast.message = message
-    this.toast.type = type
-    this.toast.show = true
+      this.toast = { show: true, message, type }
+      setTimeout(() => { this.toast.show = false }, 3000)
+    },
 
-    setTimeout(() => {
-      this.toast.show = false
-    }, 3000)
-  },
     handleBack(event) {
-  if (this.showChat) {
-    this.showChat = false
-  }
-},
+      if (this.showChat) this.showChat = false
+    },
 
-openChat() {
-  if (this.matchStatus !== 'matched') {
-    this.showToast("You can message only after matching 💕", "error")
-    return
-  }
-  this.showChat = true
-  window.history.pushState({ chat: true }, "")
-},
+    openChat() {
+      if (this.matchStatus !== 'matched') {
+        this.showToast("Connect first to start messaging 💕", "error")
+        return
+      }
+      this.showChat = true
+      window.history.pushState({ chat: true }, "")
+    },
 
+    planDate() {
+      if (this.matchStatus !== 'matched') {
+        this.showToast("Connect to plan a date ❤️", "error")
+        return
+      }
+      this.$router.push(`/date-planner/${this.person.id}`)
+    },
 
-async handleMatch() {
+  async handleMatch() {
   if (this.matchLoading || !this.person) return
   this.matchLoading = true
 
   try {
     if (this.matchStatus === null) {
-      // Send match request
       const res = await axios.post(
         "https://companion.ajaywatpade.in/api/send-match-request",
         { user_id: this.person.id },
@@ -406,10 +381,9 @@ async handleMatch() {
       if (res.data.success) {
         this.matchStatus = 'requested'
         this.notificationStore.increment()
+        this.showToast(`✨ Request sent to ${this.person.first_name}`, "success")
       }
-
     } else if (this.matchStatus === 'requested') {
-      // Cancel match request
       const res = await axios.post(
         "https://companion.ajaywatpade.in/api/cancel-match-request",
         { user_id: this.person.id },
@@ -417,15 +391,14 @@ async handleMatch() {
       )
       if (res.data.success) {
         this.matchStatus = null
+        this.showToast("Request cancelled", "success")
       }
-
     } else if (this.matchStatus === 'matched') {
-      // SHOW CONFIRMATION MODAL ONLY
       this.confirmDialog = {
         show: true,
-        message: `Are you sure you want to remove ${this.person.first_name} from your matches?`,
+        message: `Remove ${this.person.first_name} from your connections?`,
         onConfirm: async () => {
-          this.matchLoading = true // set loading while API runs
+          this.matchLoading = true
           try {
             const res = await axios.post(
               "https://companion.ajaywatpade.in/api/remove-match",
@@ -434,174 +407,121 @@ async handleMatch() {
             )
             if (res.data.success) {
               this.matchStatus = null
-              this.showToast(`${this.person.first_name} has been removed from your matches.`, "success")
+              this.showToast(`${this.person.first_name} removed`, "success")
             }
           } catch (e) {
-            console.error("Failed to remove match", e)
+            this.showToast("Something went wrong", "error")
           } finally {
             this.matchLoading = false
             this.confirmDialog.show = false
           }
         }
       }
-
-      return // STOP here until user confirms
+      return
     }
-
+    
+    // IMPORTANT: Immediately check match status after sending/cancelling
+    await this.checkMatchStatus()
+    
   } catch (e) {
-    console.error("Match action failed", e)
+    this.showToast("Action failed", "error")
   } finally {
     if (this.matchStatus !== 'matched') this.matchLoading = false
   }
 },
 
-
-    // Check match status
+ // Add this method to check status more frequently or after certain actions
 async checkMatchStatus() {
   if (!this.person) return
-
   try {
     const res = await axios.post(
       "https://companion.ajaywatpade.in/api/match-status",
       { user_id: this.person.id },
-      {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`
-        }
-      }
+      { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } }
     )
-
-    const status = res.data.status
-
-    if (status === 'accepted') {
-      this.matchStatus = 'matched'
-    } else {
-      this.matchStatus = status ?? null
+    const newStatus = res.data.status === 'accepted' ? 'matched' : (res.data.status ?? null)
+    
+    // Only update if status changed
+    if (this.matchStatus !== newStatus) {
+      this.matchStatus = newStatus
+      // Show a notification when status changes to matched
+      if (newStatus === 'matched') {
+        this.showToast(`✨ You matched with ${this.person.first_name}!`, "success")
+      }
     }
-
   } catch (e) {
     console.error("Match status failed", e)
   }
 },
 
-    // Fetch user details
     async fetchPerson() {
       try {
         const res = await axios.get(
           `https://companion.ajaywatpade.in/api/users/${this.$route.params.id}`,
-          {
-            headers: {
-              Authorization: `Bearer ${localStorage.getItem("token")}`
-            }
-          }
+          { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } }
         )
-
-        const data = res.data
-        if (data.success && data.user) {
-          const user = data.user
-
-          const profilePhoto = user.profile_photo
-            ? `https://companion.ajaywatpade.in/${user.profile_photo}`
-            : null
-
-          let gallery = []
-          if (Array.isArray(user.photo_gallery)) {
-            gallery = user.photo_gallery.map(
-              img => `https://companion.ajaywatpade.in/${img}`
-            )
-          }
-
+        if (res.data.success && res.data.user) {
+          const user = res.data.user
           this.person = {
             ...user,
-            profile_photo: profilePhoto,
-            photo_gallery: gallery
+            profile_photo: user.profile_photo ? `https://companion.ajaywatpade.in/${user.profile_photo}` : 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400',
+            photo_gallery: Array.isArray(user.photo_gallery) && user.photo_gallery.length 
+              ? user.photo_gallery.map(img => `https://companion.ajaywatpade.in/${img}`)
+              : ['https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?w=400', 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=400', 'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=400']
           }
-
-         await this.checkFollowStatus()
-await this.checkMatchStatus()
-this.loading = false
-
-// OPEN CHAT IF REQUESTED
-if (this.$route.query.chat && this.matchStatus === 'matched') {
-  this.openChat()
-}
+          await this.checkFollowStatus()
+          await this.checkMatchStatus()
+          this.loading = false
+          if (this.$route.query.chat && this.matchStatus === 'matched') this.openChat()
         }
       } catch (e) {
-  console.error(e)
-  alert("User not found")
-  this.$router.back()
-}
-
+        console.error("Fetch error:", e)
+        this.showToast("Profile not found", "error")
+        this.$router.back()
+      }
     },
 
-    // Check if current user is following this person
     async checkFollowStatus() {
       if (!this.person) return
       try {
         const res = await axios.post(
           "https://companion.ajaywatpade.in/api/follow-status",
           { following_id: this.person.id },
-          {
-            headers: {
-              Authorization: `Bearer ${localStorage.getItem("token")}`
-            }
-          }
+          { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } }
         )
         this.isFollowing = res.data.following
       } catch (e) {
-        console.error("Follow status check failed", e)
+        console.error("Follow status failed", e)
       }
     },
 
-    // Follow/Unfollow user
-async toggleFollow() {
-  if (this.followLoading || !this.person) return
-  this.followLoading = true
+    async toggleFollow() {
+      if (this.followLoading || !this.person) return
+      this.followLoading = true
+      const wasFollowing = this.isFollowing
+      this.isFollowing = !wasFollowing
+      let count = Number(this.person.followers_count) || 0
+      this.person.followers_count = wasFollowing ? Math.max(count - 1, 0) : count + 1
 
-  const wasFollowing = this.isFollowing
-  this.isFollowing = !wasFollowing
-
-  // Make sure followers_count is a number
-  let count = Number(this.person.followers_count) || 0
-
-  if (!wasFollowing) {
-    count += 1
-  } else {
-    count = Math.max(count - 1, 0)
-  }
-
-  this.person.followers_count = count
-
-  try {
-    await axios.post(
-      "https://companion.ajaywatpade.in/api/follow-toggle",
-      { user_id: this.person.id },
-      {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`
+      try {
+        await axios.post(
+          "https://companion.ajaywatpade.in/api/follow-toggle",
+          { user_id: this.person.id },
+          { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } }
+        )
+        if (!wasFollowing) {
+          this.notificationStore.increment()
+          this.showToast(`Following ${this.person.first_name} ✨`, "success")
         }
+      } catch (e) {
+        this.isFollowing = wasFollowing
+        this.person.followers_count = count
+        this.showToast("Action failed", "error")
+      } finally {
+        this.followLoading = false
       }
-    )
+    },
 
-    // 🔔 INCREMENT NOTIFICATION ONLY WHEN FOLLOWING
-    if (!wasFollowing) {
-      this.notificationStore.increment()
-    }
-
-  } catch (e) {
-    // Rollback on failure
-    this.isFollowing = wasFollowing
-    if (!wasFollowing) count -= 1
-    else count += 1
-    this.person.followers_count = count
-    console.error("Follow failed", e)
-  } finally {
-    this.followLoading = false
-  }
-},  
-
-
-    // Open photo viewer
     openViewer(index) {
       this.currentIndex = index
       this.viewerOpen = true
@@ -610,1700 +530,504 @@ async toggleFollow() {
 }
 </script>
 
-
 <style scoped>
-.details {
-  min-height: 100vh;
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+.dating-app {
+  max-width: 480px;
+  margin: 0 auto;
   background: #ffffff;
-  /* background-image: url(https://www.shutterstock.com/blog/wp-content/uploads/sites/5/2020/07/trendy-background-ideas-cover.jpg); */
-  padding-bottom: 90px;
-  font-family: 'Inter', sans-serif;
+  min-height: 100vh;
+  position: relative;
+  box-shadow: 0 0 40px rgba(0, 0, 0, 0.05);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
 }
 
-/* Header */
-.details-header {
-  height: 151px;
-   /* background-image: url(https://static.vecteezy.com/system/resources/thumbnails/001/410/432/small/pink-fluid-dynamic-abstract-background-free-vector.jpg); */
-  border-bottom-left-radius: 60px;
-  border-bottom-right-radius: 60px;
-  /* position: relative; */
-}
-
-.back {
-  position: absolute;
-  top: 55px;
-  left: 16px;
-  font-size: 32px;
-  color: rgb(236, 3, 73);
-  cursor: pointer;
-}
-
-/* Card */
-.details-card {
-  /* background: white; */
-  border-radius: 28px;
-  margin: -120px 16px 0;
-  padding: 16px;
-  /* box-shadow: 0 20px 40px rgba(0,0,0,0.15); */
-  text-align: center;
-}
-
-/* Image */
-.hero-img {
-      width: 101px;
-    height: 101px;
-  border-radius: 171px;
-  margin-top: -87px;
-  border-bottom-style: inset;
-}
-
-/* Title */
-.details-card h2 {
-  margin-top: 14px;
-  font-size: 20px;
-  font-weight: 700;
+/* ========== TOAST ========== */
+.premium-toast {
+  position: fixed;
+  top: 80px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10000;
   display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 20px;
+  background: #1a1a2e;
+  border-radius: 50px;
+  color: white;
+  font-size: 13px;
+  font-weight: 500;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+  white-space: nowrap;
+}
+.premium-toast.success { background: linear-gradient(135deg, #11998e, #38ef7d); }
+.premium-toast.error { background: linear-gradient(135deg, #ff4d6d, #e63946); }
+.toast-slide-enter-active, .toast-slide-leave-active { transition: all 0.3s ease; }
+.toast-slide-enter, .toast-slide-leave-to { opacity: 0; transform: translateX(-50%) translateY(-20px); }
+
+/* ========== SKELETON ========== */
+.skeleton-wrapper { background: #faf8f9; min-height: 100vh; }
+.skeleton-hero { height: 350px; background: linear-gradient(135deg, #e0e0e0, #f0f0f0); }
+.skeleton-card { background: white; border-radius: 32px; margin: -40px 16px 0; padding: 24px; }
+.skeleton-avatar { width: 80px; height: 80px; border-radius: 50%; margin: 0 auto 16px; background: #e0e0e0; }
+.skeleton-line { height: 14px; background: #e0e0e0; border-radius: 8px; margin: 0 auto 12px; }
+.w-50 { width: 50%; } .w-35 { width: 35%; }
+.skeleton-stats { display: flex; justify-content: space-around; margin: 24px 0; }
+.skeleton-stat { width: 60px; height: 40px; background: #e0e0e0; border-radius: 12px; }
+.skeleton-buttons { display: flex; gap: 12px; margin-bottom: 24px; }
+.skeleton-btn { flex: 1; height: 48px; background: #e0e0e0; border-radius: 40px; }
+.skeleton-bio { height: 80px; background: #e0e0e0; border-radius: 20px; margin-bottom: 20px; }
+.skeleton-habits { height: 50px; background: #e0e0e0; border-radius: 20px; margin-bottom: 20px; }
+.skeleton-gallery { display: flex; gap: 10px; }
+.skeleton-img { flex: 1; height: 110px; background: #e0e0e0; border-radius: 16px; }
+.shimmer { background: linear-gradient(90deg, #e0e0e0 25%, #f0f0f0 50%, #e0e0e0 75%); background-size: 200% 100%; animation: shimmer 1.5s infinite; }
+@keyframes shimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
+
+/* ========== HERO SECTION ========== */
+.hero-section {
+  height: 420px;
+  background-size: cover;
+  background-position: center 30%;
+  position: relative;
+  border-radius: 0 0 48px 48px;
+  overflow: hidden;
+}
+.hero-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(180deg, rgba(0,0,0,0.2) 0%, rgba(0,0,0,0.5) 60%, rgba(0,0,0,0.7) 100%);
+}
+.hero-back-btn {
+  position: absolute;
+  top: 50px;
+  left: 20px;
+  width: 40px;
+  height: 40px;
+  background: rgba(255,255,255,0.2);
+  backdrop-filter: blur(10px);
+  border-radius: 30px;
+  display: flex;
+  align-items: center;
   justify-content: center;
+  color: white;
+  cursor: pointer;
+  z-index: 10;
+}
+.hero-badge {
+  position: absolute;
+  top: 50px;
+  right: 20px;
+  background: rgba(255,215,0,0.95);
+  padding: 8px 16px;
+  border-radius: 30px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #1a1a2e;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  z-index: 10;
+}
+.hero-info {
+  position: absolute;
+  bottom: 70px;
+  left: 0;
+  right: 0;
+  padding: 0 24px;
+  color: white;
+  z-index: 10;
+}
+.hero-name {
+  font-size: 36px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.hero-age {
+  font-size: 22px;
+  font-weight: 500;
+  opacity: 0.9;
+}
+.hero-location {
+  font-size: 14px;
+  margin-top: 6px;
+  opacity: 0.85;
+  display: flex;
+  align-items: center;
   gap: 6px;
 }
-
-.verified {
-      height: 18px;
-    margin-top: 7px;
-    width: 18px;
-}
-
-.meta {
+.hero-quote {
   font-size: 13px;
-  color: #666;
-}
-
-.rating {
-  margin: 8px 0 14px;
-  font-size: 13px;
-  color: #444;
-}
-
-/* Features */
-.features {
-  display: flex;
-  justify-content: space-around;
-  margin: 16px 0;
-  font-size: 13px;
-}
-
-/* Sections */
-.section {
-  margin-top: 14px;
-  text-align: left;
-}
-
-.section h4 {
-  font-size: 11px;
-  margin-bottom: 6px;
-  color: #444;
-}
-
-.box {
-  background: #f6f7fb;
-  padding: 14px;
-  border-radius: 14px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-size: 13px;
-}
-
-.bottom-bar {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-      gap: 12px;
-  width: 100%;
-  background: #ffffff;
-  padding: 14px 16px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  box-shadow: 0 -6px 20px rgba(0, 0, 0, 0.08);
-  border-top-left-radius: 16px;
-  border-top-right-radius: 16px;
-  z-index: 1000;
-}
-
-/* Price Section */
-.price {
-  display: flex;
-  flex-direction: column;
-}
-
-.price span {
-  font-size: 12px;
-  color: #888;
-  font-weight: 500;
-}
-
-.price strong {
-  font-size: 13px;
-  font-weight: 700;
-  color: #111;
-}
-
-/* Checkout Button */
-.messaging {
-  background: linear-gradient(135deg, #ff4d6d, #aa0730);
-  color: #fff;
-  border: none;
-  padding: 12px 20px;
-  width: 100%;
-  border-radius: 12px;
-  font-size: 12px;
-  font-weight: 500;
-  cursor: pointer;
-  /* box-shadow: 0 8px 20px rgba(255, 46, 99, 0.35); */
-  transition: all 0.2s ease;
-}
-
-.messaging:active {
-  transform: scale(0.96);
-}
-.dateplan {
-  background: linear-gradient(135deg, oklch(0.63 0.13 98.39), #e79e00);
-  color: #fff;
-  border: none;
-  padding: 12px 20px;
-  width: 100%;
-  border-radius: 12px;
-  font-size: 12px;
-  font-weight: 500;
-  cursor: pointer;
-  /* box-shadow: 0 8px 20px rgba(255, 46, 99, 0.35); */
-  transition: all 0.2s ease;
-}
-
-.plandate:active {
-  transform: scale(0.96);
-}
-
-/* Overlay */
-.overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.45);
-  z-index: 999;
-}
-
-/* Payment Sheet */
-.payment-sheet {
-  position: fixed;
-  bottom: -100%;
-  left: 0;
-  width: 100%;
-  background: #fff;
-  border-top-left-radius: 24px;
-  border-top-right-radius: 24px;
-  padding: 16px;
-  z-index: 1000;
-  transition: bottom 0.35s ease;
-}
-
-.payment-sheet.open {
-  bottom: 0;
-}
-
-/* Handle */
-.sheet-handle {
-  width: 40px;
-  height: 4px;
-  background: #ddd;
-  border-radius: 10px;
-  margin: 6px auto 14px;
-}
-
-/* Title */
-.payment-sheet h3 {
-  text-align: center;
-  font-size: 16px;
-  margin-bottom: 14px;
-}
-
-/* Rows */
-.pay-row {
-  display: flex;
-  justify-content: space-between;
-  padding: 12px 0;
-  font-size: 14px;
-  border-bottom: 1px solid #eee;
-}
-
-.pay-row.total {
-  font-size: 16px;
-  font-weight: 700;
-  border-bottom: none;
-  margin-top: 6px;
-}
-
-/* Pay Button */
-.pay-btn {
-  width: 100%;
-  margin-top: 16px;
-  padding: 14px;
-  background: linear-gradient(135deg, #ff2e63, #2d010c);
-  color: white;
-  border: none;
-  border-radius: 14px;
-  font-size: 15px;
-  font-weight: 600;
-}
-
-/* Cancel */
-.cancel {
-  text-align: center;
+  font-style: italic;
   margin-top: 10px;
-  font-size: 13px;
-  color: #888;
-}
-/* iOS Bounce Animation */
-.payment-sheet {
-  transition: transform 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
-  transform: translateY(100%);
-}
-
-.payment-sheet.open {
-  transform: translateY(0);
-}
-
-/* Payment Methods */
-.methods {
-  display: flex;
-  justify-content: space-between;
-  margin: 16px 0;
-}
-
-.method {
-  flex: 1;
-  margin: 0 6px;
-  padding: 12px;
-  border-radius: 14px;
-  background: #f6f7fb;
-  text-align: center;
-  font-size: 12px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.method img {
-  height: 26px;
-  margin-bottom: 6px;
-}
-
-.method.active {
-  background: #e8edff;
-  border: 2px solid #bebebe;
-  transform: scale(1.05);
-}
-
-/* Summary */
-.pay-summary {
-  background: #fafafa;
-  padding: 14px;
-  border-radius: 14px;
-}
-
-.pay-summary .row {
-  display: flex;
-  justify-content: space-between;
-  padding: 6px 0;
-  font-size: 14px;
-}
-
-.pay-summary .total {
-  font-size: 17px;
-  font-weight: 700;
-}
-
-/* Price Animation */
-.price-animate {
-  transition: transform 0.2s ease;
-}
-
-/* Pay Button */
-.pay-btn {
-  width: 100%;
-  margin-top: 18px;
-  padding: 14px;
-  background: linear-gradient(135deg, #ff2e63, #2d010c);
-  color: #fff;
-  border: none;
-  border-radius: 14px;
-  font-size: 15px;
-  font-weight: 600;
-  box-shadow: 0 10px 30px rgba(255, 91, 236, 0.4);
-}
-
-/* Cancel */
-.cancel {
-  text-align: center;
-  margin-top: 10px;
-  font-size: 13px;
-  color: #777;
-}
-
-/* Duration Slider Box */
-.duration-box {
-  margin: 16px 0;
-  padding: 14px;
-  background: #f6f7fb;
-  border-radius: 16px;
-}
-
-.duration-header {
-  display: flex;
-  justify-content: space-between;
-  font-size: 14px;
-  font-weight: 600;
-  margin-bottom: 10px;
-}
-
-/* Slider */
-.duration-slider {
-  width: 100%;
-  appearance: none;
-  height: 6px;
-  border-radius: 6px;
-  background: linear-gradient(135deg, #ff2e63, #2d010c);
-  outline: none;
-}
-
-/* Slider Thumb */
-.duration-slider::-webkit-slider-thumb {
-  appearance: none;
-  width: 22px;
-  height: 22px;
-  border-radius: 50%;
-  background: #fff;
-  border: 3px solid #ba0982;
-  box-shadow: 0 6px 12px rgba(0,0,0,0.2);
-  cursor: pointer;
-}
-
-/* Scale */
-.duration-scale {
-  display: flex;
-  justify-content: space-between;
-  font-size: 11px;
-  color: #777;
-  margin-top: 6px;
-}
-
-/* Photo Gallery */
-.photo-gallery {
-  display: flex;
-  gap: 12px;
-  overflow-x: auto;
-  padding-bottom: 6px;
-  scroll-snap-type: x mandatory;
-}
-
-.photo-gallery::-webkit-scrollbar {
-  display: none;
-}
-
-.photo-gallery img {
-  flex: 0 0 auto;
-  width: 120px;
-  height: 160px;
-  border-radius: 16px;
-  object-fit: cover;
-  scroll-snap-align: start;
-  box-shadow: 0 10px 20px rgba(0,0,0,0.15);
-  transition: transform 0.2s ease;
-}
-
-.photo-gallery img:active {
-  transform: scale(0.95);
-}
-/* FULLSCREEN VIEWER */
-.viewer {
-  position: fixed;
-  inset: 0;
-  background: #000;
-  z-index: 2000;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-
-.viewer-img {
-  max-width: 100%;
-  max-height: 100%;
-  object-fit: contain;
-}
-
-.close {
-  position: absolute;
-  top: 18px;
-  right: 18px;
-  font-size: 32px;
-  /* background-color: #ff2e63;/ */
-  
-    justify-self: left;
-  border-radius: 18px;
-
-      width: 31px;
-  color: rgb(236, 3, 73);
-  cursor: pointer;
-  z-index: 3000; /* 🔥 THIS FIXES IT */
-}
-
-
-/* Counter */
-.counter {
-  position: absolute;
-  top: 20px;
-  left: 20px;
-  background: rgba(0,0,0,0.6);
-  color: white;
-  padding: 6px 10px;
-  border-radius: 12px;
-  font-size: 13px;
-}
-
-/* Dots */
-.dots {
-  position: absolute;
-  bottom: 24px;
-  display: flex;
-  gap: 8px;
-}
-
-.dots span {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: rgba(255,255,255,0.4);
-}
-
-.dots span.active {
-  background: white;
-}
-
-/* Navigation */
-.nav {
-  position: absolute;
-  top: 0;
-  width: 50%;
-  height: 100%;
-}
-
-.nav.left {
-  left: 0;
-}
-
-.nav.right {
-  right: 0;
-}
-/* Success Overlay */
-.success-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,0.5);
-  z-index: 3000;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-/* Card */
-.success-card {
-  background: #fff;
-  width: 86%;
-  max-width: 320px;
-  padding: 28px 20px;
-  border-radius: 22px;
-  text-align: center;
-  animation: pop 0.35s ease;
-}
-
-/* Icon */
-.success-icon {
-  width: 64px;
-  height: 64px;
-  background: linear-gradient(135deg, #00c853, #00e676);
-  color: white;
-  font-size: 36px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin: 0 auto 14px;
-}
-
-/* Text */
-.success-card h2 {
-  font-size: 20px;
-  margin-bottom: 8px;
-}
-
-.success-card p {
-  font-size: 14px;
-  color: #555;
-  line-height: 1.4;
-}
-
-/* Done Button */
-.done-btn {
-  margin-top: 18px;
-  width: 100%;
-  padding: 12px;
-  border: none;
-  border-radius: 14px;
-  background: linear-gradient(135deg, #ff2e63, #2d010c);
-  color: #fff;
-  font-size: 15px;
-  font-weight: 600;
-}
-
-/* Animation */
-@keyframes pop {
-  0% {
-    transform: scale(0.8);
-    opacity: 0;
-  }
-  100% {
-    transform: scale(1);
-    opacity: 1;
-  }
-}
-/* CONFETTI */
-.confetti {
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  overflow: hidden;
-  z-index: 3001;
-}
-
-.confetti span {
-  position: absolute;
-  top: -10px;
-  width: 8px;
-  height: 14px;
-  background: red;
   opacity: 0.9;
-  animation: fall 3s linear forwards;
 }
-
-/* Random colors */
-.confetti span:nth-child(3n) { background: #ff4d6d; }
-.confetti span:nth-child(3n+1) { background: #635bff; }
-.confetti span:nth-child(3n+2) { background: #00e676; }
-
-/* Random positions & delays */
-.confetti span {
-  left: calc(100% * var(--x));
-  animation-delay: var(--delay);
-  transform: rotate(var(--rotate));
-}
-
-/* Falling animation */
-@keyframes fall {
-  0% {
-    transform: translateY(0) rotate(0deg);
-  }
-  100% {
-    transform: translateY(110vh) rotate(360deg);
-  }
-}
-
-@keyframes fall {
-  0% {
-    transform: translateY(-10px) rotate(0deg);
-    opacity: 1;
-  }
-  100% {
-    transform: translateY(110vh) rotate(360deg);
-    opacity: 0;
-  }
-}
-.photo-section {
-  margin-top: 24px;
-}
-
-.section-title {
-  font-size: 16px;
-  font-weight: 600;
-  margin-bottom: 12px;
-  color: #222;
-}
-
-/* Grid layout */
-.photo-gallery {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 10px;
-}
-
-/* Card wrapper */
-.photo-card {
-  border-radius: 14px;
-  overflow: hidden;
-  position: relative;
-  background: #f5f5f5;
-  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.08);
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-}
-
-/* Image */
-.photo-card img {
-  width: 100%;
-  height: 110px;
-  object-fit: cover;
-  display: block;
-}
-
-/* Tap / hover effect */
-.photo-card:active {
-  transform: scale(0.96);
-}
-
-.photo-card:hover {
-  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.12);
-}
-
-/* Optional overlay icon */
-.photo-card::after {
-  content: "📸";
+.hero-wave {
   position: absolute;
-  bottom: 6px;
-  right: 8px;
-  font-size: 14px;
-  opacity: 0.7;
-}
-
-.details-skeleton {
-  min-height: 100vh;
-  padding: 16px;
-  background: #f0f2f5;
-  font-family: 'Inter', sans-serif;
-}
-
-.skeleton-header {
-  height: 200px;
-  border-radius: 60px 60px 0 0;
-  background: linear-gradient(90deg, #eee 25%, #ddd 50%, #eee 75%);
-  background-size: 200% 100%;
-  animation: shimmer 1.5s infinite;
-}
-
-.skeleton-card {
-  background: white;
-  border-radius: 28px;
-  padding: 16px;
-  margin-top: -80px;
-}
-
-.skeleton-img {
-  height: 180px;
-  border-radius: 22px;
-  background: linear-gradient(90deg, #eee 25%, #ddd 50%, #eee 75%);
-  background-size: 200% 100%;
-  animation: shimmer 1.5s infinite;
-}
-
-.skeleton-text {
-  height: 16px;
-  border-radius: 8px;
-  margin: 10px 0;
-  background: linear-gradient(90deg, #eee 25%, #ddd 50%, #eee 75%);
-  background-size: 200% 100%;
-  animation: shimmer 1.5s infinite;
-}
-
-.skeleton-text.title { width: 40%; margin: 16px auto 10px; }
-.skeleton-text.meta { width: 30%; margin: 0 auto; }
-.skeleton-text.rating { width: 20%; margin: 0 auto; }
-
-.skeleton-features {
-  display: flex;
-  justify-content: space-around;
-  margin: 16px 0;
-}
-.skeleton-feature {
-  width: 80px;
-  height: 20px;
-  border-radius: 10px;
-  background: linear-gradient(90deg, #eee 25%, #ddd 50%, #eee 75%);
-  animation: shimmer 1.5s infinite;
-}
-
-.skeleton-gallery {
-  display: flex;
-  gap: 12px;
-  margin-top: 14px;
-}
-.skeleton-photo {
-  width: 120px;
-  height: 160px;
-  border-radius: 16px;
-  background: linear-gradient(90deg, #eee 25%, #ddd 50%, #eee 75%);
-  animation: shimmer 1.5s infinite;
-}
-
-.skeleton-bottom {
-  display: flex;
-  justify-content: space-between;
-  margin-top: 20px;
-}
-.skeleton-price { width: 80px; height: 20px; border-radius: 10px; background: #ddd; }
-.skeleton-button { width: 120px; height: 36px; border-radius: 12px; background: #ddd; }
-
-@keyframes shimmer {
-  0% { background-position: -200% 0; }
-  100% { background-position: 200% 0; }
-}
-
-/* ===============================
-   SUBTITLE
-================================ */
-.subtitle {
-font-size: 14px;
-    color: #555;
-    margin-top: 2px;
-    margin-bottom: 10px;
-    line-height: 1.4;
-}
-
-/* ===============================
-   LOCATION INFO CARD
-================================ */
-.info-card {
-  background: #f6f7fb;
-  padding: 12px 14px;
-  border-radius: 16px;
-  margin: 12px 0 16px;
-  /* box-shadow: 0 6px 14px rgba(0, 0, 0, 0.05); */
-}
-
-.info-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 14px;
-  color: #333;
-}
-
-/* ===============================
-   STATS (LIKES / COMMENTS / RATING)
-================================ */
-.stats {
-  display: flex;
-  justify-content: space-around;
-  margin: 18px 0 10px;
-}
-
-.stat {
-  text-align: center;
-  font-size: 12px;
-  color: #666;
-}
-
-.stat strong {
-  display: block;
-  font-size: 12px;
-  /* font-weight: 700; */
-  color: #111;
-  margin: 2px 0;
-}
-
-.stat span {
-  font-size: 11px;
-}
-
-/* ===============================
-   HABITS SECTION
-================================ */
-.habits {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-top: 8px;
-}
-
-.habit-chip {
-  padding: 6px 14px;
-  background: linear-gradient(135deg, #ff4d6d, #ff2e63);
-  color: #fff;
-  border-radius: 999px;
-  font-size: 12px;
-  font-weight: 500;
-  box-shadow: 0 6px 14px rgba(255, 46, 99, 0.3);
-  transition: transform 0.2s ease;
-}
-
-.habit-chip:active {
-  transform: scale(0.95);
-}
-
-/* ===============================
-   SECTION TITLE (REUSE)
-================================ */
-.section-title {
-  font-size: 15px;
-  font-weight: 600;
-  margin-bottom: 8px;
-  color: #222;
-}
-
-/* ===============================
-   MOBILE POLISH
-================================ */
-@media (max-width: 480px) {
-  .stats {
-    margin-top: 14px;
-  }
-
-  .info-card {
-    padding: 10px 12px;
-  }
-}
-/* ===============================
-   HABITS & LIFESTYLE (PREMIUM)
-================================ */
-.habit-card {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 14px 16px;
-  border-radius: 18px;
-  background: linear-gradient(135deg, #fff5f7, #ffeef2);
-  /* box-shadow: 0 8px 20px rgba(255, 77, 109, 0.15); */
-  margin-top: 10px;
-}
-
-.habit-icon {
-  width: 38px;
-  height: 38px;
-  border-radius: 50%;
-  /* background: linear-gradient(135deg, #ff4d6d, #ff2e63); */
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 18px;
-  color: #fff;
-  flex-shrink: 0;
-}
-
-.habit-text {
-  font-size: 12px;
-  /* font-weight: 600; */
-  color: #333;
-  letter-spacing: 0.3px;
-}
-
-/* Mobile polish */
-@media (max-width: 480px) {
-  .habit-card {
-    padding: 12px 14px;
-  }
-
-  .habit-text {
-    font-size: 12px;
-  }
-}
-
-/* ===============================
-   HERO IMAGE WITH ANIMATED RINGS
-================================ */
-.hero-wrapper {
-  position: relative;
-  width: 110px;
-  height: 110px;
-  margin: -90px auto 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-/* Profile Image */
-.hero-img {
-     width: 81px;
-    height: 81px;
-    border-radius: 50%;
-    object-fit: cover;
-    position: relative;
-    z-index: 5;
-    background: #fff;
-    box-shadow: 0px 0px 20px 0px #ff2e633b;
-    margin-top: -2px;
-}
-
-/* Animated Rings */
-.ring {
-  position: absolute;
-  border-radius: 50%;
-  border: 2px solid rgba(255, 46, 99, 0.5);
-  animation: pulse 3s infinite ease-out;
-  z-index: 1;
-}
-
-.ring-1 {
-  width: 110px;
-  height: 110px;
-  animation-delay: 0s;
-}
-
-.ring-2 {
-  width: 125px;
-  height: 125px;
-  animation-delay: 1s;
-  opacity: 0.6;
-}
-
-.ring-3 {
-  width: 145px;
-  height: 145px;
-  animation-delay: 2s;
-  opacity: 0.4;
-}
-
-/* Pulse animation */
-@keyframes pulse {
-  0% {
-    transform: scale(0.9);
-    opacity: 0.8;
-  }
-  70% {
-    transform: scale(1.1);
-    opacity: 0;
-  }
-  100% {
-    opacity: 0;
-  }
-}
-/* ===============================
-   HEART PULSE (VERIFIED USERS)
-================================ */
-.heart-pulse {
-  position: absolute;
-  width: 160px;
-  height: 160px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 0;
-}
-
-.heart {
-  position: absolute;
-  width: 60px;
-  height: 60px;
-  background: #ff2e63;
-  transform: rotate(-45deg);
-  animation: heartPulse 3s infinite ease-out;
-  opacity: 0.6;
-}
-
-.heart::before,
-.heart::after {
-  content: "";
-  position: absolute;
-  width: 60px;
-  height: 60px;
-  background: #ff2e63;
-  border-radius: 50%;
-}
-
-.heart::before {
-  top: -30px;
+  bottom: -1px;
   left: 0;
+  width: 100%;
+  line-height: 0;
+  z-index: 10;
+}
+.hero-wave svg {
+  width: 100%;
+  height: 50px;
+}
+.hero-wave path {
+  fill: white;
 }
 
-.heart::after {
-  left: 30px;
-  top: 0;
-}
-
-/* Multiple pulse layers */
-.heart:nth-child(1) {
-  animation-delay: 0s;
-}
-
-.heart:nth-child(2) {
-  animation-delay: 1s;
-  opacity: 0.4;
-  transform: scale(1.2) rotate(-45deg);
-}
-
-.heart:nth-child(3) {
-  animation-delay: 2s;
-  opacity: 0.25;
-  transform: scale(1.4) rotate(-45deg);
-}
-
-/* Heart pulse animation */
-@keyframes heartPulse {
-  0% {
-    transform: scale(0.7) rotate(-45deg);
-    opacity: 0.8;
-  }
-  70% {
-    transform: scale(1.6) rotate(-45deg);
-    opacity: 0;
-  }
-  100% {
-    opacity: 0;
-  }
-}
-/* ===============================
-   FOLLOW BUTTON (INSTAGRAM STYLE)
-================================ */
-.follow-btn {
-  margin-top: 10px;
-  padding: 8px 22px;
-  border-radius: 999px;
-  border: none;
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.25s ease;
-  background: linear-gradient(135deg, #ff4d6d, #ff2e63);
-  color: #fff;
-  box-shadow: 0 6px 14px rgba(255, 46, 99, 0.35);
-}
-
-.follow-btn:active {
-  transform: scale(0.95);
-}
-
-/* Following state */
-.follow-btn.following {
-  background: #f1f1f1;
-  color: #333;
-  box-shadow: none;
-  border: 1px solid #ddd;
-}
-/* ===============================
-   INSTAGRAM PROFILE HEADER
-================================ */
-.insta-profile {
-  display: flex;
-  align-items: center;
-  gap: 18px;
-  margin-top: -30px;
-}
-
-/* Avatar */
-.insta-avatar img {
-  width: 86px;
-  height: 86px;
-  margin-top: 6px;
-  border-radius: 50%;
-  object-fit: cover;
-  border: 2px solid #ff2e63;
-}
-
-/* Right Section */
-.insta-right {
-  flex: 1;
-  margin-top: -9px;
+/* ========== PROFILE CARD ========== */
+.profile-card {
+  background: white;
+  border-radius: 40px;
+  margin: -30px 16px 20px;
+  padding: 24px 20px;
+  position: relative;
+  z-index: 15;
 }
 
 /* Stats Row */
-.insta-stats {
+.stats-row {
   display: flex;
-  justify-content: space-between;
-  margin-bottom: 10px;
-}
-
-.insta-stat {
-  text-align: center;
-  font-size: 12px;
-}
-
-.insta-stat strong {
-  display: block;
-  font-size: 14px;
-  font-weight: 700;
-  color: #111;
-}
-
-.insta-stat span {
-  color: #666;
-  font-size: 11px;
-}
-
-/* Follow Button */
-.insta-follow-btn {
-  width: 100%;
-  padding: 8px 0;
-  border-radius: 8px;
-  border: none;
-  font-size: 14px;
-  font-weight: 600;
-  
-  background: linear-gradient(135deg, #ff4d6d, #ff2e63);
-  color: #fff;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.insta-follow-btn.following {
-background: #ff346529;
-    color: #ff3465;
-    border: 1px solid #ff376694;
-}
-
-.insta-follow-btn:active {
-  transform: scale(0.97);
-}
-
-/* Name */
-.insta-name {
-  margin-top: 8px;
-  font-size: 15px;
-  font-weight: 600;
-  display: flex;
+  justify-content: space-around;
   align-items: center;
-  gap: 6px;
+  background: #f8f9fc;
+  border-radius: 60px;
+  padding: 16px 20px;
+  margin-bottom: 24px;
 }
-.subtitle {
-  text-align: left;
-}
-/* ===============================
-   INSTAGRAM NAME ROW
-================================ */
-.insta-name-row {
+.stat-item { text-align: center; flex: 1; }
+.stat-value { font-size: 22px; font-weight: 800; color: #ff4d6d; }
+.stat-label { font-size: 11px; color: #888; margin-top: 4px; }
+.stat-divider { width: 1px; height: 35px; background: #e0e0e0; }
+
+/* Buttons */
+.buttons-row {
   display: flex;
-  align-items: center;
-  gap: 6px;
-     margin-top: -4px;
-    margin-left: 19px;
-}
-
-.insta-name {
-  font-size: 15px;
-  font-weight: 600;
-  color: #111;
-}
-
-/* Verified badge */
-.verified {
-  width: 16px;
-  height: 16px;
-}
-/* LEFT COLUMN */
-.insta-left {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center; /* 🔥 vertical centering */
-  min-width: 120px;
-}
-
-/* Avatar */
-.insta-avatar {
-  width: 86px;
-  height: 86px;
-  border-radius: 50%;
-  object-fit: cover;
-  border: 2px solid #ff2e63;
-  margin-bottom: 6px;
-}
-
-/* Name row */
-.insta-name-row {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  margin: 2px 0;
-}
-
-/* Name */
-.insta-name {
-  font-size: 15px;
-  font-weight: 600;
-  color: #111;
-}
-
-/* Subtitle */
-.insta-subtitle {
-  font-size: 12px;
-  color: #666;
-  text-align: center;
-  max-width: 140px;
-  line-height: 1.3;
-}
-.intro-section {
-  margin-top: 16px;
-}
-
-.intro-text {
-  font-size: 12px;
-  line-height: 1.6;
-  text-align: justify;
-  color: #444;
-  background: #f9f9f9;
-  padding: 12px;
-  border-radius: 10px;
-}
-.intro-section {
-  margin-top: 18px;
-}
-
-.intro-card {
-  background: linear-gradient(135deg, #fff, #fafafa);
-  border-radius: 16px;
-  padding: 4px;
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.06);
-}
-
-.intro-header {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 10px;
-}
-
-.intro-header h4 {
-  font-size: 16px;
-  font-weight: 600;
-}
-
-.intro-icon {
-  font-size: 18px;
-}
-
-.intro-text {
-  line-height: 1.7;
-  color: #333;
-  margin-bottom: 12px;
-}
-
-.intro-tags {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-
-.tag {
-  background: #f1f3f5;
-  padding: 6px 10px;
-  border-radius: 20px;
-  font-size: 12px;
-  color: #555;
-}
-.chat-sheet {
-  position: fixed;
-  left: 0;
-  bottom: -100%;
-  width: 100%;
-  height: 100vh;
-  background: #fff;
-  z-index: 1001;
-  transition: bottom 0.35s ease;
-  display: flex;
-  flex-direction: column;
-}
-
-.chat-sheet.open {
-  bottom: 0;
-}
-
-.chat-header {
-  padding: 16px;
-  text-align: center;
-      margin-top: 54px;
-  border-bottom: 1px solid #eee;
-  position: relative;
-}
-
-.chat-header h3 {
-  margin: 0;
-  font-size: 15px;
-}
-
-.chat-header .close {
-  position: absolute;
-  left: 5px;
-    top: 5px;
-
-  font-size: 23px;
-  cursor: pointer;
-}
-
-.chat-body {
-  flex: 1;
-  padding: 16px;
-  overflow-y: auto;
-  background: #fafafa;
-}
-
-.chat-bubble {
-  max-width: 80%;
-  padding: 12px 14px;
-  margin-bottom: 12px;
-  border-radius: 16px;
-  font-size: 14px;
-  line-height: 1.4;
-}
-
-.chat-bubble.received {
-  background: #fff;
-  border: 1px solid #eee;
-  align-self: flex-start;
-}
-
-.chat-bubble.sent {
-  background: #ff4d6d;
-  color: #fff;
-  justify-self: right;
-  align-self: flex-end;
-}
-
-.chat-footer {
-  padding: 12px;
-  display: flex;
-  gap: 8px;
-  border-top: 1px solid #eee;
-}
-
-.chat-footer input {
-  flex: 1;
-  padding: 10px;
-  border-radius: 20px;
-  border: 1px solid #ddd;
-}
-
-.chat-footer button {
-  padding: 10px 16px;
-  border-radius: 20px;
-  background: #ff4d6d;
-  color: #fff;
-  border: none;
-  opacity: 0.6;
-}
-
-/* ===============================
-   SKELETON BASE
-================================ */
-.details-skeleton {
-  min-height: 100vh;
-  background: #fff;
-  padding-bottom: 90px;
-}
-
-.shimmer {
-  background: linear-gradient(
-    90deg,
-    #eee 25%,
-    #ddd 50%,
-    #eee 75%
-  );
-  background-size: 200% 100%;
-  animation: shimmer 1.5s infinite;
-}
-
-/* ===============================
-   HEADER
-================================ */
-.skeleton-header {
-  height: 150px;
-  border-bottom-left-radius: 60px;
-  border-bottom-right-radius: 60px;
-  background: #f2f2f2;
-}
-
-/* ===============================
-   CARD
-================================ */
-.skeleton-card {
-  margin: -120px 16px 0;
-  padding: 16px;
-  border-radius: 28px;
-  background: #fff;
-}
-
-/* ===============================
-   INSTAGRAM PROFILE
-================================ */
-.skeleton-insta {
-  display: flex;
-  gap: 18px;
-  align-items: center;
-}
-
-.skeleton-avatar {
-  width: 86px;
-  height: 86px;
-  border-radius: 50%;
-}
-
-.skeleton-right {
-  flex: 1;
-}
-
-.skeleton-line.name {
-  width: 120px;
-  height: 14px;
-  border-radius: 8px;
-  margin-bottom: 10px;
-}
-
-.skeleton-stats {
-  display: flex;
-  justify-content: space-between;
-  margin-bottom: 12px;
-}
-
-.skeleton-stat {
-  width: 40px;
-  height: 12px;
-  border-radius: 6px;
-}
-
-.skeleton-btn {
-  width: 100%;
-  height: 32px;
-  border-radius: 8px;
-}
-
-/* ===============================
-   INTRO
-================================ */
-.skeleton-intro {
-  margin-top: 18px;
-}
-
-.skeleton-line.full {
-  width: 100%;
-  height: 12px;
-  border-radius: 8px;
-  margin-bottom: 8px;
-}
-
-.skeleton-line.half {
-  width: 60%;
-  height: 12px;
-  border-radius: 8px;
-}
-
-/* ===============================
-   HABITS
-================================ */
-.skeleton-habit {
-  height: 40px;
-  border-radius: 18px;
-  margin-top: 16px;
-}
-
-/* ===============================
-   GALLERY
-================================ */
-.skeleton-gallery {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 10px;
-  margin-top: 16px;
-}
-
-.skeleton-photo {
-  height: 110px;
-  border-radius: 14px;
-}
-
-/* ===============================
-   BOTTOM BAR
-================================ */
-.skeleton-bottom {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  width: 100%;
-  padding: 14px 16px;
-  display: flex;
-  justify-content: space-between;
-  background: #fff;
-}
-
-.skeleton-price {
-  width: 80px;
-  height: 14px;
-  border-radius: 8px;
-}
-
-.skeleton-action {
-  width: 140px;
-  height: 36px;
-  border-radius: 12px;
-}
-
-/* ===============================
-   ANIMATION
-================================ */
-@keyframes shimmer {
-  0% { background-position: -200% 0; }
-  100% { background-position: 200% 0; }
-}
-/* CHAT HEADER */
-.insta-chat-header {
-  display: flex;
-  align-items: center;
   gap: 12px;
-  padding: 12px 14px;
-  border-bottom: 1px solid #eee;
-  background: #fff;
+  margin-bottom: 28px;
 }
-
-/* Back Arrow */
-.insta-chat-header .close {
-  font-size: 31px;
-  cursor: pointer;
-}
-
-/* User Row */
-.chat-user {
-  display: flex;
-  align-items: center;
-      margin-left: 43px;
-  gap: 10px;
-}
-
-/* Avatar */
-.chat-avatar {
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  object-fit: cover;
-}
-
-/* Info */
-.chat-user-info {
-  display: flex;
-  flex-direction: column;
-  line-height: 1.2;
-}
-
-/* Name + badge */
-.chat-name-row {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-
-.chat-name {
-  font-size: 14px;
-  font-weight: 600;
-  color: #111;
-}
-
-.chat-verified {
-  width: 14px;
-  height: 14px;
-}
-
-/* Status */
-.chat-status {
-  font-size: 11px;
-  color: #8e8e8e;
-}
-
-.insta-btn-row {
-  display: flex;
-  gap: 8px;
-  margin-top: 6px;
-}
-
-.insta-match-btn {
-width: 100%;
-  padding: 8px 0;
-  border-radius: 8px;
-  border: none;
-  font-size: 14px;
-  font-weight: 600;
-  background: linear-gradient(135deg, #05c2da, #02acbc);
-  color: #fff;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.insta-match-btn.matched {
-  background: #e0e0e0;
-  color: #1e3cff;
-  border: 1px solid #1e3cff;
-  box-shadow: none;
-}
-
-.insta-match-btn:active {
-  transform: scale(0.97);
-}
-
-.disabledBtn {
-  background: #3a3737 !important;
-  cursor: not-allowed;
-  opacity: 0.7;
-}
-
-.toast-container {
-  position: fixed;
-  top: 20px;
-  right: 20px;
-  z-index: 9999;
-}
-.toast {
-  padding: 12px 20px;
-  border-radius: 6px;
-  color: #fff;
-  font-weight: 500;
-  margin-bottom: 10px;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.2);
-  transition: all 0.3s ease;
-}
-.toast.success {
-  background-color: #28a745;
-}
-.toast.error {
-  background-color: #dc3545;
-}
-.confirm-overlay {
-  position: fixed;
-  top: 0; left: 0; right: 0; bottom: 0;
-  background: rgba(0,0,0,0.5);
+.btn-follow, .btn-match {
+  flex: 1;
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 9999;
+  gap: 8px;
+  padding: 14px 0;
+  border-radius: 50px;
+  font-weight: 600;
+  font-size: 14px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.25s ease;
 }
+.btn-follow {
+  background: #f0f0f0;
+  color: #333;
+}
+.btn-follow.active {
+  background: linear-gradient(135deg, #ff4d6d, #ff2e63);
+  color: white;
+  box-shadow: 0 6px 20px rgba(255,46,99,0.3);
+}
+.btn-match {
+  background: linear-gradient(135deg, #a8edea, #fed6e3);
+  color: #2d6a4f;
+}
+.btn-match.requested {
+  background: linear-gradient(135deg, #f9d423, #ff4e50);
+  color: white;
+}
+.btn-match.matched {
+  background: linear-gradient(135deg, #11998e, #38ef7d);
+  color: white;
+  box-shadow: 0 6px 20px rgba(56,239,125,0.4);
+}
+.btn-follow:hover, .btn-match:hover { transform: translateY(-2px); }
 
+/* About Section */
+.about-section { margin-bottom: 28px; }
+.section-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+.section-title svg { flex-shrink: 0; }
+.section-title h3 { font-size: 16px; font-weight: 700; color: #1a1a2e; }
+.about-text {
+  background: #fef8fa;
+  border-radius: 24px;
+  padding: 18px;
+  margin-bottom: 16px;
+  border: 1px solid #ffe2ea;
+}
+.about-text p { font-size: 14px; line-height: 1.6; color: #555; }
+.info-grid {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.info-item {
+  flex: 1;
+  min-width: 100px;
+  background: #f8f9fc;
+  padding: 12px;
+  border-radius: 20px;
+  text-align: center;
+}
+.info-item svg { display: block; margin: 0 auto 6px; }
+.info-item span { font-size: 10px; color: #999; display: block; }
+.info-item strong { font-size: 12px; color: #333; margin-top: 4px; display: block; }
+
+/* Habits */
+.habits-section { margin-bottom: 28px; }
+.habits-container { display: flex; flex-wrap: wrap; gap: 10px; }
+.habit-pill {
+  background: linear-gradient(135deg, #fff0f3, #ffffff);
+  border: 1px solid #ffe2ea;
+  padding: 10px 18px;
+  border-radius: 40px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #ff4d6d;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.habit-dot { width: 6px; height: 6px; background: #ff4d6d; border-radius: 50%; display: inline-block; }
+
+/* Gallery */
+.gallery-section { margin-bottom: 20px; }
+.gallery-count { margin-left: auto; font-size: 11px; color: #aaa; }
+.gallery-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+.gallery-item {
+  position: relative;
+  border-radius: 18px;
+  overflow: hidden;
+  aspect-ratio: 1;
+  cursor: pointer;
+}
+.grid-span-2 {
+  grid-column: span 2;
+  aspect-ratio: 16/10;
+}
+.gallery-item img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.3s;
+}
+.gallery-item:hover img { transform: scale(1.05); }
+.gallery-hover {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0,0,0,0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.25s;
+}
+.gallery-item:hover .gallery-hover { opacity: 1; }
+.gallery-hover svg { color: white; }
+
+/* Bottom Action Bar */
+.bottom-action-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  max-width: 480px;
+  margin: 0 auto;
+  display: flex;
+  gap: 16px;
+  padding: 16px 24px;
+  background: rgba(255,255,255,0.96);
+  backdrop-filter: blur(20px);
+  border-top: 1px solid rgba(255,77,109,0.15);
+  z-index: 100;
+}
+.action-chat, .action-date {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 14px 0;
+  border-radius: 50px;
+  font-weight: 700;
+  font-size: 14px;
+  border: none;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.2s;
+}
+.action-chat {
+  background: linear-gradient(135deg, #ff4d6d, #ff2e63);
+  color: white;
+}
+.action-date {
+  background: linear-gradient(135deg, #f9b43a, #fb8b2c);
+  color: white;
+}
+.action-chat.disabled, .action-date.disabled {
+  opacity: 0.5;
+  filter: grayscale(0.2);
+  cursor: not-allowed;
+}
+.action-glow {
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+  animation: glowMove 2s infinite;
+}
+@keyframes glowMove { 0% { left: -100%; } 100% { left: 100%; } }
+
+/* Image Viewer */
+.image-viewer {
+  position: fixed;
+  inset: 0;
+  background: #000;
+  z-index: 10050;
+  display: flex;
+  flex-direction: column;
+}
+.viewer-top {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  padding: 20px;
+  display: flex;
+  justify-content: space-between;
+  z-index: 10;
+}
+.viewer-close {
+  width: 44px;
+  height: 44px;
+  background: rgba(255,255,255,0.2);
+  border: none;
+  border-radius: 30px;
+  color: white;
+  cursor: pointer;
+  backdrop-filter: blur(10px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.viewer-counter {
+  background: rgba(255,255,255,0.2);
+  backdrop-filter: blur(10px);
+  padding: 10px 20px;
+  border-radius: 30px;
+  color: white;
+  font-size: 14px;
+}
+.viewer-main {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 15px;
+  padding: 0 15px;
+}
+.viewer-image {
+  max-width: 85%;
+  max-height: 80vh;
+  border-radius: 20px;
+  box-shadow: 0 0 0 3px white;
+}
+.viewer-nav {
+  width: 48px;
+  height: 48px;
+  background: rgba(255,255,255,0.2);
+  border: none;
+  border-radius: 30px;
+  color: white;
+  cursor: pointer;
+  backdrop-filter: blur(10px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.viewer-bottom {
+  position: absolute;
+  bottom: 30px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0,0,0,0.6);
+  backdrop-filter: blur(10px);
+  padding: 10px 24px;
+  border-radius: 40px;
+  color: white;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.viewer-fade-enter-active, .viewer-fade-leave-active { transition: opacity 0.25s; }
+.viewer-fade-enter, .viewer-fade-leave-to { opacity: 0; }
+
+/* Confirm Modal */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.6);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 11000;
+}
 .confirm-modal {
   background: white;
-  padding: 20px;
-  border-radius: 12px;
-  width: 80%;
-  max-width: 350px;
+  width: 85%;
+  max-width: 320px;
+  padding: 32px 24px;
+  border-radius: 48px;
   text-align: center;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
 }
-
-.confirm-buttons {
-  display: flex;
-  justify-content: space-around;
-  margin-top: 15px;
-}
-
-.confirm-buttons button {
-  padding: 8px 16px;
-  border-radius: 6px;
+.modal-heart { margin-bottom: 12px; }
+.confirm-modal h3 { font-size: 20px; margin-bottom: 8px; color: #1a1a2e; }
+.confirm-modal p { font-size: 14px; color: #666; margin-bottom: 24px; }
+.modal-buttons { display: flex; gap: 12px; }
+.modal-cancel, .modal-confirm {
+  flex: 1;
+  padding: 12px 0;
+  border-radius: 50px;
+  font-weight: 600;
+  font-size: 14px;
   border: none;
   cursor: pointer;
 }
-
-.confirm-buttons button:first-child {
-  background: #ccc;
-}
-
-.confirm-buttons button:last-child {
-  background: #e63946;
-  color: white;
-}
+.modal-cancel { background: #f0f0f0; color: #666; }
+.modal-confirm { background: linear-gradient(135deg, #ff4d6d, #e63946); color: white; }
+.modal-pop-enter-active, .modal-pop-leave-active { transition: all 0.2s; }
+.modal-pop-enter, .modal-pop-leave-to { opacity: 0; transform: scale(0.9); }
 </style>

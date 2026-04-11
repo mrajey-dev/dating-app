@@ -1,300 +1,305 @@
 <template>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
   <div class="profile-page">
-    <div class="profile-card">
+    <!-- Animated Background -->
+    <div class="animated-bg">
+      <div class="gradient-bg"></div>
+      <div class="floating-hearts">
+        <span v-for="i in 6" :key="i" class="heart" :style="{ animationDelay: `${i * 0.5}s` }">❤️</span>
+      </div>
+    </div>
 
+    <div class="profile-container">
+      <!-- Profile Card with Glassmorphism -->
+      <div class="profile-card glass-effect">
+        
+        <!-- Logout Button - Top Right Corner -->
+        <button class="logout-btn-top" @click="showLogoutConfirm">
+          <i class="fa fa-sign-out"></i>
+          <span>Logout</span>
+        </button>
 
-  <!-- USER STATS -->
-<div class="profile-card insta-profile">
-  <!-- PROFILE HEADER -->
-  <div class="profile-header">
-  <div class="profile-photo" @click="triggerProfilePhotoInput">
-  <img :src="previewPhoto.profile_photo || user.profile_photo" class="avatar" />
-  
-  <!-- Hidden file input -->
-  <input
-    type="file"
-    ref="profilePhotoInput"
-    accept="image/*"
-    @change="onProfilePhotoSelect"
-    hidden
-  />
-</div>
-
-
-    <div class="profile-info">
-     <h2 class="username">
-  {{ user.first_name }} {{ user.last_name }}
-  <img
-    v-if="user.verified_badge"
-    src="/verified1.png"
-    alt="Verified Badge"
-    class="verified-icon"
-  />
-</h2>
-
-
-      <div class="profile-stats">
-        <div class="stat">
-         <div class="count">
-  {{ user.photo_gallery ? user.photo_gallery.length : 0 }}
-</div>
-
-          <div class="label">Posts</div>
+        <!-- Cover Photo -->
+        <div class="cover-photo">
+          <div class="cover-overlay"></div>
         </div>
-        <div class="stat">
-          <div class="count">{{ user.followers || 0 }}</div>
-          <div class="label">Followers</div>
+
+        <!-- Profile Header - Instagram Style -->
+        <div class="profile-header">
+          <div class="profile-photo-wrapper">
+            <div class="profile-photo" @click="triggerProfilePhotoInput">
+              <img :src="previewPhoto.profile_photo || user.profile_photo || '/default-avatar.png'" class="avatar" />
+              <div class="photo-overlay">
+                <i class="fa fa-camera"></i>
+              </div>
+              <input type="file" ref="profilePhotoInput" accept="image/*" @change="onProfilePhotoSelect" hidden />
+            </div>
+            <div class="online-indicator" v-if="user.is_online"></div>
+          </div>
+
+          <div class="profile-info">
+            <div class="name-section">
+              <h2 class="username">
+                {{ user.first_name }} {{ user.last_name }}
+                <img v-if="user.verified_badge" src="/verified1.png" alt="Verified" class="verified-icon" />
+              </h2>
+              <button class="icon-btn edit-btn" @click="toggleEditForm">
+                <i class="fa fa-edit"></i>
+              </button>
+            </div>
+
+            <div class="profile-stats">
+              <div class="stat">
+                <div class="count">{{ user.photo_gallery ? user.photo_gallery.length : 0 }}</div>
+                <div class="label">Posts</div>
+              </div>
+              <div class="stat">
+                <div class="count">{{ user.followers || 0 }}</div>
+                <div class="label">Followers</div>
+              </div>
+              <div class="stat">
+                <div class="count">{{ user.following || 0 }}</div>
+                <div class="label">Following</div>
+              </div>
+            </div>
+          </div>
         </div>
-        <div class="stat">
-          <div class="count">{{ user.following || 0 }}</div>
-          <div class="label">Following</div>
+
+        <!-- Bio Section -->
+        <div class="bio-section" v-if="user.subtitle">
+          <i class="fa fa-quote-left"></i>
+          <p>{{ user.subtitle }}</p>
+        </div>
+
+        <!-- Introduction Video -->
+        <div class="video-section">
+          <h3 class="section-title">
+            <i class="fa fa-video-camera"></i> Introduction Video
+          </h3>
+          <div class="video-container">
+            <video v-if="previewVideo" :src="previewVideo" controls class="intro-video"></video>
+            <label class="upload-video-btn" v-else>
+              <i class="fa fa-cloud-upload"></i> Upload Introduction Video
+              <input type="file" accept="video/*" @change="onVideoSelect" hidden />
+            </label>
+            <label class="upload-video-btn small" v-if="previewVideo">
+              <i class="fa fa-exchange"></i> Change Video
+              <input type="file" accept="video/*" @change="onVideoSelect" hidden />
+            </label>
+          </div>
+        </div>
+
+        <!-- Photo Gallery -->
+        <div class="gallery-section">
+          <h3 class="section-title">
+            <i class="fa fa-picture-o"></i> Photo Gallery
+            <span class="gallery-count">{{ previewPhoto.photo_gallery?.length || 0 }}/12</span>
+          </h3>
+          <div class="gallery-grid">
+            <div v-for="(photo, i) in previewPhoto.photo_gallery" :key="i" class="gallery-item" @click="openLightbox(i)">
+              <img :src="photo" class="gallery-img" />
+              <div class="gallery-overlay">
+                <button class="remove-btn" @click.stop="showRemovePhotoConfirm(i)">
+                  <i class="fa fa-trash"></i>
+                </button>
+              </div>
+            </div>
+            <label class="add-photo-btn" v-if="(previewPhoto.photo_gallery?.length || 0) < 12">
+              <i class="fa fa-plus"></i>
+              <span>Add Photo</span>
+              <input type="file" multiple accept="image/*" @change="e => onFileChange('photo_gallery', e)" hidden />
+            </label>
+          </div>
+        </div>
+
+        <!-- Edit Form with Slide Animation -->
+        <div ref="editFormContainer" class="edit-form-container" v-show="showPersonalDetails">
+          <div class="form-header">
+            <h3><i class="fa fa-user-circle"></i> Edit Profile</h3>
+            <button class="close-form" @click="closeEditForm">✕</button>
+          </div>
+          <form class="profile-form" @submit.prevent="updateProfile">
+            <div class="form-row">
+              <div class="form-group">
+                <label><i class="fa fa-user"></i> First Name</label>
+                <input v-model="user.first_name" required placeholder="Enter first name" />
+              </div>
+              <div class="form-group">
+                <label><i class="fa fa-user"></i> Last Name</label>
+                <input v-model="user.last_name" required placeholder="Enter last name" />
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label><i class="fa fa-envelope"></i> Email</label>
+                <input type="email" v-model="user.email" required placeholder="your@email.com" />
+              </div>
+              <div class="form-group">
+                <label><i class="fa fa-phone"></i> Phone</label>
+                <input v-model="user.phone_number" placeholder="Phone number" />
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label><i class="fa fa-lock"></i> Password</label>
+                <input type="password" v-model="user.password" placeholder="Leave blank to keep current" />
+              </div>
+              <div class="form-group">
+                <label><i class="fa fa-venus-mars"></i> Gender</label>
+                <select v-model="user.gender" disabled>
+                  <option value="male">Male</option>
+                  <option value="female">Female</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label><i class="fa fa-calendar"></i> Date of Birth</label>
+              <input type="date" v-model="user.dob" :max="maxDate" />
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label><i class="fa fa-globe"></i> Country</label>
+                <input v-model="user.country" placeholder="Country" />
+              </div>
+              <div class="form-group">
+                <label><i class="fa fa-map-marker"></i> State</label>
+                <input v-model="user.state" placeholder="State" />
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label><i class="fa fa-building"></i> City</label>
+                <input v-model="user.city" placeholder="City" />
+              </div>
+              <div class="form-group">
+                <label><i class="fa fa-map-pin"></i> Pin Code</label>
+                <input v-model="user.pin_code" placeholder="Pin code" />
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label><i class="fa fa-location-arrow"></i> Address</label>
+              <textarea v-model="user.address" rows="3" placeholder="Your address"></textarea>
+            </div>
+
+            <div class="form-group">
+              <label><i class="fa fa-comment"></i> Bio</label>
+              <input v-model="user.subtitle" placeholder="Write something about yourself" />
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label><i class="fa fa-heart"></i> Relationship Status</label>
+                <select v-model="user.status">
+                  <option disabled value="">Select status</option>
+                  <option>Single</option>
+                  <option>Married</option>
+                  <option>Divorced</option>
+                  <option>Separated</option>
+                  <option>Widowed</option>
+                </select>
+              </div>
+              <div class="form-group toggle-group">
+                <label class="toggle-label">
+                  <i class="fa fa-shield"></i> Verified Badge
+                  <img v-if="user.verified_badge" src="/verified1.png" alt="Badge" class="verified-icon" />
+                </label>
+                <div class="toggle-switch">
+                  <input type="checkbox" id="verifiedToggle" v-model="user.verified_badge" />
+                  <label for="verifiedToggle" class="toggle-slider"></label>
+                </div>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label><i class="fa fa-heartbeat"></i> Habits / Hobbies</label>
+              <input v-model="habitsText" placeholder="Enter habits separated by commas (e.g., Reading, Travel, Music)" />
+              <div class="habits-preview">
+                <span v-for="(h, i) in habitsText.split(',').map(h => h.trim()).filter(h => h)" :key="i" class="habit-chip">
+                  {{ h }}
+                </span>
+              </div>
+            </div>
+
+            <div class="form-actions">
+              <button type="submit" class="btn-save">
+                <i class="fa fa-save"></i> Save Changes
+              </button>
+              <button type="button" class="btn-cancel-form" @click="closeEditForm">
+                <i class="fa fa-times"></i> Cancel
+              </button>
+            </div>
+          </form>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Lightbox Modal for Gallery -->
+    <transition name="modal-fade">
+      <div v-if="lightboxOpen" class="lightbox-modal" @click="closeLightbox">
+        <div class="lightbox-content" @click.stop>
+          <img :src="previewPhoto.photo_gallery[lightboxIndex]" class="lightbox-image" />
+          <button class="lightbox-close" @click="closeLightbox">✕</button>
+          <button class="lightbox-prev" @click="prevImage" v-if="previewPhoto.photo_gallery?.length > 1">‹</button>
+          <button class="lightbox-next" @click="nextImage" v-if="previewPhoto.photo_gallery?.length > 1">›</button>
+        </div>
+      </div>
+    </transition>
+
+    <!-- Toast Notification -->
+    <transition name="toast-fade">
+      <div v-if="toast.show" :class="['toast', toast.type]">
+        <i :class="toast.type === 'success' ? 'fa fa-check-circle' : 'fa fa-exclamation-circle'"></i>
+        {{ toast.message }}
+      </div>
+    </transition>
+
+    <!-- Custom Confirmation Modal -->
+    <transition name="modal-fade">
+      <div v-if="confirmModal.show" class="confirm-modal-overlay" @click.self="closeConfirmModal">
+        <div class="confirm-modal">
+          <div class="confirm-modal-header" :class="confirmModal.type">
+            <i :class="confirmModal.type === 'danger' ? 'fa fa-exclamation-triangle' : 'fa fa-question-circle'"></i>
+            <h3>{{ confirmModal.title }}</h3>
+          </div>
+          <div class="confirm-modal-body">
+            <p>{{ confirmModal.message }}</p>
+          </div>
+          <div class="confirm-modal-footer">
+            <button class="confirm-btn cancel" @click="cancelConfirmAction">
+              <i class="fa fa-times"></i> {{ confirmModal.cancelText || 'Cancel' }}
+            </button>
+            <button class="confirm-btn confirm" :class="confirmModal.type" @click="executeConfirmAction">
+              <i class="fa fa-check"></i> {{ confirmModal.confirmText || 'Confirm' }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </transition>
+
+    <!-- Cropper Modal -->
+    <div v-if="showCropper" class="cropper-modal-overlay" @click.self="closeCropper">
+      <div class="cropper-container">
+        <div class="cropper-header">
+          <button @click="closeCropper">Cancel</button>
+          <span>Edit Profile Photo</span>
+          <button class="done" @click="cropAndUpload">Done</button>
+        </div>
+        <div class="cropper-body">
+          <img ref="cropImage" :src="cropImageUrl" />
+        </div>
+        <div class="cropper-footer">
+          <i class="fa fa-hand-pointer-o"></i> Drag & Zoom to adjust
         </div>
       </div>
     </div>
   </div>
-</div>
-<!-- INTRODUCTION VIDEO -->
-<div class="video-section">
-  <h3 class="introduction">Introduction Video</h3>
-
-  <div class="video-preview">
-    <video
-      v-if="previewVideo"
-      :src="previewVideo"
-      controls
-      class="intro-video"
-    ></video>
-
-    <label class="add-video">
-      <i class="fa fa-folder-open-o" style="font-size:15px"></i> Upload Video
-      <input
-        type="file"
-        accept="video/*"
-        @change="onVideoSelect"
-        hidden
-      />
-    </label>
-  </div>
-</div>
-
-
-      <!-- PHOTO GALLERY -->
-      <div class="photo-gallery">
-        <h3>Gallery</h3>
-        <div class="gallery-scroll" @click.stop>  
- <div
-  v-for="(photo, i) in previewPhoto.photo_gallery || []"
-  :key="i"
-  class="gallery-item"
-  @click="togglePhoto(i)"
->
-  <img :src="photo" class="gallery-img" />
-
-  <!-- REMOVE BUTTON (only when selected) -->
-  <button
-    v-if="selectedPhotoIndex === i"
-    class="remove-photo"
-    @click.stop="removeGalleryPhoto(i)"
-  >
-    ✕
-  </button>
-</div>
-
-
-          <label class="add-photo">
-            +
-          <input type="file" multiple @change="e => onFileChange('photo_gallery', e)" hidden />
-
-          </label>
-        </div>
-      </div>
-<div class="edit-bar">
-   <button class="btn-logout" @click="logout">
-   <i class="fa fa-sign-out" style="font-size:15px"></i> Logout
-  </button>
-  <button
-    type="button"
-    class="btn-edit"
-    v-if="!showPersonalDetails"
-    @click="showPersonalDetails = true"
-  >
-    <i class="fas fa-edit" style="font-size: 13px;"></i> Edit Personal Details
-  </button>
-
-  <button
-    type="button"
-    class="btn-cancel"
-    v-if="showPersonalDetails"
-    @click="showPersonalDetails = false"
-  >
-   <i class="fa fa-eye-slash" aria-hidden="true"></i> Hide
-  </button>
-</div>
-
-    <form
-  v-if="showPersonalDetails"
-  class="profile-form"
-  @submit.prevent="updateProfile"
->
-        <!-- BASIC INFO -->
-        <div class="form-row">
-          <div class="form-group">
-            <label>First Name</label>
-            <input v-model="user.first_name" required />
-          </div>
-          <div class="form-group">
-            <label>Last Name</label>
-            <input v-model="user.last_name" required />
-          </div>
-        </div>
-
-        <div class="form-row">
-          <div class="form-group">
-            <label>Email</label>
-            <input type="email" v-model="user.email" required />
-          </div>
-          <div class="form-group">
-            <label>Phone</label>
-            <input v-model="user.phone_number" />
-          </div>
-        </div>
-
-        <div class="form-row">
-          <div class="form-group">
-            <label>Password</label>
-            <input type="password" v-model="user.password" placeholder="Leave blank to keep current" />
-          </div>
-          <div class="form-group">
-  <label>Gender</label>
-  <select v-model="user.gender" disabled>
-    <option value="male">Male</option>
-    <option value="female">Female</option>
-  </select>
-</div>
-          
-        </div>
-
-        <div class="form-group">
-          <label>Date of Birth</label>
-          <input type="date" v-model="user.dob" :max="maxDate" />
-        </div>
-
-        <!-- LOCATION -->
-        <div class="form-row">
-          <div class="form-group"><label>Country</label><input v-model="user.country" /></div>
-          <div class="form-group"><label>State</label><input v-model="user.state" /></div>
-        </div>
-        <div class="form-row">
-          <div class="form-group"><label>City</label><input v-model="user.city" /></div>
-          <div class="form-group"><label>Pin Code</label><input v-model="user.pin_code" /></div>
-        </div>
-        <div class="form-group">
-          <label>Address</label>
-          <textarea v-model="user.address"></textarea>
-        </div>
-
-        <!-- PROFILE DETAILS -->
-        <div class="form-group">
-          <label>Bio</label>
-          <input v-model="user.subtitle" />
-        </div>
-        <div class="form-group"> 
-          <label>Status</label>
-      
-          <select v-model="user.status">
-          <option disabled value="">Select status</option>
-          <option>Single</option>
-          <option>Married</option>
-          <option>Divorced</option>
-          <option>Separated</option>
-          <option>Widowed</option>
-        </select>
-        </div>
-
-        <div class="form-row">
-        <div class="form-group toggle-group">
- <label class="toggle-label">
-  Verified Badge  
-  <img
-    v-if="user.verified_badge"
-    src="/verified1.png"
-    alt="Verification Badge"
-    class="verified-icon"
-  />
-</label>
-
-
-  <div class="toggle-switch">
-    <input
-      type="checkbox"
-      id="verifiedToggle"
-      v-model="user.verified_badge"
-    />
-    <label for="verifiedToggle" class="toggle-slider"></label>
-  </div>
-</div>
-
-          <!-- <div class="form-group"><label>Rate (₹/hour)</label><input type="number" v-model="user.rate" min="0" /></div> -->
-        </div>
-
-     <!-- HABITS FIELD -->
-<div class="form-group">
-  <label>Habits / Hobbies</label>
-  <input
-    v-model="habitsText"
-    placeholder="Enter habits separated by commas"
-  />
-  <div class="habits-preview">
-  <span v-for="(h, i) in habitsText.split(',').map(h => h.trim()).filter(h => h)" :key="i" class="habit-chip">
-    {{ h }}
-  </span>
-</div>
-
-</div>
-
-<!-- DELETE ACCOUNT -->
-<!-- <div class="delete-account">
-  <button @click="confirmDelete" class="btn-delete">
-    Delete My Account
-  </button>
-</div> -->
-
-      <!-- Sticky Save Bar -->
-<!-- Sticky Save & Logout Bar -->
-<div class="save-bar">
- 
-  <button type="submit" class="btn-save"><i class="fa fa-save" style="font-size:15px"></i> Save Changes</button>
-</div>
-
-
-      </form>
-    </div>
-  
- <!-- TOAST -->
-<div class="toast-container">
-  <div
-    v-if="toast.show"
-    :class="['toast', toast.type]"
-  >
-    {{ toast.message }}
-  </div>
-</div>
-<!-- CROP MODAL -->
-<div v-if="showCropper" class="cropper-modal">
-  <div class="cropper-header">
-    <button @click="closeCropper">Cancel</button>
-    <span>Move & Scale</span>
-    <button class="done" @click="cropAndUpload">Done</button>
-  </div>
-
-  <div class="cropper-body">
-    <img ref="cropImage" :src="cropImageUrl" />
-  </div>
-</div>
-
- </div>
-
 </template>
 
 <script>
@@ -302,32 +307,43 @@ import axios from "axios"
 import Cropper from "cropperjs"
 import "cropperjs/dist/cropper.min.css"
 import '@fortawesome/fontawesome-free/css/all.min.css'
+import BottomNavBar from '@/components/BottomNavBar.vue'
 
 export default {
+  components: { BottomNavBar },
   data() {
     return {
       showPersonalDetails: false,
       previewVideo: null,
-      selectedPhotoIndex: null,
-        showCropper: false,
-cropper: null,
-cropImageUrl: null,
-selectedProfileFile: null,
-
-        toast: {
-      show: false,
-      message: "",
-      type: "success", // success | error
-    },
+      lightboxOpen: false,
+      lightboxIndex: 0,
+      showCropper: false,
+      cropper: null,
+      cropImageUrl: null,
+      selectedProfileFile: null,
+      toast: {
+        show: false,
+        message: "",
+        type: "success",
+      },
+      confirmModal: {
+        show: false,
+        title: "",
+        message: "",
+        type: "warning",
+        confirmText: "",
+        cancelText: "",
+        onConfirm: null,
+        onCancel: null,
+      },
+      pendingRemovePhotoIndex: null,
       user: {
         first_name: "",
         last_name: "",
         gender: "",
-        gender_preference: "",
         dob: "",
         email: "",
         phone_number: "",
-        country_code: "",
         password: "",
         profile_photo: "",
         photo_gallery: [],
@@ -338,12 +354,13 @@ selectedProfileFile: null,
         country: "",
         pin_code: "",
         verified_badge: false,
-        rate: 0,
-       habits: [],
+        habits: [],
         status: "",
+        followers: 0,
+        following: 0,
+        is_online: true,
       },
-      habitsText: "", 
-
+      habitsText: "",
       fileUploads: {
         profile_photo: null,
         photo_gallery: [],
@@ -361,462 +378,834 @@ selectedProfileFile: null,
       return today.toISOString().split("T")[0]
     },
   },
-async mounted() {
-  const storedUser = JSON.parse(localStorage.getItem("user"))
-  console.log(storedUser)
-  if (!storedUser) return
+  async mounted() {
+    const storedUser = JSON.parse(localStorage.getItem("user"))
+    if (!storedUser) return
 
-  // Profile photo
-  const profilePhoto = storedUser.profile_photo
-    ? storedUser.profile_photo.startsWith("http")
-      ? storedUser.profile_photo
-      : `https://companion.ajaywatpade.in/dating-backend/public/storage/${storedUser.profile_photo}`
-    : ""
-if (storedUser.introduction_video) {
-  this.previewVideo = storedUser.introduction_video.startsWith("http")
-    ? storedUser.introduction_video
-    : `https://companion.ajaywatpade.in/dating-backend/public/storage/${storedUser.introduction_video}`
-}
+    const profilePhoto = storedUser.profile_photo
+      ? storedUser.profile_photo.startsWith("http")
+        ? storedUser.profile_photo
+        : `https://companion.ajaywatpade.in/dating-backend/public/storage/${storedUser.profile_photo}`
+      : ""
 
-  this.user = {
-    ...storedUser,
-    profile_photo: profilePhoto,
-     verified_badge:
-    storedUser.verified_badge === 1 ||
-    storedUser.verified_badge === "1" ||
-    storedUser.verified_badge === true,
-   
-  followers: Number(storedUser.followers_count || 0),
-  following: Number(storedUser.following_count || 0),
-  }
-  document.addEventListener("click", this.closePhotoSelection)
-
-  this.user.verified_badge =
-  storedUser.verified_badge === 1 ||
-  storedUser.verified_badge === "1" ||
-  storedUser.verified_badge === true
-
-
-  // Habits text
-  if (Array.isArray(storedUser.habits)) {
-    this.habitsText = storedUser.habits.join(", ")
-  } else if (typeof storedUser.habits === "string") {
-    try {
-      const parsed = JSON.parse(storedUser.habits)
-      if (Array.isArray(parsed)) this.habitsText = parsed.join(", ")
-      else this.habitsText = storedUser.habits
-    } catch (e) {
-      this.habitsText = storedUser.habits
+    if (storedUser.introduction_video) {
+      this.previewVideo = storedUser.introduction_video.startsWith("http")
+        ? storedUser.introduction_video
+        : `https://companion.ajaywatpade.in/dating-backend/public/storage/${storedUser.introduction_video}`
     }
-  } else {
-    this.habitsText = ""
-  }
 
-  // --- PHOTO GALLERY ---
-  if (storedUser.photo_gallery) {
-    let galleryArr = []
+    this.user = {
+      ...storedUser,
+      profile_photo: profilePhoto,
+      verified_badge: storedUser.verified_badge === 1 || storedUser.verified_badge === "1" || storedUser.verified_badge === true,
+      followers: Number(storedUser.followers_count || 0),
+      following: Number(storedUser.following_count || 0),
+    }
 
-    // Parse if stored as JSON string
-    if (typeof storedUser.photo_gallery === "string") {
+    if (Array.isArray(storedUser.habits)) {
+      this.habitsText = storedUser.habits.join(", ")
+    } else if (typeof storedUser.habits === "string") {
       try {
-        galleryArr = JSON.parse(storedUser.photo_gallery)
+        const parsed = JSON.parse(storedUser.habits)
+        if (Array.isArray(parsed)) this.habitsText = parsed.join(", ")
+        else this.habitsText = storedUser.habits
       } catch (e) {
-        galleryArr = []
+        this.habitsText = storedUser.habits
       }
-    } else if (Array.isArray(storedUser.photo_gallery)) {
-      galleryArr = storedUser.photo_gallery
     }
 
-    // Set preview with /storage/ prepended
-    this.previewPhoto.photo_gallery = galleryArr.map(
-      (p) =>
-        p.startsWith("http")
-          ? p
-          : `https://companion.ajaywatpade.in/dating-backend/public/storage/${p.replace("gallery\\", "gallery/")}`
-    )
-
-    // Keep original array for backend
-    this.user.photo_gallery = galleryArr
-  }
-},
-beforeUnmount() {
-  document.removeEventListener("click", this.closePhotoSelection)
-},
-
-
-
+    if (storedUser.photo_gallery) {
+      let galleryArr = []
+      if (typeof storedUser.photo_gallery === "string") {
+        try {
+          galleryArr = JSON.parse(storedUser.photo_gallery)
+        } catch (e) {
+          galleryArr = []
+        }
+      } else if (Array.isArray(storedUser.photo_gallery)) {
+        galleryArr = storedUser.photo_gallery
+      }
+      this.previewPhoto.photo_gallery = galleryArr.map(p =>
+        p.startsWith("http") ? p : `https://companion.ajaywatpade.in/dating-backend/public/storage/${p.replace("gallery\\", "gallery/")}`
+      )
+      this.user.photo_gallery = galleryArr
+    }
+  },
   methods: {
-    async onVideoSelect(e) {
-  const token = localStorage.getItem("token")
-
-  const file = e.target.files[0]
-  if (!file) return
-
-  // Optional: limit size (50MB example)
-  if (file.size > 50 * 1024 * 1024) {
-    this.showToast("Video must be under 50MB", "error")
-    return
-  }
-
-  const formData = new FormData()
-  formData.append("introduction_video", file)
-
-  try {
-    const res = await axios.post(
-      "https://companion.ajaywatpade.in/api/profile/upload-video",
-      formData,
-      { headers: { Authorization: `Bearer ${token}` } }
-    )
-
-    this.previewVideo = URL.createObjectURL(file)
-    this.user.introduction_video = res.data.introduction_video
-    localStorage.setItem("user", JSON.stringify(res.data))
-
-    this.showToast("Video uploaded successfully")
-  } catch (err) {
-    console.error(err)
-    this.showToast("Failed to upload video", "error")
-  }
-},
-
-    triggerProfilePhotoInput() {
-  this.$refs.profilePhotoInput.click()
-},
-
-    closePhotoSelection() {
-  this.selectedPhotoIndex = null
-},
-    togglePhoto(index) {
-  if (this.selectedPhotoIndex === index) {
-    this.selectedPhotoIndex = null
-  } else {
-    this.selectedPhotoIndex = index
-  }
-},
-
-    logout() {
-  localStorage.removeItem("token")
-  localStorage.removeItem("user")
-  window.location.href = "/"
-},
-
-    async removeGalleryPhoto(index) {
-  const confirmed = confirm("Remove this photo from your gallery?")
-  if (!confirmed) return
-  this.selectedPhotoIndex = null
-  const token = localStorage.getItem("token")
-  if (!token) return
-
-  // Remove from preview instantly (UX win)
-  const removedPhoto = this.user.photo_gallery[index]
-
-  this.previewPhoto.photo_gallery.splice(index, 1)
-  this.user.photo_gallery.splice(index, 1)
-
-  try {
-    const res = await axios.post(
-      "https://companion.ajaywatpade.in/api/profile/remove-gallery-photo",
-      {
-        photo: removedPhoto,
-      },
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      }
-    )
-
-    // Update local storage with latest user data
-    localStorage.setItem("user", JSON.stringify(res.data))
-    this.showToast("Photo removed successfully")
-  } catch (err) {
-    console.error(err)
-    this.showToast("Failed to remove photo", "error")
-  }
-},
-
-    confirmDelete() {
-  const confirmed = confirm(
-    "Are you sure?\nThis will permanently delete your account and cannot be undone."
-  )
-
-  if (confirmed) {
-    this.deleteAccount()
-  }
-},
-
-async deleteAccount() {
-  const token = localStorage.getItem("token")
-  if (!token) return
-
-  try {
-    await axios.delete(
-      "https://companion.ajaywatpade.in/api/profile/delete",
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      }
-    )
-
-    // Clear everything
-    localStorage.removeItem("token")
-    localStorage.removeItem("user")
-
-    // Redirect to home
-    window.location.href = "/"
-  } catch (err) {
-    console.error(err)
-    this.showToast("Failed to delete account", "error")
-  }
-},
-
-    onProfilePhotoSelect(e) {
-  const file = e.target.files[0]
-  if (!file) return
-
-  this.selectedProfileFile = file
-  this.cropImageUrl = URL.createObjectURL(file)
-  this.showCropper = true
-
-  this.$nextTick(() => {
-    this.cropper = new Cropper(this.$refs.cropImage, {
-      aspectRatio: 1,
-      viewMode: 1,
-      dragMode: "move",
-      background: false,
-      autoCropArea: 1,
-      responsive: true,
-      zoomOnWheel: true,
-    })
-  })
-},
-
-closeCropper() {
-  if (this.cropper) {
-    this.cropper.destroy()
-    this.cropper = null
-  }
-  this.showCropper = false
-},
-
-async cropAndUpload() {
-  const token = localStorage.getItem("token")
-  if (!token) return
-
-  const canvas = this.cropper.getCroppedCanvas({
-    width: 512,
-    height: 512,
-    imageSmoothingQuality: "high",
-  })
-
-  canvas.toBlob(async (blob) => {
-    const formData = new FormData()
-    formData.append("profile_photo", blob, "profile.jpg")
-
-    try {
-      const res = await axios.post(
-        "https://companion.ajaywatpade.in/api/profile/upload-profile-photo",
-        formData,
-        { headers: { Authorization: `Bearer ${token}` } }
-      )
-
-      this.previewPhoto.profile_photo = canvas.toDataURL()
-      this.user.profile_photo = res.data.profile_photo
-      localStorage.setItem("user", JSON.stringify(res.data))
-      this.showToast("Profile photo updated")
-    } catch (err) {
-      console.error(err)
-      this.showToast("Failed to upload photo", "error")
-    } finally {
-      this.closeCropper()
-    }
-  }, "image/jpeg", 0.9)
-},
-
-    showToast(message, type = "success") {
-  this.toast.message = message
-  this.toast.type = type
-  this.toast.show = true
-
-  setTimeout(() => {
-    this.toast.show = false
-  }, 3000)
-},
-
-async onFileChange(field, e) {
-  const token = localStorage.getItem("token")
-
-
-  // ---------------- GALLERY ----------------
-  if (field === "photo_gallery") {
-    const files = Array.from(e.target.files).slice(0, 5)
-    if (!files.length) return
-
-    // Preview instantly
-    const previews = files.map((f) => URL.createObjectURL(f))
-    this.previewPhoto.photo_gallery.push(...previews)
-
-    const formData = new FormData()
-    files.forEach((file) => formData.append("photo_gallery[]", file))
-
-    try {
-      const res = await axios.post(
-        "https://companion.ajaywatpade.in/api/profile/upload-gallery",
-        formData,
-        { headers: { Authorization: `Bearer ${token}` } }
-      )
-
-      // Backend should return updated gallery array
-      this.user.photo_gallery = res.data.photo_gallery
-      localStorage.setItem("user", JSON.stringify(res.data))
-    } catch (err) {
-      console.error(err)
-      alert("Failed to upload gallery images")
-    }
-  }
-},
-
-async updateProfile() {
-  const token = localStorage.getItem("token")
-  if (!token) return
-
-  // Convert habits text to array
-  this.user.habits = this.habitsText
-    .split(",")
-    .map(h => h.trim())
-    .filter(Boolean)
-
-  const formData = new FormData()
-
-  Object.keys(this.user).forEach((key) => {
-    if (["profile_photo", "photo_gallery"].includes(key)) return
-
-    if (key === "verified_badge") {
-      formData.append(key, this.user.verified_badge ? 1 : 0)
-    } else if (Array.isArray(this.user[key])) {
-      // Handle array fields like habits
-      this.user[key].forEach(value => {
-        formData.append(`${key}[]`, value)
+    // Custom Confirmation Modal Methods
+    showConfirmModal(options) {
+      return new Promise((resolve) => {
+        this.confirmModal = {
+          show: true,
+          title: options.title || "Confirm Action",
+          message: options.message || "Are you sure?",
+          type: options.type || "warning",
+          confirmText: options.confirmText || "Confirm",
+          cancelText: options.cancelText || "Cancel",
+          onConfirm: () => {
+            this.confirmModal.show = false
+            resolve(true)
+          },
+          onCancel: () => {
+            this.confirmModal.show = false
+            resolve(false)
+          },
+        }
       })
-    } else {
-      formData.append(key, this.user[key] ?? "")
-    }
-  })
+    },
 
-  try {
-    const res = await axios.post(
-      "https://companion.ajaywatpade.in/api/profile/update",
-      formData,
-      { headers: { Authorization: `Bearer ${token}` } }
-    )
+    closeConfirmModal() {
+      if (this.confirmModal.onCancel) {
+        this.confirmModal.onCancel()
+      }
+      this.confirmModal.show = false
+    },
 
-    localStorage.setItem("user", JSON.stringify(res.data))
-    this.showToast("Profile updated successfully")
+    cancelConfirmAction() {
+      if (this.confirmModal.onCancel) {
+        this.confirmModal.onCancel()
+      }
+      this.confirmModal.show = false
+    },
 
-    // Optional: hide form after save
-    this.showPersonalDetails = false
+    executeConfirmAction() {
+      if (this.confirmModal.onConfirm) {
+        this.confirmModal.onConfirm()
+      }
+    },
 
-  } catch (err) {
-    console.error(err)
-    this.showToast("Failed to update profile", "error")
-  }
-},
+    async showLogoutConfirm() {
+      const confirmed = await this.showConfirmModal({
+        title: "Logout",
+        message: "Are you sure you want to logout?",
+        type: "warning",
+        confirmText: "Logout",
+        cancelText: "Stay",
+      })
+      if (confirmed) {
+        this.logout()
+      }
+    },
 
+    async showRemovePhotoConfirm(index) {
+      this.pendingRemovePhotoIndex = index
+      const confirmed = await this.showConfirmModal({
+        title: "Remove Photo",
+        message: "Are you sure you want to remove this photo from your gallery?",
+        type: "danger",
+        confirmText: "Remove",
+        cancelText: "Cancel",
+      })
+      if (confirmed) {
+        await this.removeGalleryPhoto(this.pendingRemovePhotoIndex)
+      }
+      this.pendingRemovePhotoIndex = null
+    },
 
+    // Toggle edit form with auto-scroll
+    toggleEditForm() {
+      if (this.showPersonalDetails) {
+        this.closeEditForm()
+      } else {
+        this.showPersonalDetails = true
+        this.$nextTick(() => {
+          this.scrollToEditForm()
+        })
+      }
+    },
+    
+    // Close edit form
+    closeEditForm() {
+      this.showPersonalDetails = false
+    },
+    
+    // Auto-scroll to edit form with smooth animation
+    scrollToEditForm() {
+      const editForm = this.$refs.editFormContainer
+      if (editForm) {
+        const elementPosition = editForm.getBoundingClientRect().top
+        const offsetPosition = elementPosition + window.pageYOffset - 80
+        
+        window.scrollTo({
+          top: offsetPosition,
+          behavior: 'smooth'
+        })
+        
+        editForm.style.transition = 'all 0.3s ease'
+        editForm.style.boxShadow = '0 0 0 3px #fd5068'
+        setTimeout(() => {
+          editForm.style.boxShadow = ''
+        }, 1000)
+      }
+    },
+    
+    openLightbox(index) {
+      this.lightboxIndex = index
+      this.lightboxOpen = true
+    },
+    closeLightbox() {
+      this.lightboxOpen = false
+    },
+    prevImage() {
+      if (this.lightboxIndex > 0) {
+        this.lightboxIndex--
+      } else {
+        this.lightboxIndex = this.previewPhoto.photo_gallery.length - 1
+      }
+    },
+    nextImage() {
+      if (this.lightboxIndex < this.previewPhoto.photo_gallery.length - 1) {
+        this.lightboxIndex++
+      } else {
+        this.lightboxIndex = 0
+      }
+    },
+    async onVideoSelect(e) {
+      const token = localStorage.getItem("token")
+      const file = e.target.files[0]
+      if (!file) return
+
+      if (file.size > 50 * 1024 * 1024) {
+        this.showToast("Video must be under 50MB", "error")
+        return
+      }
+
+      const formData = new FormData()
+      formData.append("introduction_video", file)
+
+      try {
+        const res = await axios.post("https://companion.ajaywatpade.in/api/profile/upload-video", formData, {
+          headers: { Authorization: `Bearer ${token}` }
+        })
+        this.previewVideo = URL.createObjectURL(file)
+        this.user.introduction_video = res.data.introduction_video
+        localStorage.setItem("user", JSON.stringify(res.data))
+        this.showToast("Video uploaded successfully")
+      } catch (err) {
+        console.error(err)
+        this.showToast("Failed to upload video", "error")
+      }
+    },
+    triggerProfilePhotoInput() {
+      this.$refs.profilePhotoInput.click()
+    },
+    async removeGalleryPhoto(index) {
+      const token = localStorage.getItem("token")
+      const removedPhoto = this.user.photo_gallery[index]
+
+      this.previewPhoto.photo_gallery.splice(index, 1)
+      this.user.photo_gallery.splice(index, 1)
+
+      try {
+        const res = await axios.post("https://companion.ajaywatpade.in/api/profile/remove-gallery-photo",
+          { photo: removedPhoto },
+          { headers: { Authorization: `Bearer ${token}` } }
+        )
+        localStorage.setItem("user", JSON.stringify(res.data))
+        this.showToast("Photo removed successfully")
+      } catch (err) {
+        console.error(err)
+        this.showToast("Failed to remove photo", "error")
+        // Revert on error
+        this.previewPhoto.photo_gallery.splice(index, 0, removedPhoto)
+        this.user.photo_gallery.splice(index, 0, removedPhoto)
+      }
+    },
+    logout() {
+      localStorage.removeItem("token")
+      localStorage.removeItem("user")
+      window.location.href = "/"
+    },
+    onProfilePhotoSelect(e) {
+      const file = e.target.files[0]
+      if (!file) return
+      this.selectedProfileFile = file
+      this.cropImageUrl = URL.createObjectURL(file)
+      this.showCropper = true
+      this.$nextTick(() => {
+        this.cropper = new Cropper(this.$refs.cropImage, {
+          aspectRatio: 1,
+          viewMode: 1,
+          dragMode: "move",
+          background: false,
+          autoCropArea: 1,
+          responsive: true,
+          zoomOnWheel: true,
+        })
+      })
+    },
+    closeCropper() {
+      if (this.cropper) {
+        this.cropper.destroy()
+        this.cropper = null
+      }
+      this.showCropper = false
+    },
+    async cropAndUpload() {
+      const token = localStorage.getItem("token")
+      if (!token) return
+
+      const canvas = this.cropper.getCroppedCanvas({ width: 512, height: 512, imageSmoothingQuality: "high" })
+      canvas.toBlob(async (blob) => {
+        const formData = new FormData()
+        formData.append("profile_photo", blob, "profile.jpg")
+
+        try {
+          const res = await axios.post("https://companion.ajaywatpade.in/api/profile/upload-profile-photo", formData, {
+            headers: { Authorization: `Bearer ${token}` }
+          })
+          this.previewPhoto.profile_photo = canvas.toDataURL()
+          this.user.profile_photo = res.data.profile_photo
+          localStorage.setItem("user", JSON.stringify(res.data))
+          this.showToast("Profile photo updated")
+        } catch (err) {
+          console.error(err)
+          this.showToast("Failed to upload photo", "error")
+        } finally {
+          this.closeCropper()
+        }
+      }, "image/jpeg", 0.9)
+    },
+    showToast(message, type = "success") {
+      this.toast.message = message
+      this.toast.type = type
+      this.toast.show = true
+      setTimeout(() => { this.toast.show = false }, 3000)
+    },
+    async onFileChange(field, e) {
+      const token = localStorage.getItem("token")
+      if (field === "photo_gallery") {
+        const files = Array.from(e.target.files).slice(0, 5)
+        if (!files.length) return
+
+        const previews = files.map(f => URL.createObjectURL(f))
+        this.previewPhoto.photo_gallery.push(...previews)
+
+        const formData = new FormData()
+        files.forEach(file => formData.append("photo_gallery[]", file))
+
+        try {
+          const res = await axios.post("https://companion.ajaywatpade.in/api/profile/upload-gallery", formData, {
+            headers: { Authorization: `Bearer ${token}` }
+          })
+          this.user.photo_gallery = res.data.photo_gallery
+          localStorage.setItem("user", JSON.stringify(res.data))
+          this.showToast("Gallery photos added")
+        } catch (err) {
+          console.error(err)
+          this.showToast("Failed to upload gallery images", "error")
+        }
+      }
+    },
+    async updateProfile() {
+      const token = localStorage.getItem("token")
+      if (!token) return
+
+      this.user.habits = this.habitsText.split(",").map(h => h.trim()).filter(Boolean)
+
+      const formData = new FormData()
+      Object.keys(this.user).forEach(key => {
+        if (["profile_photo", "photo_gallery"].includes(key)) return
+        if (key === "verified_badge") {
+          formData.append(key, this.user.verified_badge ? 1 : 0)
+        } else if (Array.isArray(this.user[key])) {
+          this.user[key].forEach(value => formData.append(`${key}[]`, value))
+        } else {
+          formData.append(key, this.user[key] ?? "")
+        }
+      })
+
+      try {
+        const res = await axios.post("https://companion.ajaywatpade.in/api/profile/update", formData, {
+          headers: { Authorization: `Bearer ${token}` }
+        })
+        localStorage.setItem("user", JSON.stringify(res.data))
+        this.showToast("Profile updated successfully")
+        this.closeEditForm()
+      } catch (err) {
+        console.error(err)
+        this.showToast("Failed to update profile", "error")
+      }
+    },
   },
 }
 </script>
 
 <style scoped>
-/* MOBILE-FRIENDLY STYLING */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
 .profile-page {
-  display: flex;
-  justify-content: center;
-  padding: 15px;
-  background: #f7f7f7;
   min-height: 100vh;
+  position: relative;
+  overflow-x: hidden;
+  padding: 20px;
 }
 
-.profile-card {
+/* Animated Background */
+.animated-bg {
+  position: fixed;
+  top: 0;
+  left: 0;
   width: 100%;
-  max-width: 500px;
-  background: #fff;
-  border-radius: 20px;
-      margin-bottom: 39px;
-  padding: 8px;
-  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.1);
+  height: 100%;
+  overflow: hidden;
+  z-index: 0;
 }
 
-.profile-card h1 {
-  text-align: center;
-  margin-bottom: 20px;
-  font-size: 24px;
-    font-family: math;
-  color: #ff5864;
+.gradient-bg {
+  position: absolute;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(circle at 20% 50%, rgba(255, 107, 139, 0.15) 0%, transparent 50%);
+  animation: rotate 20s linear infinite;
+}
+
+@keyframes rotate {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.floating-hearts {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+}
+
+.heart {
+  position: absolute;
+  font-size: 20px;
+  opacity: 0.25;
+  animation: floatHeart 10s infinite ease-in-out;
+}
+
+.heart:nth-child(1) { top: 10%; left: 10%; animation-delay: 0s; }
+.heart:nth-child(2) { top: 70%; left: 85%; animation-delay: 2s; }
+.heart:nth-child(3) { top: 40%; left: 20%; animation-delay: 4s; }
+.heart:nth-child(4) { top: 80%; left: 30%; animation-delay: 6s; }
+.heart:nth-child(5) { top: 20%; left: 75%; animation-delay: 8s; }
+.heart:nth-child(6) { top: 60%; left: 50%; animation-delay: 3s; }
+
+@keyframes floatHeart {
+  0%, 100% { transform: translateY(0) rotate(0deg); opacity: 0.2; }
+  50% { transform: translateY(-40px) rotate(10deg); opacity: 0.4; }
+}
+
+.profile-container {
+  position: relative;
+  z-index: 1;
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+/* Glass Effect Card */
+.glass-effect {
+  background: rgba(255, 255, 255, 0.96);
+  backdrop-filter: blur(10px);
+  border-radius: 30px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+  overflow: hidden;
+  animation: slideUp 0.6s cubic-bezier(0.2, 0.9, 0.4, 1.1);
+  position: relative;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Logout Button - Top Right Corner */
+.logout-btn-top {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: rgba(255, 255, 255, 0.95);
+  border: none;
+  border-radius: 40px;
+  font-weight: 600;
+  color: #ff4444;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  font-size: 14px;
+}
+
+.logout-btn-top i {
+  font-size: 14px;
+}
+
+.logout-btn-top:hover {
+  background: #ff4444;
+  color: white;
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(255, 68, 68, 0.3);
+}
+
+/* Cover Photo */
+.cover-photo {
+  height: 140px;
+  background: linear-gradient(135deg, #fd5068, #ff8a5c);
+  position: relative;
+}
+
+.cover-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to bottom, rgba(0,0,0,0.1), rgba(0,0,0,0.3));
+}
+
+/* Profile Header */
+.profile-header {
+  padding: 0 20px 20px;
+  position: relative;
+  margin-top: -50px;
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.profile-photo-wrapper {
+  position: relative;
 }
 
 .profile-photo {
-text-align: center;
-    display: flex;
-    margin-bottom: 20px;
-    flex-direction: column;
-    align-items: center;
-}
-
-.profile-photo .avatar {
-  width: 120px;
-  height: 120px;
+  width: 100px;
+  height: 100px;
   border-radius: 50%;
-  object-fit: cover;
-  border: 3px solid #ff5864;
-}
-
-.upload-btn {
-  display: inline-block;
-  margin-top: 10px;
-  background: #ff5864;
-  color: #fff;
-  padding: 3px 11px;
-  border-radius: 7px;
+  border: 4px solid white;
+  box-shadow: 0 5px 20px rgba(0,0,0,0.15);
   cursor: pointer;
-  font-size: 12px;
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.3s;
 }
 
-.photo-gallery h3 {
-  font-weight: 600;
-  margin-bottom: 8px;
-  font-size: 10px;
-  color: #333;
+.profile-photo:hover {
+  transform: scale(1.03);
 }
 
-.gallery-scroll {
-  display: flex;
-  gap: 10px;
-  overflow-x: auto;
-  padding-bottom: 10px;
-  flex-wrap: wrap;
-  justify-content: flex-start;
-}
-
-.gallery-img {
-  width: 70px;
-  height: 70px;
-  border-radius: 12px;
+.profile-photo img {
+  width: 100%;
+  height: 100%;
   object-fit: cover;
 }
 
-.add-photo {
-  width: 70px;
-  height: 70px;
-  background: #ffe0e6;
+.photo-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 12px;
-  font-weight: bold;
+  opacity: 0;
+  transition: opacity 0.3s;
+  color: white;
+  font-size: 24px;
+}
+
+.profile-photo:hover .photo-overlay {
+  opacity: 1;
+}
+
+.online-indicator {
+  position: absolute;
+  bottom: 5px;
+  right: 5px;
+  width: 16px;
+  height: 16px;
+  background: #4cd964;
+  border-radius: 50%;
+  border: 2px solid white;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(76, 217, 100, 0.7); }
+  50% { box-shadow: 0 0 0 6px rgba(76, 217, 100, 0); }
+}
+
+.profile-info {
+  flex: 1;
+}
+
+.name-section {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.username {
+  font-size: 20px;
+  font-weight: 700;
+  color: #1a1a2e;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.verified-icon {
+  width: 18px;
+  height: 18px;
+}
+
+.edit-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: none;
+  background: linear-gradient(135deg, #fd5068, #ff8a5c);
+  color: white;
   cursor: pointer;
-  color: #ff5864;
+  transition: all 0.3s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.edit-btn:hover {
+  transform: scale(1.08);
+  box-shadow: 0 5px 15px rgba(253,80,104,0.4);
+}
+
+.profile-stats {
+  display: flex;
+  gap: 30px;
+}
+
+.stat {
+  text-align: center;
+}
+
+.stat .count {
+  font-size: 18px;
+  font-weight: 700;
+  color: #1a1a2e;
+}
+
+.stat .label {
+  font-size: 12px;
+  color: #666;
+}
+
+/* Bio Section */
+.bio-section {
+  padding: 0 20px 20px;
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  color: #666;
+  font-size: 14px;
+}
+
+.bio-section i {
+  color: #fd5068;
+  margin-top: 2px;
+}
+
+/* Section Titles */
+.section-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1a1a2e;
+  margin-bottom: 15px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.section-title i {
+  color: #fd5068;
+}
+
+.gallery-count {
+  margin-left: auto;
+  font-size: 12px;
+  font-weight: normal;
+  color: #999;
+}
+
+/* Video Section */
+.video-section {
+  padding: 20px;
+  border-top: 1px solid rgba(0,0,0,0.05);
+  border-bottom: 1px solid rgba(0,0,0,0.05);
+}
+
+.video-container {
+  position: relative;
+}
+
+.intro-video {
+  width: 100%;
+  border-radius: 15px;
+  max-height: 300px;
+}
+
+.upload-video-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 15px;
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  color: white;
+  border-radius: 15px;
+  cursor: pointer;
+  transition: all 0.3s;
+  font-weight: 600;
+}
+
+.upload-video-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 25px rgba(102,126,234,0.3);
+}
+
+.upload-video-btn.small {
+  margin-top: 10px;
+  background: #f0f0f0;
+  color: #666;
+}
+
+/* Gallery Section */
+.gallery-section {
+  padding: 20px;
+}
+
+.gallery-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+.gallery-item {
+  position: relative;
+  aspect-ratio: 1;
+  border-radius: 15px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: transform 0.3s;
+}
+
+.gallery-item:hover {
+  transform: scale(1.02);
+}
+
+.gallery-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.gallery-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.gallery-item:hover .gallery-overlay {
+  opacity: 1;
+}
+
+.remove-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: #ff4444;
+  border: none;
+  color: white;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.remove-btn:hover {
+  transform: scale(1.1);
+}
+
+.add-photo-btn {
+  aspect-ratio: 1;
+  border-radius: 15px;
+  background: #f5f5f5;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  cursor: pointer;
+  transition: all 0.3s;
+  border: 2px dashed #ddd;
+}
+
+.add-photo-btn:hover {
+  background: #fd5068;
+  color: white;
+  border-color: #fd5068;
+}
+
+.add-photo-btn i {
+  font-size: 24px;
+}
+
+.add-photo-btn span {
+  font-size: 12px;
+}
+
+/* Edit Form */
+.edit-form-container {
+  padding: 20px;
+  background: #f8f9fa;
+  border-top: 1px solid rgba(0,0,0,0.05);
+  animation: slideUp 0.4s ease;
+  scroll-margin-top: 80px;
+}
+
+.form-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.form-header h3 {
+  font-size: 18px;
+  color: #1a1a2e;
+}
+
+.close-form {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: none;
+  background: #ddd;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.close-form:hover {
+  background: #fd5068;
+  color: white;
+  transform: rotate(90deg);
 }
 
 .profile-form {
@@ -826,154 +1215,107 @@ text-align: center;
 }
 
 .form-row {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
   gap: 15px;
 }
 
 .form-group {
   display: flex;
   flex-direction: column;
+  gap: 5px;
 }
 
-input, textarea, select {
+.form-group label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #666;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
   padding: 12px;
-  border-radius: 12px;
   border: 1px solid #ddd;
+  border-radius: 12px;
   font-size: 14px;
+  transition: all 0.3s;
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
   outline: none;
+  border-color: #fd5068;
+  box-shadow: 0 0 0 3px rgba(253,80,104,0.1);
 }
 
-input:focus, textarea:focus, select:focus {
-  border-color: #ff5864;
+/* Toggle Switch */
+.toggle-group {
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
 }
 
-textarea {
-  resize: vertical;
-  min-height: 60px;
+.toggle-switch {
+  position: relative;
+  width: 50px;
+  height: 26px;
 }
 
-.btn-save {
-  padding: 14px;
-  background: linear-gradient(135deg, #ff5864, #ff2e44);
-  color: #fff;
-  font-weight: bold;
-  border: none;
-  border-radius: 25px;
+.toggle-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.toggle-slider {
+  position: absolute;
+  inset: 0;
+  background: #ddd;
+  border-radius: 30px;
   cursor: pointer;
   transition: 0.3s;
 }
 
-.btn-save:hover {
-  opacity: 0.9;
+.toggle-slider::before {
+  content: "";
+  position: absolute;
+  height: 20px;
+  width: 20px;
+  left: 3px;
+  bottom: 3px;
+  background: white;
+  border-radius: 50%;
+  transition: 0.3s;
 }
 
-/* RESPONSIVE FOR TABLETS AND DESKTOP */
-@media (min-width: 600px) {
-  .form-row {
-    flex-direction: row;
-  }
+.toggle-switch input:checked + .toggle-slider {
+  background: linear-gradient(135deg, #fd5068, #ff8a5c);
 }
+
+.toggle-switch input:checked + .toggle-slider::before {
+  transform: translateX(24px);
+}
+
+/* Habits Preview */
 .habits-preview {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
-  margin-top: 5px;
+  gap: 8px;
+  margin-top: 8px;
 }
 
 .habit-chip {
-  background: #ffe0e6;
-  color: #96040e;
-  padding: 4px 10px;
-  border-radius: 2px;
-  font-size: 12px;
-}
-
-/* Page fade + slide */
-.profile-page {
-  animation: pageFade 0.6s ease-out;
-}
-
-@keyframes pageFade {
-  from {
-    opacity: 0;
-    transform: translateY(12px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-/* Card float-in */
-.profile-card {
-  animation: cardFloat 0.7s ease-out;
-}
-
-@keyframes cardFloat {
-  from {
-    opacity: 0;
-    transform: scale(0.96) translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1) translateY(0);
-  }
-}
-.profile-photo .avatar {
-  transition: all 0.4s ease;
-}
-
-.profile-photo .avatar:hover {
-  transform: scale(1.05);
-  box-shadow: 0 0 0 6px rgba(255, 88, 100, 0.15),
-              0 15px 30px rgba(255, 88, 100, 0.3);
-}
-.upload-btn,
-.btn-save {
-  transition: all 0.25s ease;
-}
-
-.upload-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 18px rgba(255, 88, 100, 0.35);
-}
-
-.btn-save:active {
-  transform: scale(0.96);
-}
-input,
-textarea,
-select {
-  transition: all 0.25s ease;
-  background: #fafafa;
-}
-
-input:focus,
-textarea:focus,
-select:focus {
-  background: #fff;
-  box-shadow: 0 0 0 4px rgba(255, 88, 100, 0.12);
-}
-.gallery-img {
-  transition: all 0.35s ease;
-}
-
-.gallery-img:hover {
-  transform: scale(1.12);
-  box-shadow: 0 12px 25px rgba(0, 0, 0, 0.25);
-}
-.add-photo {
-  transition: all 0.3s ease;
-}
-
-.add-photo:hover {
-  background: #ff5864;
-  color: #fff;
-  transform: scale(1.1);
-}
-.habit-chip {
-  animation: chipPop 0.35s ease;
+  background: linear-gradient(135deg, #fd5068, #ff8a5c);
+  color: white;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 11px;
+  animation: chipPop 0.3s ease;
 }
 
 @keyframes chipPop {
@@ -986,490 +1328,407 @@ select:focus {
     transform: scale(1);
   }
 }
-.form-group label {
-    font-size: 10px;
-  font-weight: 600;
-  margin-bottom: 6px;
-  height: 28px;
-  color: #444;
-}
 
-.profile-form {
+/* Form Actions */
+.form-actions {
+  display: flex;
+  gap: 12px;
   margin-top: 10px;
 }
-/* Toggle container */
-.toggle-group {
+
+.btn-save,
+.btn-cancel-form {
+  flex: 1;
+  padding: 12px;
+  border: none;
+  border-radius: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.btn-save {
+  background: linear-gradient(135deg, #fd5068, #ff8a5c);
+  color: white;
+}
+
+.btn-save:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(253,80,104,0.4);
+}
+
+.btn-cancel-form {
+  background: #f0f0f0;
+  color: #666;
+}
+
+.btn-cancel-form:hover {
+  background: #e0e0e0;
+}
+
+/* Lightbox Modal */
+.lightbox-modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.95);
+  z-index: 10000;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  flex-direction: row;
-  gap: 12px;
+  justify-content: center;
 }
 
-/* Label text */
-.toggle-label {
-  font-weight: 600;
-  color: #444;
-  font-size: 14px;
-}
-
-/* Toggle switch wrapper */
-.toggle-switch {
+.lightbox-content {
   position: relative;
-  width: 50px;
-  height: 26px;
+  max-width: 90%;
+  max-height: 90%;
 }
 
-/* Hide default checkbox */
-.toggle-switch input {
-  opacity: 0;
-  width: 0;
-  height: 0;
+.lightbox-image {
+  max-width: 100%;
+  max-height: 90vh;
+  border-radius: 10px;
 }
 
-/* Slider background */
-.toggle-slider {
+.lightbox-close,
+.lightbox-prev,
+.lightbox-next {
   position: absolute;
-  inset: 0;
-  background: #ddd;
-  border-radius: 30px;
+  background: rgba(255,255,255,0.2);
+  border: none;
+  color: white;
+  font-size: 24px;
   cursor: pointer;
-  transition: background 0.3s ease;
-}
-
-/* Slider knob */
-.toggle-slider::before {
-  content: "";
-  position: absolute;
- height: 15px;
-    width: 15px;
-  left: 6px;
-  top: 7px;
-  background: #fff;
+  width: 50px;
+  height: 50px;
   border-radius: 50%;
-  transition: transform 0.3s ease;
-  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.2);
+  transition: all 0.3s;
 }
 
-/* Active state */
-.toggle-switch input:checked + .toggle-slider {
-  background: linear-gradient(135deg, #ff5864, #ff2e44);
-  height: 28px;
+.lightbox-close {
+  top: 20px;
+  right: 20px;
 }
 
-.toggle-switch input:checked + .toggle-slider::before {
-  transform: translateX(24px);
-  
-}
-img {
-  width: 16px;
-    height: 11px;
-  object-fit: contain;
-}
-.verified-icon {
-  width: 16px;
-  height: 16px;
-  margin-left: 4px;
-  vertical-align: middle;
-  object-fit: contain;
-  animation: badgeFade 0.3s ease;
+.lightbox-prev {
+  left: 20px;
+  top: 50%;
+  transform: translateY(-50%);
 }
 
+.lightbox-next {
+  right: 20px;
+  top: 50%;
+  transform: translateY(-50%);
+}
 
-@keyframes badgeFade {
+.lightbox-close:hover,
+.lightbox-prev:hover,
+.lightbox-next:hover {
+  background: rgba(255,255,255,0.4);
+  transform: scale(1.1);
+}
+
+.lightbox-prev:hover,
+.lightbox-next:hover {
+  transform: translateY(-50%) scale(1.1);
+}
+
+/* Custom Confirmation Modal */
+.confirm-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(4px);
+  z-index: 10003;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.confirm-modal {
+  background: white;
+  border-radius: 24px;
+  width: 90%;
+  max-width: 380px;
+  overflow: hidden;
+  animation: modalPop 0.3s cubic-bezier(0.34, 1.2, 0.64, 1);
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+}
+
+@keyframes modalPop {
   from {
     opacity: 0;
-    transform: scale(0.8);
+    transform: scale(0.9);
   }
   to {
     opacity: 1;
     transform: scale(1);
   }
 }
-/* TOAST */
-.toast-container {
-  position: fixed;
-  top: 20px;
-  right: 20px;
-  z-index: 9999;
+
+.confirm-modal-header {
+  padding: 20px 20px 12px;
+  text-align: center;
 }
 
-.toast {
-  min-width: 260px;
-  padding: 14px 18px;
-  border-radius: 14px;
-  font-size: 14px;
+.confirm-modal-header i {
+  font-size: 48px;
+  margin-bottom: 12px;
+  display: block;
+}
+
+.confirm-modal-header.warning i {
+  color: #ff9800;
+}
+
+.confirm-modal-header.danger i {
+  color: #ff4444;
+}
+
+.confirm-modal-header.success i {
+  color: #4caf50;
+}
+
+.confirm-modal-header h3 {
+  font-size: 20px;
   font-weight: 600;
-  color: #fff;
-  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.2);
-  animation: toastIn 0.4s ease, toastOut 0.4s ease 2.6s forwards;
+  color: #1a1a2e;
+  margin: 0;
 }
 
-/* Success */
-.toast.success {
-  background: linear-gradient(135deg, #28c76f, #1f9d57);
+.confirm-modal-body {
+  padding: 0 20px 20px;
+  text-align: center;
 }
 
-/* Error */
-.toast.error {
-  background: linear-gradient(135deg, #ff5864, #ff2e44);
+.confirm-modal-body p {
+  color: #666;
+  font-size: 14px;
+  line-height: 1.5;
+  margin: 0;
 }
 
-/* Animations */
-@keyframes toastIn {
-  from {
-    opacity: 0;
-    transform: translateX(40px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
+.confirm-modal-footer {
+  display: flex;
+  gap: 12px;
+  padding: 16px 20px 20px;
+  border-top: 1px solid #f0f0f0;
 }
 
-@keyframes toastOut {
-  to {
-    opacity: 0;
-    transform: translateX(40px);
-  }
+.confirm-btn {
+  flex: 1;
+  padding: 12px;
+  border: none;
+  border-radius: 40px;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.confirm-btn.cancel {
+  background: #f5f5f5;
+  color: #666;
+}
+
+.confirm-btn.cancel:hover {
+  background: #e0e0e0;
+}
+
+.confirm-btn.confirm {
+  background: linear-gradient(135deg, #fd5068, #ff8a5c);
+  color: white;
+}
+
+.confirm-btn.confirm:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 5px 15px rgba(253, 80, 104, 0.3);
+}
+
+.confirm-btn.confirm.danger {
+  background: linear-gradient(135deg, #ff4444, #ff6b6b);
+}
+
+.confirm-btn.confirm.danger:hover {
+  box-shadow: 0 5px 15px rgba(255, 68, 68, 0.3);
 }
 
 /* Cropper Modal */
-.cropper-modal {
+.cropper-modal-overlay {
   position: fixed;
   inset: 0;
-  background: #000;
-  z-index: 9999;
-  display: flex;
-  flex-direction: column;
-}
-
-/* Header */
-.cropper-header {
-  height: 54px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 0 16px;
-  color: #fff;
-  font-weight: 600;
-}
-
-.cropper-header button {
-  background: none;
-  border: none;
-  color: #25d366;
-  font-size: 15px;
-  cursor: pointer;
-}
-
-.cropper-header .done {
-  font-weight: 700;
-}
-
-/* Body */
-.cropper-body {
-  flex: 1;
+  background: rgba(0,0,0,0.95);
+  z-index: 10001;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
-.cropper-body img {
-  max-width: 100%;
-  max-height: 100%;
-}
-
-/* Dark background like WhatsApp */
-.cropper-bg {
-  background: #000 !important;
-}
-.cropper-modal {
-    background-color: #000;
-    opacity: 8!important;
-}
-.delete-account {
-  margin-top: 20px;
-  text-align: center;
-}
-
-.btn-delete {
+.cropper-container {
   width: 100%;
-  padding: 14px;
-  background: linear-gradient(135deg, #ff3b3b, #c70000);
-  color: #fff;
-  font-weight: bold;
-  border: none;
-  border-radius: 25px;
-  cursor: pointer;
-  transition: 0.3s;
+  max-width: 500px;
+  background: #000;
+  border-radius: 20px;
+  overflow: hidden;
 }
 
-.btn-delete:hover {
-  opacity: 0.9;
-  box-shadow: 0 10px 25px rgba(255, 0, 0, 0.35);
-}
-
-.gallery-item {
-  position: relative;
-}
-
-.remove-photo {
-  position: absolute;
-  top: 2px;
-    right: 0px;
-  width: 22px;
-  height: 22px;
-  border-radius: 50%;
-  background: #ff3b3b;
-  color: #fff;
-  border: none;
-  font-size: 14px;
-  cursor: pointer;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.25);
-}
-
-.remove-photo:hover {
-  transform: scale(1.1);
-}
-/* TOP ACTION BAR */
-.top-actions {
+.cropper-header {
   display: flex;
   justify-content: space-between;
-  gap: 10px;
-  margin-bottom: 15px;
+  padding: 15px 20px;
+  background: #1a1a1a;
+  color: white;
 }
 
-/* LOGOUT */
-.btn-logout-top {
-  padding: 6px 14px;
-  border-radius: 20px;
-  border: 1px solid #ddd;
-      height: 35px;
-    width: auto;
-      background: #ff0000;
-    color: #ffffff;
-  font-size: 12px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: 0.3s;
-}
-
-.btn-logout-top:hover {
-  background: #f3f3f3;
-}
-
-/* DELETE */
-.btn-delete-top {
-  padding: 6px 14px;
-  border-radius: 20px;
+.cropper-header button {
+  background: none;
   border: none;
-  background: #ffe5e5;
-  color: #ff3b3b;
-  font-size: 12px;
+  color: #fd5068;
   font-weight: 600;
   cursor: pointer;
-  transition: 0.3s;
 }
 
-.btn-delete-top:hover {
-  background: #ff3b3b;
-  color: #fff;
-}
-
-.profile-stats {
-  display: flex;
-  justify-content: space-around;
-  margin: 15px 0;
-  padding: 10px 0;
-  border-bottom: 1px solid #eee;
-}
-
-.profile-stats .stat {
-  text-align: center;
-}
-
-.profile-stats .count {
-  font-weight: bold;
-  font-size: 16px;
-  color: #333;
-}
-
-.profile-stats .label {
-  font-size: 12px;
-  color: #777;
-}
-
-/* Instagram-style profile header */
-.insta-profile .profile-header {
+.cropper-body {
+  height: 400px;
   display: flex;
   align-items: center;
-  gap: 20px;
-  margin-bottom: 20px;
+  justify-content: center;
 }
 
-.insta-profile .profile-photo .avatar {
-  width: 81px;
-  height: 81px;
-  border-radius: 50%;
-  border: 2px solid #ddd;
-  object-fit: cover;
-  transition: all 0.3s ease;
-}
-
-.insta-profile .profile-info {
-  flex: 1;
-}
-
-.insta-profile .username {
-font-size: 15px;
-    font-weight: 600;
-    margin-bottom: -19px;
-  color: #111;
-}
-
-.insta-profile .profile-stats {
-  display: flex;
-  gap: 25px;
-}
-
-.insta-profile .profile-stats .stat {
+.cropper-footer {
+  padding: 15px;
   text-align: center;
-}
-
-.insta-profile .profile-stats .count {
-  font-weight: 600;
-  font-size: 16px;
-  color: #111;
-}
-
-.insta-profile .profile-stats .label {
+  color: #888;
   font-size: 12px;
-  color: #555;
+  background: #1a1a1a;
 }
-.save-bar {
+
+/* Toast */
+.toast {
   position: fixed;
-  bottom: 10px;
+  bottom: 30px;
   left: 50%;
   transform: translateX(-50%);
-  width: calc(100% - 30px);
-  max-width: 470px;
-  display: flex;
-  justify-content: space-between;
-  gap: 10px;
-  background: #fff;
-  padding: 10px;
-  border-radius: 9px;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.1);
-  z-index: 10;
-}
-
-.save-bar .btn-save {
-  flex: 1;
-  background:linear-gradient(135deg, #E91E63, #E91E63);
-  color: #fff;
-  font-weight: bold;
-  border: none;
-  border-radius: 9px;
-  padding: 12px;
-  cursor: pointer;
-}
-
-.save-bar .btn-logout-bottom {
+  padding: 12px 24px;
+  font-weight: 600;
+  z-index: 10002;
   display: flex;
   align-items: center;
-  gap: 6px;
-  background: #e92d60;
-  color: #fff;
-  font-weight: 600;
-  border: none;
-  border-radius: 9px;
-  padding: 12px;
-  cursor: pointer;
+  gap: 10px;
+  animation: toastSlide 0.3s ease;
+  border-radius: 50px;
+}
+
+.toast.success {
+  background: linear-gradient(135deg, #28a745, #20c997);
+  color: white;
+}
+
+.toast.error {
+  background: linear-gradient(135deg, #dc3545, #fd7e7e);
+  color: white;
+}
+
+@keyframes toastSlide {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+.toast-fade-enter-active,
+.toast-fade-leave-active {
+  transition: all 0.3s;
+}
+
+.toast-fade-enter-from,
+.toast-fade-leave-to {
+  opacity: 0;
+  transform: translateX(-50%) translateY(20px);
+}
+
+/* Slide Up Animation */
+.slide-up-enter-active,
+.slide-up-leave-active {
   transition: all 0.3s ease;
 }
 
-.save-bar .btn-logout-bottom:hover {
-  background: #d10000;
+.slide-up-enter-from,
+.slide-up-leave-to {
+  opacity: 0;
+  transform: translateY(20px);
 }
 
-.save-bar .btn-save:hover {
-  opacity: 0.9;
+/* Modal Fade */
+.modal-fade-enter-active,
+.modal-fade-leave-active {
+  transition: opacity 0.3s;
 }
 
-.profile-form {
-  display: flex;
-  flex-direction: column;
-  gap: 15px;
-  padding-bottom: 40px; /* add extra space equal or slightly more than the save-bar height */
+.modal-fade-enter-from,
+.modal-fade-leave-to {
+  opacity: 0;
 }
 
-.video-section {
-  margin-bottom: 20px;
-}
-
-.intro-video {
-     width: 100%;
-    max-height: 300px;
-    padding: 15px;
-    background-color: var(--vt-c-white-mute);
-    border-radius: 10px;
-}
-
-.add-video {
-    display: inline-block;
-    margin-top: 10px;
-    cursor: pointer;
-    padding: 5px 18px;
-    font-size: 13px;
-    border-radius: 7px;
-    background-color: #007584;
-    color: #ffffff;
-    font-weight: 600;
-}
-
-.edit-bar {
- text-align: center;
-    display: flex;
-    gap: 3px;
-    margin: 15px 0;
-    justify-content: space-between;
-}
-
-.btn-edit {
-  padding: 10px 18px;
-  width: 100%;
-  background: linear-gradient(135deg, #d8d8d8, #d8d8d8);
-  color: #000000;
-  border: none;
-     border-radius: 7px;
-  font-weight: 500;
-  cursor: pointer;
-}
-
-.btn-cancel {
-  padding: 10px 18px;
-  background: #ddd;
-  color: #333;
-  width: 100%;
-  border: none;
-      border-radius: 7px;
-  font-weight: 500;
-  cursor: pointer;
-}
-.btn-logout {
-  padding: 10px 18px;
-  background: #ce0000;
-      width: 145px;
-  color: #ffffff;
-  border: none;
-      border-radius: 7px;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.introduction{
-  color: rgb(30, 1, 75);
-  font-family: math;
+/* Responsive */
+@media (max-width: 600px) {
+  .profile-page {
+    padding: 10px;
+  }
+  
+  .profile-header {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+  
+  .profile-stats {
+    justify-content: center;
+  }
+  
+  .name-section {
+    justify-content: center;
+  }
+  
+  .bio-section {
+    text-align: center;
+    justify-content: center;
+  }
+  
+  .form-row {
+    grid-template-columns: 1fr;
+  }
+  
+  .gallery-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+  
+  .logout-btn-top {
+    padding: 6px 12px;
+    font-size: 12px;
+  }
+  
+  .logout-btn-top span {
+    display: none;
+  }
+  
+  .logout-btn-top i {
+    font-size: 16px;
+  }
+  
+  .confirm-modal {
+    width: 85%;
+    margin: 20px;
+  }
 }
 </style>

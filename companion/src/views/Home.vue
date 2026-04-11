@@ -1,218 +1,166 @@
 <template>
-   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
   <div class="app">
     <!-- Side Menu Overlay -->
     <div class="overlay" v-if="isMenuOpen" @click="closeMenu"></div>
 
     <!-- Header -->
-<div class="header">
-  <h1 class="page-title">Choose a Companion</h1>
+    <div class="header">
+      <h1 class="page-title">Choose a Companion</h1>
 
-  <div class="search-filter-wrapper">
-   <input
-  v-if="showSearchBar"
-  ref="searchInput"
-  type="text"
-  v-model="search"
-  placeholder="Search"
-  class="search-input"
-/>
-
-   <div class="filter-icon" @click="toggleFilter">
-<i class="fa fa-sliders" style="font-size:24px"></i>
-</div>
-
-  </div>
-</div>
-
+      <div class="search-filter-wrapper">
+        <input
+          v-if="showSearchBar"
+          ref="searchInput"
+          type="text"
+          v-model="search"
+          placeholder="Search"
+          class="search-input"
+        />
+        <div class="filter-icon" @click="toggleFilter">
+          <i class="fa fa-sliders" style="font-size:24px"></i>
+        </div>
+      </div>
+    </div>
 
     <!-- FILTER POPUP -->
-<transition name="slide-down">
-  <div v-if="showFilter" class="filter-popup">
-    <div class="filter-header">
-      <h3>Advanced Filters</h3>
-      <span class="close-btn" @click="toggleFilter">✖</span>
-    </div>
-
-    <div class="filter-body">
-
-      <div class="filter-group">
-        <label>Status</label>
-        <input v-model="filters.status" placeholder="Enter status" />
+    <transition name="slide-down">
+      <div v-if="showFilter" class="filter-popup">
+        <div class="filter-header">
+          <h3>Advanced Filters</h3>
+          <span class="close-btn" @click="toggleFilter">✖</span>
+        </div>
+        <div class="filter-body">
+          <div class="filter-group">
+            <label>Status</label>
+            <input v-model="filters.status" placeholder="Enter status" />
+          </div>
+          <div class="filter-group">
+            <label>Subtitle</label>
+            <input v-model="filters.subtitle" placeholder="Enter subtitle" />
+          </div>
+          <div class="filter-group">
+            <label>City</label>
+            <input v-model="filters.city" placeholder="Enter city" />
+          </div>
+          <div class="filter-group">
+            <label>State</label>
+            <input v-model="filters.state" placeholder="Enter state" />
+          </div>
+          <div class="filter-group">
+            <label>Verified Badge</label>
+            <select v-model="filters.verified_badge">
+              <option value="">All</option>
+              <option value="1">Verified Only</option>
+            </select>
+          </div>
+          <div class="filter-group">
+            <label>Habits</label>
+            <input v-model="filters.habits" placeholder="Smoking, Gym, etc" />
+          </div>
+          <div class="filter-actions">
+            <button class="clear-btn" @click="clearFilters"><i class="fa fa-remove" style="font-size:14px"></i> Clear</button>
+            <button class="apply-btn" @click="closeFilter"><i class="fa fa-check" style="font-size:14px"></i> Apply</button>
+          </div>
+        </div>
       </div>
-
-      <div class="filter-group">
-        <label>Subtitle</label>
-        <input v-model="filters.subtitle" placeholder="Enter subtitle" />
-      </div>
-
-      <div class="filter-group">
-        <label>City</label>
-        <input v-model="filters.city" placeholder="Enter city" />
-      </div>
-
-      <div class="filter-group">
-        <label>State</label>
-        <input v-model="filters.state" placeholder="Enter state" />
-      </div>
-
-      <div class="filter-group">
-        <label>Verified Badge</label>
-        <select v-model="filters.verified_badge">
-          <option value="">All</option>
-          <option value="1">Verified Only</option>
-        </select>
-      </div>
-
-      <div class="filter-group">
-        <label>Habits</label>
-        <input v-model="filters.habits" placeholder="Smoking, Gym, etc" />
-      </div>
-
-      <div class="filter-actions">
-        <button class="clear-btn" @click="clearFilters"><i class="fa fa-remove" style="font-size:14px"></i> Clear</button>
-       <button class="apply-btn" @click="closeFilter"><i class="fa fa-check" style="font-size:14px"></i> Done</button>
-
-      </div>
-
-    </div>
-  </div>
-</transition>
-
+    </transition>
 
     <!-- Results -->
-   <div class="content">
-
-  <!-- If users exist -->
-  <div v-if="people.length">
-
-    <div
-      class="deal-card"
-      v-for="person in filteredPeople"
-      :key="person.id"
-      :data-id="person.id"
-      ref="cards"
-    >
-
-      <!-- Top -->
-      <div class="deal-top">
-        <div class="deal-rating">🥇 {{ person.rating || 0 }}</div>
-
-        <button
-          class="fav-btn"
-          :class="{ active: person.liked }"
-          @click.stop="toggleFavourite(person)"
+    <div class="content">
+      <div v-if="people.length">
+        <div
+          class="deal-card"
+          v-for="person in filteredPeople"
+          :key="person.id"
+          :data-id="person.id"
+          ref="cards"
         >
-          {{ person.liked ? "❤️" : "🤍" }}
-        </button>
-      </div>
+          <!-- Top -->
+          <div class="deal-top">
+            <div class="deal-rating">🥇 {{ person.rating || 0 }}</div>
+            <button
+              class="fav-btn"
+              :class="{ active: person.liked }"
+              @click.stop="toggleFavourite(person)"
+            >
+              {{ person.liked ? "❤️" : "🤍" }}
+            </button>
+          </div>
 
-      <!-- Media Section -->
-      
-      <!-- Show video if available -->
-  <div v-if="person.introduction_video" class="video-wrapper"
-     @click="showControls(person.id)">
+          <!-- Media Section -->
+          <div v-if="person.introduction_video" class="video-wrapper" @click="showControls(person.id)">
+            <video
+              :ref="setVideoRef"
+              :data-video-id="person.id"
+              class="deal-img no-fullscreen"
+              :src="person.introduction_video"
+              preload="metadata"
+              loop
+              playsinline
+              controlsList="nodownload noplaybackrate noremoteplayback"
+              disablePictureInPicture
+              @click.stop="toggleVideo(person.id)"
+              @play="onVideoPlay(person.id)"
+              @pause="onVideoPause(person.id)"
+            ></video>
 
- <video
-    :ref="'video-' + person.id"
-    class="deal-img no-fullscreen"
-    :src="person.introduction_video"
-    preload="metadata"
-    loop
-    controls
-    playsinline
-    controlsList="nodownload noplaybackrate noremoteplayback"
-    disablePictureInPicture
-    @click.stop="toggleVideo(person.id)"
-  ></video>
+            <!-- Controls Wrapper -->
+            <div v-if="controlsVisible[person.id]" class="video-controls">
+              <div class="play-btn" @click.stop="toggleVideo(person.id)">
+                {{ playingVideo === person.id ? '❚❚' : '▶' }}
+              </div>
+              <div class="sound-btn" @click.stop="toggleSound(person.id)">
+                {{ videoMuted[person.id] ? '🔇' : '🔊' }}
+              </div>
+            </div>
+          </div>
 
-
-  <!-- Controls Wrapper -->
-  <div v-if="controlsVisible[person.id]" class="video-controls">
-
-    <!-- Play Button -->
-    <div class="play-btn" @click.stop="toggleVideo(person.id)">
-      {{ playingVideo === person.id ? '||' : '▶' }}
-    </div>
-
-    <!-- Sound Button -->
-    <div class="sound-btn" @click.stop="toggleSound(person.id)">
-  {{ videoMuted[person.id] ? '🔇' : '🔊' }}
-</div>
-
-
-  </div>
-</div>
-
-
-
-
-      <!-- Otherwise show image -->
-      <img
-        v-else
-        class="deal-img"
-        :src="person.profile_photo || 'https://via.placeholder.com/200'"
-        alt="Profile"
-      />
-
-      <!-- Content -->
-      <div class="deal-content">
-        <h3>
-          {{ person.first_name || person.name }}
-
+          <!-- Otherwise show image -->
           <img
-            v-if="person.verified_badge == 1"
-            src="@/assets/verified1.png"
-            class="verified"
-            alt="Verified"
+            v-else
+            class="deal-img"
+            :src="person.profile_photo || 'https://via.placeholder.com/200'"
+            alt="Profile"
           />
-        </h3>
 
-        <p class="sub">
-          {{ person.status || '' }}
-        </p>
+          <!-- Content -->
+          <div class="deal-content">
+            <h3>
+              {{ person.first_name || person.name }}
+              <img
+                v-if="person.verified_badge == 1"
+                src="@/assets/verified1.png"
+                class="verified"
+                alt="Verified"
+              />
+            </h3>
+            <p class="sub">{{ person.status || '' }}</p>
+          </div>
+
+          <!-- Arrow -->
+          <button class="deal-next" @click="goToDetails(person.id)">››</button>
+        </div>
+
+        <div v-if="loadingMore" class="loading-more">Loading more companions...</div>
       </div>
 
-      <!-- Arrow -->
-      <button
-        class="deal-next"
-        @click="goToDetails(person.id)"
-      >
-        ››
-      </button>
-
+      <div v-else class="empty-state">No companions available. Make sure you are logged in!</div>
     </div>
-
-    <!-- ✅ Loading more (ONLY when fetching next page) -->
-    <div v-if="loadingMore" class="loading-more">
-      Loading more companions...
-    </div>
-
-  </div>
-
-  <!-- ✅ Empty state -->
-  <div v-else class="empty-state">
-    No companions available. Make sure you are logged in!
-  </div>
-
-</div>
-
 
     <!-- Instagram Style Footer -->
     <div class="bottom-footer">
-     <div class="footer-item" @click="goHome">
-  <i class="fa fa-home" style="font-size:24px"></i>
-</div>
-     <div class="footer-item" @click="openSearch">
- <i class="fa fa-search" style="font-size:20px"></i>
-</div>
-
-      <div class="footer-item" @click="$router.push('/myplans')">
-         <!-- <i class='fa fa-crown' style='font-size:20px'></i> -->
+      <div class="footer-item" @click="goHome">
+        <i class="fa fa-home" style="font-size:24px"></i>
+      </div>
+      <div class="footer-item" @click="openSearch">
+        <i class="fa fa-search" style="font-size:20px"></i>
+      </div>
+      <div class="footer-item" v-if="showPlansIcon" @click="$router.push('/myplans')">
         <img src="@/assets/golden.png" class="footer-icon" />
       </div>
       <div class="footer-item" @click="$router.push('/mymatches')">
-       <i class='fa fa-heart' style='font-size:20px'></i>
+        <i class='fa fa-heart' style='font-size:20px'></i>
       </div>
       <div class="footer-item" @click="$router.push('/profile')">
         <img :src="user.profile_photo" class="footer-avatar" />
@@ -230,11 +178,12 @@ export default {
   
   data() {
     return {
+      userGender: null,
       showSearchBar: true,
-      videoMuted: {},            // track mute state per video
-      controlsVisible: {},       // track controls visibility per video
-      controlTimeouts: {},       // timeout for controls hide
-      playingVideo: null,        // currently playing video ID
+      videoMuted: {},
+      controlsVisible: {},
+      controlTimeouts: {},
+      playingVideo: null,
       currentPage: 1,
       lastPage: 1,
       loadingMore: false,
@@ -256,16 +205,21 @@ export default {
       visibleUsers: new Set(),
       observer: null,
       user: { first_name: "", last_name: "", city: "", profile_photo: "" },
+      videoRefs: {} // Store video refs by ID
     }
   },
 
   async mounted() {
+    const user = JSON.parse(localStorage.getItem('user'))
+    this.userGender = user?.gender || null
     await this.loadUser()
     await this.loadUsers(1)
+    
+    // Small delay to ensure DOM is ready
+    await this.$nextTick()
     this.setupObserver()
     this.refreshVisibleUsers()
 
-    // Infinite scroll listener
     this.scrollHandler = this.handleScroll
     window.addEventListener("scroll", this.scrollHandler)
   },
@@ -274,6 +228,9 @@ export default {
     if (this.refreshInterval) clearInterval(this.refreshInterval)
     if (this.observer) this.observer.disconnect()
     window.removeEventListener("scroll", this.scrollHandler)
+    
+    // Clean up video refs
+    this.videoRefs = {}
   },
 
   beforeRouteEnter(to, from, next) {
@@ -286,6 +243,10 @@ export default {
   },
 
   computed: {
+    showPlansIcon() {
+      const gender = (this.userGender || '').trim().toLowerCase()
+      return gender !== 'female'
+    },
     filteredPeople() {
       return this.people
     }
@@ -304,21 +265,18 @@ export default {
   },
 
   methods: {
-    goHome() {
-    // Navigate to /home and refresh the page
-    window.location.href = '/home';
-  },
-openSearch() {
-  this.showSearchBar = true
+    // Set video ref dynamically
+    setVideoRef(el) {
+      if (el && el.dataset && el.dataset.videoId) {
+        const videoId = parseInt(el.dataset.videoId)
+        this.videoRefs[videoId] = el
+      }
+    },
 
-  this.$nextTick(() => {
-    if (this.$refs.searchInput) {
-      this.$refs.searchInput.focus()
-    }
-  })
-},
+    getVideoElement(id) {
+      return this.videoRefs[id]
+    },
 
-    // Show video controls for 2 seconds
     showControls(id) {
       this.controlsVisible[id] = true
       if (this.controlTimeouts[id]) clearTimeout(this.controlTimeouts[id])
@@ -327,55 +285,44 @@ openSearch() {
       }, 2000)
     },
 
-    // Toggle play/pause manually
-    toggleVideo(id) {
-      this.showControls(id)
-      const currentRef = this.$refs['video-' + id]
-      if (!currentRef) return
-      const video = Array.isArray(currentRef) ? currentRef[0] : currentRef
-
-      // Pause if same video clicked
-      if (this.playingVideo === id) {
-        video.pause()
-        this.playingVideo = null
-        return
-      }
-
-      // Pause all other videos
-      Object.keys(this.$refs).forEach(key => {
-        if (key.startsWith('video-')) {
-          const refItem = this.$refs[key]
-          const v = Array.isArray(refItem) ? refItem[0] : refItem
-          if (v && typeof v.pause === 'function') {
-            const otherId = Number(key.replace('video-', ''))
-            if (otherId !== id) {
-              v.pause()
-              v.currentTime = 0
-              this.videoMuted[otherId] = true
-            }
-          }
-        }
-      })
-
-      // Play selected video
-      video.play()
-        .then(() => {
-          this.playingVideo = id
-          this.videoMuted[id] = video.muted
-        })
-        .catch(err => console.log("Play blocked:", err))
+    onVideoPlay(id) {
+      this.playingVideo = id
     },
 
-    // Toggle sound
+    onVideoPause(id) {
+      if (this.playingVideo === id) {
+        this.playingVideo = null
+      }
+    },
+
+    toggleVideo(id) {
+      this.showControls(id)
+      const video = this.getVideoElement(id)
+      if (!video) return
+
+      if (this.playingVideo === id) {
+        video.pause()
+      } else {
+        // Pause all other videos
+        Object.keys(this.videoRefs).forEach(videoId => {
+          const otherVideo = this.videoRefs[videoId]
+          if (otherVideo && parseInt(videoId) !== id && !otherVideo.paused) {
+            otherVideo.pause()
+            otherVideo.currentTime = 0
+          }
+        })
+
+        video.play().catch(err => console.log("Play blocked:", err))
+      }
+    },
+
     toggleSound(id) {
-      const currentRef = this.$refs['video-' + id]
-      if (!currentRef) return
-      const video = Array.isArray(currentRef) ? currentRef[0] : currentRef
+      const video = this.getVideoElement(id)
+      if (!video) return
       video.muted = !video.muted
       this.videoMuted[id] = video.muted
     },
 
-    // Infinite scroll
     handleScroll() {
       const scrollTop = window.scrollY
       const windowHeight = window.innerHeight
@@ -423,57 +370,69 @@ openSearch() {
       this.loadUsers(1)
     }, 500),
 
-    showFavourites() {
-      this.isMenuOpen = false
-      this.showOnlyFavourites = true
-    },
-
-    showAllUsers() {
-      this.showOnlyFavourites = false
-    },
-
-    // IntersectionObserver to auto-play top visible video
     setupObserver() {
       if (this.observer) this.observer.disconnect()
 
       this.observer = new IntersectionObserver(
-        entries => {
+        (entries) => {
+          // Get all visible entries sorted by position
           const visibleEntries = entries
             .filter(entry => entry.isIntersecting)
-            .sort((a, b) => a.target.getBoundingClientRect().top - b.target.getBoundingClientRect().top)
+            .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top)
 
-          // Pause videos not visible
+          // Pause videos that are not visible
           entries.forEach(entry => {
-            const id = Number(entry.target.dataset.id)
-            const videoRef = this.$refs['video-' + id]
-            const video = Array.isArray(videoRef) ? videoRef[0] : videoRef
-            if (!entry.isIntersecting && video) {
-              video.pause()
-              video.currentTime = 0
-              if (this.playingVideo === id) this.playingVideo = null
+            if (!entry.isIntersecting) {
+              const id = parseInt(entry.target.dataset.id)
+              const video = this.getVideoElement(id)
+              if (video && !video.paused) {
+                video.pause()
+                video.currentTime = 0
+              }
             }
           })
 
-          // Auto-play top visible video if none is manually playing
+          // Auto-play the topmost visible video if none is playing
           if (visibleEntries.length > 0 && this.playingVideo === null) {
             const topVisible = visibleEntries[0]
-            const id = Number(topVisible.target.dataset.id)
-            const videoRef = this.$refs['video-' + id]
-            const video = Array.isArray(videoRef) ? videoRef[0] : videoRef
-            if (video) {
+            const id = parseInt(topVisible.target.dataset.id)
+            const video = this.getVideoElement(id)
+            
+            if (video && video.src) {
               video.muted = false
               this.videoMuted[id] = false
-              video.play()
-                .then(() => { this.playingVideo = id })
-                .catch(err => console.log("Auto-play blocked:", err))
+              video.play().catch(err => {
+                console.log("Auto-play blocked:", err)
+              })
             }
           }
         },
         { threshold: 0.5 }
       )
 
+      this.observeCards()
+    },
+
+    observeCards() {
+      if (this.$refs.cards) {
+        this.$refs.cards.forEach(card => {
+          if (card && this.observer) {
+            this.observer.observe(card)
+          }
+        })
+      }
+    },
+
+    goHome() {
+      window.location.href = '/home'
+    },
+
+    openSearch() {
+      this.showSearchBar = true
       this.$nextTick(() => {
-        this.$refs.cards?.forEach(el => this.observer.observe(el))
+        if (this.$refs.searchInput) {
+          this.$refs.searchInput.focus()
+        }
       })
     },
 
@@ -504,16 +463,11 @@ openSearch() {
         })
 
         this.$nextTick(() => {
-          this.$refs.cards?.forEach(el => this.observer.observe(el))
+          this.observeCards()
         })
       } catch (e) {
         console.error("Visible refresh failed", e)
       }
-    },
-
-    goToProfile() {
-      this.isMenuOpen = false
-      this.$router.push("/profile")
     },
 
     async loadUsers(page = 1) {
@@ -546,28 +500,26 @@ openSearch() {
           liked: person.liked || false
         }))
 
-        if (page === 1) this.people = newUsers
-        else this.people = [...this.people, ...newUsers]
+        if (page === 1) {
+          this.people = newUsers
+          // Clear video refs when loading fresh data
+          this.videoRefs = {}
+        } else {
+          this.people = [...this.people, ...newUsers]
+        }
 
         this.currentPage = res.data.current_page
         this.lastPage = res.data.last_page
+
+        // Re-setup observer after DOM updates
+        await this.$nextTick()
+        this.observeCards()
 
       } catch (err) {
         console.error("Failed to load users:", err)
       } finally {
         this.loadingMore = false
       }
-    },
-
-    logout() {
-      axios.post("https://companion.ajaywatpade.in/api/logout", {}, {
-        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` }
-      }).catch(() => {})
-
-      localStorage.removeItem("token")
-      localStorage.removeItem("user")
-      this.isMenuOpen = false
-      this.$router.replace("/")
     },
 
     async loadUser() {
@@ -625,146 +577,129 @@ openSearch() {
 }
 </script>
 
+<style scoped>
+/* Your existing styles remain the same */
+.app {
+  min-height: 100vh;
+  font-family: 'Inter', sans-serif;
+  position: relative;
+  overflow-x: hidden;
+}
 
+.header {
+  background-image: url(https://png.pngtree.com/thumb_back/fh260/background/20241126/pngtree-abstract-pink-background-vector-image_16667423.jpg);
+  padding: 7px 48px 63px;
+  border-bottom-left-radius: 40px;
+  border-bottom-right-radius: 40px;
+  color: white;
+  position: relative;
+}
 
+.top-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
 
-        <style scoped>
-        /* App Wrapper */
-        .app {
-        min-height: 100vh;
-        font-family: 'Inter', sans-serif;
-        position: relative;
-        overflow-x: hidden;
-        }
+.menu {
+  font-size: 22px;
+}
 
-        /* Header with waves */
-        .header {
-        /* background-image: url(https://img.freepik.com/free-vector/wave-gradient-blue-background-modern-design_343694-3814.jpg); */
-        background-image: url(https://png.pngtree.com/thumb_back/fh260/background/20241126/pngtree-abstract-pink-background-vector-image_16667423.jpg);
-        padding: 7px 48px 63px;
-        border-bottom-left-radius: 40px;
-        border-bottom-right-radius: 40px;
-        color: white;
-        position: relative;
-        }
+.avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+}
 
-        /* Top bar */
-        .top-bar {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        }
+.header h1 {
+  margin-top: 20px;
+  font-size: 22px;
+  font-weight: 600;
+}
 
-        .menu {
-        font-size: 22px;
-        }
+.content {
+  padding: 20px;
+  margin-top: -101px;
+  padding-bottom: 80px;
+}
 
-        .avatar {
-        width: 36px;
-        height: 36px;
-        border-radius: 50%;
-        }
+.results {
+  font-size: 14px;
+  color: #444;
+  margin-bottom: 14px;
+}
 
-        /* Title */
-        .header h1 {
-        margin-top: 20px;
-        font-size: 22px;
-        font-weight: 600;
-        }
+.rating {
+  background: #ffb703;
+  color: white;
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 10px;
+  font-size: 12px;
+}
 
-    
+.card-body {
+  display: flex;
+  align-items: center;
+  margin-top: 10px;
+}
 
-        /* Content */
-        .content {
-        padding: 20px;
-        margin-top: -101px;
-        }
-
-        .results {
-        font-size: 14px;
-        color: #444;
-        margin-bottom: 14px;
-        }
-
-    
-
-        .rating {
-        background: #ffb703;
-        color: white;
-        display: inline-block;
-        padding: 4px 10px;
-        border-radius: 10px;
-        font-size: 12px;
-        }
-
-        .card-body {
-        display: flex;
-        align-items: center;
-        margin-top: 10px;
-        }
-
-   .profile-img {
+.profile-img {
   width: 90px;
   height: 60px;
   border-radius: 12px;
   object-fit: cover;
 }
 
-
-        .info {
-        flex: 1;
-        padding-left: 12px;
-        }
-
-        .info h3 {
-        font-size: 15px;
-        display: flex;
-        align-items: center;
-        gap: 6px;
-        }
-
-        .verified {
-        width: 16px;
-        }
-
-        .sub {
-        font-size: 12px;
-        color: #666;
-        }
-
-        .price {
-        font-weight: 700;
-        margin-top: 4px;
-        }
-
-        /* Arrow */
-        .next {
-        position: absolute;
-        right: 14px;
-        bottom: 14px;
-        width: 36px;
-        height: 36px;
-        border-radius: 50%;
-        background: #ff4791;
-        color: white;
-        border: none;
-        font-size: 20px;
-        }
-
-     
-
-        .deal-card {
-     background: white;
-    border-radius: 26px;
-    padding: 16px;
-        margin-top: 28px;
-
-    margin-bottom: 18px;
-    position: relative;
-    box-shadow: 0px 0px 20px 5px #0000001f;
+.info {
+  flex: 1;
+  padding-left: 12px;
 }
 
-/* Rating badge */
+.info h3 {
+  font-size: 15px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.verified {
+  width: 16px;
+}
+
+.sub {
+  font-size: 12px;
+  color: #666;
+}
+
+.price {
+  font-weight: 700;
+  margin-top: 4px;
+}
+
+.next {
+  position: absolute;
+  right: 14px;
+  bottom: 14px;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: #ff4791;
+  color: white;
+  border: none;
+  font-size: 20px;
+}
+
+.deal-card {
+  background: white;
+  border-radius: 26px;
+  padding: 16px;
+  margin-top: 28px;
+  margin-bottom: 18px;
+  position: relative;
+  box-shadow: 0px 0px 20px 5px #0000001f;
+}
+
 .deal-rating {
   position: absolute;
   top: 14px;
@@ -777,16 +712,14 @@ openSearch() {
   font-weight: 600;
 }
 
-/* Image */
 .deal-img {
   width: 100%;
-  height: auto  ;
+  height: auto;
   object-fit: cover;
   border-radius: 18px;
   margin-top: 43px;
 }
 
-/* Content */
 .deal-content {
   margin-top: 12px;
 }
@@ -812,7 +745,6 @@ openSearch() {
   margin-top: 4px;
 }
 
-/* Arrow Button */
 .deal-next {
   position: absolute;
   right: 14px;
@@ -826,6 +758,7 @@ openSearch() {
   font-size: 22px;
   cursor: pointer;
 }
+
 .search-box {
   display: flex;
   align-items: center;
@@ -839,7 +772,6 @@ openSearch() {
   margin: 0 auto;
 }
 
-/* Location */
 .location {
   display: flex;
   align-items: center;
@@ -853,9 +785,6 @@ openSearch() {
   font-size: 16px;
 }
 
-
-        
-       /* Overlay */
 .overlay {
   position: fixed;
   inset: 0;
@@ -863,7 +792,6 @@ openSearch() {
   z-index: 9;
 }
 
-/* Side Menu */
 .side-menu {
   position: fixed;
   top: 0;
@@ -878,12 +806,10 @@ openSearch() {
   border-bottom-right-radius: 24px;
 }
 
-/* Open state */
 .side-menu.open {
   left: 0;
 }
 
-/* Menu Header */
 .menu-header {
   padding: 24px 16px;
   background: linear-gradient(135deg, #ff5fa2, #ff8ccf);
@@ -900,7 +826,6 @@ openSearch() {
   object-fit: cover;
 }
 
-/* Menu List */
 .menu-list {
   list-style: none;
   padding: 16px;
@@ -922,8 +847,7 @@ openSearch() {
   color: #ff3b3b;
   margin-top: 12px;
 }
- 
-/* Top badges wrapper */
+
 .deal-top {
   position: absolute;
   top: 14px;
@@ -935,7 +859,6 @@ openSearch() {
   z-index: 2;
 }
 
-/* Favourite button */
 .fav-btn {
   width: 34px;
   height: 34px;
@@ -955,43 +878,30 @@ openSearch() {
   transform: scale(0.85);
 }
 
-/* Active (❤️) state */
 .fav-btn.active {
   background: #fdfdfd;
   animation: pop 0.3s ease;
 }
 
-/* Pop animation */
 @keyframes pop {
-  0% {
-    transform: scale(0.6);
-  }
-  60% {
-    transform: scale(1.2);
-  }
-  100% {
-    transform: scale(1);
-  }
+  0% { transform: scale(0.6); }
+  60% { transform: scale(1.2); }
+  100% { transform: scale(1); }
 }
-
 
 .fav-btn:hover {
   transform: scale(1.1);
 }
 
-.deal-img {
-  margin-top: 50px;
-}
 .search-input {
   width: 100%;
-  padding:9px 14px;
+  padding: 9px 14px;
   margin: 10px 0 16px;
   border-radius: 30px;
   border: 1px solid #ddd;
   font-size: 14px;
 }
 
-/* Bottom Instagram Style Footer */
 .bottom-footer {
   position: fixed;
   bottom: 0;
@@ -1018,34 +928,19 @@ openSearch() {
   transform: scale(0.85);
 }
 
-/* Profile avatar */
 .footer-avatar {
   width: 28px;
   height: 28px;
   border-radius: 50%;
   object-fit: cover;
 }
-.content {
-  padding: 20px;
-  margin-top: -101px;
-  padding-bottom: 80px; /* important */
-}
+
 .footer-icon {
   width: 24px;
   height: 24px;
   object-fit: contain;
-}
-.footer-icon {
-  width: 24px;
-  height: 24px;
   user-select: none;
   -webkit-user-drag: none;
-}
-.deal-img {
-  width: 100%;
-  height: auto;
-  object-fit: cover;
-  border-radius: 15px;
 }
 
 .search-filter-wrapper {
@@ -1054,9 +949,6 @@ openSearch() {
   gap: 10px;
 }
 
-
-
-/* Popup */
 .filter-popup {
   position: fixed;
   top: 58px;
@@ -1128,7 +1020,6 @@ openSearch() {
   cursor: pointer;
 }
 
-/* Animation */
 .slide-down-enter-active,
 .slide-down-leave-active {
   transition: all 0.4s ease;
@@ -1143,6 +1034,7 @@ openSearch() {
   transform: translateY(-100%);
   opacity: 0;
 }
+
 .filter-icon {
   cursor: pointer;
   display: flex;
@@ -1155,29 +1047,53 @@ openSearch() {
   height: 22px;
   object-fit: contain;
 }
+
 .loading-more {
   text-align: center;
   padding: 20px;
   font-weight: 600;
 }
+
 .video-wrapper {
   position: relative;
 }
 
-
-/* Hide the fullscreen button in WebKit browsers (Chrome, Safari) */
 video.no-fullscreen::-webkit-media-controls-fullscreen-button {
   display: none;
 }
 
-/* Hide the fullscreen button in Firefox */
 video.no-fullscreen::-moz-fullscreen-button {
   display: none;
 }
 
-/* Hide the fullscreen button in Edge / IE (experimental) */
 video.no-fullscreen::-ms-fullscreen-button {
   display: none;
 }
-</style>
 
+.video-controls {
+  position: absolute;
+  bottom: 10px;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+  background: rgba(0,0,0,0.5);
+  padding: 8px;
+  border-radius: 20px;
+  width: fit-content;
+  margin: 0 auto;
+}
+
+.play-btn, .sound-btn {
+  background: white;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 16px;
+}
+</style>
