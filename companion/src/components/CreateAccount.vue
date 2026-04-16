@@ -1,333 +1,440 @@
 <template>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
   <div class="signup-wrap">
-
-    <!-- Progress Header - Glass style -->
-    <div class="progress-header glass-progress">
-      <div class="prog-top-row">
-        <div class="step-badge glass-step-badge">
-          <div class="badge-dot"></div>
-          <span>{{ stepTitles[currentStep] }}</span>
+    <!-- Progress Steps -->
+    <div class="progress-header">
+      <div class="step-indicators">
+        <div 
+          v-for="(step, idx) in stepNames" 
+          :key="idx"
+          class="step-indicator"
+          :class="{ active: currentStep >= idx, completed: currentStep > idx }"
+        >
+          <div class="step-number">{{ idx + 1 }}</div>
+          <span class="step-label">{{ step }}</span>
         </div>
-        <span class="step-counter">{{ currentStep + 1 }} <span class="of">of</span> {{ stepTitles.length }}</span>
       </div>
-      <div class="prog-bar-wrap">
-        <div class="prog-bar glass-prog-bar">
-          <div class="prog-fill" :style="{ width: ((currentStep + 1) / stepTitles.length) * 100 + '%' }"></div>
-        </div>
+      <div class="progress-bar">
+        <div class="progress-fill" :style="{ width: ((currentStep + 1) / stepNames.length) * 100 + '%' }"></div>
       </div>
     </div>
 
-    <!-- Step Card - Glass Card -->
-    <div class="step-card glass-card">
-
-      <!-- Step Title -->
+    <!-- Step Card -->
+    <div class="step-card">
       <transition name="step-fade" mode="out-in">
-        <div :key="currentStep" class="step-head">
-          <h2 class="step-title glass-title">{{ stepHeadings[currentStep].title }}</h2>
-          <!-- <p class="step-sub glass-sub">{{ stepHeadings[currentStep].sub }}</p> -->
-        </div>
-      </transition>
-
-      <!-- Step Content -->
-      <transition name="step-slide" mode="out-in">
-        <div :key="currentStep" class="step-body">
-
-          <!-- STEP 0: Contact Details -->
+        <div :key="currentStep" class="step-content">
+          
+          <!-- Step 0: Basic Info -->
           <div v-if="currentStep === 0">
-            <div class="field-group" :class="{ focused: f === 'mobile' }">
-              <label class="fl glass-fl">Mobile number</label>
-              <div class="phone-row">
-                <div class="country-select">
-                  <select v-model="form.countryCode" @focus="f='mobile'" @blur="f=''" class="glass-select">
-                    <option value="+91">🇮🇳 +91</option>
-                    <option value="+1">🇺🇸 +1</option>
-                    <option value="+44">🇬🇧 +44</option>
-                  </select>
-                </div>
-                <input type="tel" v-model="form.mobile" placeholder="00000 00000" @focus="f='mobile'" @blur="f=''" class="glass-input" />
-              </div>
-            </div>
-
-            <div class="field-group" :class="{ focused: f === 'email' }">
-              <label class="fl glass-fl">Email address</label>
-              <input type="email" v-model="form.email" placeholder="you@example.com" @focus="f='email'" @blur="f=''" class="glass-input" />
-            </div>
-
+            <h2 class="step-title">Welcome! Let's start with basics</h2>
+            <p class="step-subtitle">Tell us who you are</p>
+            
             <div class="two-col">
-              <div class="field-group" :class="{ focused: f === 'first' }">
-                <label class="fl glass-fl">First name</label>
-                <input v-model="form.firstName" placeholder="Ajay" @focus="f='first'" @blur="f=''" class="glass-input" />
+              <div class="floating-group">
+                <i class="fa fa-user-o"></i>
+                <div class="input-floating-wrapper" :class="{ focused: focusedField === 'firstName', 'has-value': form.firstName.length > 0 }">
+                  <input
+                    id="firstName"
+                    type="text"
+                    v-model="form.firstName"
+                    @focus="focusedField = 'firstName'"
+                    @blur="focusedField = ''"
+                    class="floating-input"
+                  />
+                  <label for="firstName" class="floating-placeholder">First name</label>
+                  <div class="input-accent-line"></div>
+                </div>
               </div>
-              <div class="field-group" :class="{ focused: f === 'last' }">
-                <label class="fl glass-fl">Last name</label>
-                <input v-model="form.lastName" placeholder="Sharma" @focus="f='last'" @blur="f=''" class="glass-input" />
+              <div class="floating-group">
+                <div class="input-floating-wrapper" :class="{ focused: focusedField === 'lastName', 'has-value': form.lastName.length > 0 }">
+                  <input
+                    id="lastName"
+                    type="text"
+                    v-model="form.lastName"
+                    @focus="focusedField = 'lastName'"
+                    @blur="focusedField = ''"
+                    class="floating-input"
+                  />
+                  <label for="lastName" class="floating-placeholder">Last name</label>
+                  <div class="input-accent-line"></div>
+                </div>
+              </div>
+            </div>
+            
+            <div class="floating-group">
+              <i class="fa fa-envelope"></i>
+              <div class="input-floating-wrapper" :class="{ focused: focusedField === 'email', 'has-value': form.email.length > 0 }">
+                <input
+                  id="email"
+                  type="email"
+                  v-model="form.email"
+                  @focus="focusedField = 'email'"
+                  @blur="focusedField = ''"
+                  class="floating-input"
+                />
+                <label for="email" class="floating-placeholder">Email address</label>
+                <div class="input-accent-line"></div>
+              </div>
+            </div>
+            
+            <div class="floating-group">
+              <i class="fa fa-lock"></i>
+              <div class="input-floating-wrapper" :class="{ focused: focusedField === 'password', 'has-value': form.password.length > 0 }">
+                <input
+                  id="password"
+                  :type="showPassword ? 'text' : 'password'"
+                  v-model="form.password"
+                  @focus="focusedField = 'password'"
+                  @blur="focusedField = ''"
+                  class="floating-input"
+                />
+                <label for="password" class="floating-placeholder">Password</label>
+                <div class="input-accent-line"></div>
+              </div>
+            </div>
+            
+            <!-- Phone Field: Country Code + Mobile Number Combined in Single Field -->
+            <div class="floating-group">
+              <i class="fa fa-phone"></i>
+              <div class="phone-combined-container">
+                <!-- Country Code Selector - Fixed Width -->
+                <div class="country-code-selector" :class="{ open: countryDropdownOpen }">
+                  <div class="selected-country" @click="toggleCountryDropdown">
+                    <img 
+                      v-if="selectedCountry.flag" 
+                      :src="selectedCountry.flag" 
+                      class="country-flag"
+                      :alt="selectedCountry.code"
+                    />
+                    <span class="country-code-text">{{ selectedCountry.dialCode }}</span>
+                    <i class="fa fa-chevron-down"></i>
+                  </div>
+                  <div class="country-dropdown" v-show="countryDropdownOpen">
+                    <div class="search-box">
+                      <i class="fa fa-search"></i>
+                      <input 
+                        type="text" 
+                        v-model="countrySearch" 
+                        placeholder="Search country..."
+                        @input="filterCountries"
+                      />
+                    </div>
+                    <div class="country-list">
+                      <div 
+                        v-for="country in filteredCountries" 
+                        :key="country.code"
+                        class="country-option"
+                        @click="selectCountry(country)"
+                      >
+                        <img :src="country.flag" class="country-flag" :alt="country.code" />
+                        <span class="country-name">{{ country.name }}</span>
+                        <span class="country-dial">{{ country.dialCode }}</span>
+                      </div>
+                      <div v-if="filteredCountries.length === 0" class="no-results">
+                        No countries found
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
+                <!-- Combined Mobile Number Input with Country Code Prefix Display -->
+                <div class="mobile-input-combined">
+                  <div class="input-floating-wrapper" :class="{ focused: focusedField === 'mobile', 'has-value': form.mobile.length > 0 }">
+                    <input
+                      id="mobile"
+                      type="tel"
+                      v-model="form.mobile"
+                      @focus="focusedField = 'mobile'"
+                      @blur="focusedField = ''"
+                      class="floating-input combined-input"
+                      placeholder=" "
+                    />
+                    <label for="mobile" class="floating-placeholder">Mobile number</label>
+                    <div class="input-accent-line"></div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
 
-          <!-- STEP 1: Location (Optional) -->
-          <div v-if="currentStep === 1" class="center-step">
-            <div class="loc-visual">
-              <div class="loc-rings">
-                <div class="loc-ring r1"></div>
-                <div class="loc-ring r2"></div>
-                <div class="loc-ring r3"></div>
+          <!-- Step 1: Personal Details -->
+          <div v-if="currentStep === 1">
+            <h2 class="step-title">Tell us more about you</h2>
+            <p class="step-subtitle">This helps us find your perfect match</p>
+            
+            <div class="floating-group">
+              <div class="input-floating-wrapper" :class="{ focused: focusedField === 'dob', 'has-value': form.dob.length > 0 }">
+                <input
+                  id="dob"
+                  type="date"
+                  v-model="form.dob"
+                  :max="maxDOB"
+                  @focus="focusedField = 'dob'"
+                  @blur="focusedField = ''"
+                  class="floating-input"
+                />
+                <label for="dob" class="floating-placeholder">Date of birth</label>
+                <div class="input-accent-line"></div>
               </div>
-              <div class="loc-pin-wrap">
-                <div class="loc-pin glass-pin">
-                  <i class="fa fa-map-marker" style="font-size:22px;color:#fff"></i>
+              <p class="hint-text">You must be 18+ to use HeartLink</p>
+            </div>
+            
+            <div class="field-group">
+              <label class="field-label-static">Gender</label>
+              <div class="gender-grid">
+                <div class="gender-card" :class="{ active: form.gender === 'Male' }" @click="form.gender = 'Male'">
+                  <div class="gender-icon male">♂</div>
+                  <span>Male</span>
+                </div>
+                <div class="gender-card" :class="{ active: form.gender === 'Female' }" @click="form.gender = 'Female'">
+                  <div class="gender-icon female">♀</div>
+                  <span>Female</span>
                 </div>
               </div>
             </div>
-            <p class="loc-note glass-loc-note">HeartLink shows you people nearby. Your location is <strong>never shared</strong> publicly.</p>
-            <button
-              class="loc-btn glass-loc-btn"
-              @click="requestLocation"
-              :disabled="locationLoading"
-              :class="{ granted: locationGranted }"
-            >
-              <span v-if="locationLoading" class="btn-spinner white"></span>
-              <i v-else-if="locationGranted" class="fa fa-check" style="font-size:16px"></i>
-              <i v-else class="fa fa-map-marker" style="font-size:16px"></i>
-              <span>{{ locationGranted ? 'Location enabled' : locationLoading ? 'Requesting...' : 'Allow location access' }}</span>
+            
+            <div class="field-group">
+              <label class="field-label-static">Relationship status</label>
+              <div class="status-grid">
+                <span v-for="s in statuses" :key="s" class="status-chip" :class="{ active: form.status === s }" @click="form.status = s">{{ s }}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Step 2: Location -->
+          <div v-if="currentStep === 2" class="center-step">
+            <h2 class="step-title">Where are you located?</h2>
+            <p class="step-subtitle">We'll show you matches nearby</p>
+            
+            <div class="location-visual">
+              <div class="pulse-ring"></div>
+              <div class="location-pin">
+                📍
+              </div>
+            </div>
+            
+            <button class="location-btn" @click="requestLocation" :disabled="locationLoading">
+              <span v-if="locationLoading" class="spinner"></span>
+              <span v-else>📍</span>
+              <span>{{ locationGranted ? 'Location Enabled ✓' : 'Enable Location Access' }}</span>
             </button>
-            <button 
-              v-if="!locationGranted" 
-              class="skip-location-btn glass-skip-link" 
-              @click="skipLocation"
-            >
+            
+            <button v-if="!locationGranted" class="skip-btn" @click="skipLocation">
               Skip for now →
             </button>
-            <p v-if="locationStatus" class="loc-status" :class="{ error: locationStatus.includes('denied') || locationStatus.includes('error') }">
+            
+            <p v-if="locationStatus" class="location-status" :class="{ error: locationStatus.includes('denied') }">
               {{ locationStatus }}
             </p>
           </div>
 
-          <!-- STEP 2: Profile Photo -->
-          <div v-if="currentStep === 2" class="center-step">
-            <div class="avatar-upload" @click="triggerCamera">
-              <img v-if="selfiePreview" :src="selfiePreview" class="avatar-img" />
-              <div v-else class="avatar-placeholder glass-avatar-placeholder">
-                <i class="fa fa-camera" style="font-size:28px;color:#fd5068"></i>
+          <!-- Step 3: Profile Photo -->
+          <div v-if="currentStep === 3" class="center-step">
+            <h2 class="step-title">Add your profile photo</h2>
+            <p class="step-subtitle">Profiles with photos get 5× more matches</p>
+            
+            <div class="avatar-container" @click="triggerPhotoUpload">
+              <img v-if="profilePreview" :src="profilePreview" class="avatar-image" />
+              <div v-else class="avatar-placeholder">
+                📷
                 <span>Add photo</span>
               </div>
-              <div v-if="selfiePreview" class="avatar-edit-badge glass-edit-badge">
-                <i class="fa fa-pencil" style="font-size:10px;color:#fff"></i>
+              <div v-if="profilePreview" class="avatar-edit">
+                ✎
               </div>
             </div>
-
-            <!-- Use simple file inputs that work better on Android -->
-            <input type="file" accept="image/jpeg,image/png,image/jpg" hidden ref="cameraInput" @change="handleImage" />
-            <input type="file" accept="image/jpeg,image/png,image/jpg" hidden ref="galleryInput" @change="handleImage" />
-
-            <div class="upload-options">
-              <button class="upload-opt-btn glass-upload-btn" @click="triggerCameraClick">
-                <i class="fa fa-camera" style="font-size:14px"></i> Take selfie
+            
+            <div class="upload-buttons">
+              <button class="upload-btn" @click.stop="triggerCamera">
+                📷 Take selfie
               </button>
-              <button class="upload-opt-btn glass-upload-btn" @click="triggerGalleryClick">
-                <i class="fa fa-image" style="font-size:14px"></i> From gallery
+              <button class="upload-btn" @click.stop="triggerGallery">
+                🖼️ From gallery
               </button>
             </div>
+            
+            <input type="file" ref="photoInput" accept="image/*" hidden @change="handlePhotoSelect" />
           </div>
 
-          <!-- STEP 3: Intro Video -->
-          <div v-if="currentStep === 3" class="center-step">
-            <div class="video-box glass-video-box">
-              <video v-if="videoPreview" :src="videoPreview" controls class="video-player"></video>
-              <div v-else class="video-placeholder">
-                <i class="fa fa-video-camera" style="font-size:30px;color:#fd5068"></i>
-                <p>Record a quick hello</p>
-              </div>
-            </div>
-
-            <div class="tips-card glass-tips-card">
-              <div class="tips-title">
-                <i class="fa fa-lightbulb-o" style="font-size:13px;color:#fd5068"></i>
-                Quick tips
-              </div>
-              <ul class="tips-list glass-tips-list">
-                <li>Smile and say hello 👋</li>
-                <li>Talk about your hobbies</li>
-                <li>Keep it under 15 seconds</li>
-              </ul>
-            </div>
-
-            <input type="file" accept="video/*" hidden ref="videoInput" @change="handleVideo" />
-
-            <button class="btn-outline-pink full glass-outline-btn" @click="triggerVideoRecord">
-              <i class="fa fa-video-camera" style="font-size:14px"></i>
-              Record intro video
-            </button>
-            <button class="skip-link glass-skip-link" @click="skipVideo">Skip for now →</button>
-          </div>
-
-          <!-- STEP 4: Gender -->
+          <!-- Step 4: Bio & Interests -->
           <div v-if="currentStep === 4">
-            <div class="gender-grid">
-              <div
-                class="gender-card glass-gender-card"
-                :class="{ active: form.gender === 'Male' }"
-                @click="form.gender = 'Male'"
-              >
-                <div class="gender-icon male-icon">♂</div>
-                <span class="gender-label">Male</span>
+            <h2 class="step-title">Tell the world about you</h2>
+            <p class="step-subtitle">Share what makes you unique</p>
+            
+            <div class="floating-group">
+              <div class="input-floating-wrapper" :class="{ focused: focusedField === 'bio', 'has-value': form.bio.length > 0 }">
+                <input
+                  id="bio"
+                  type="text"
+                  v-model="form.bio"
+                  maxlength="60"
+                  @focus="focusedField = 'bio'"
+                  @blur="focusedField = ''"
+                  class="floating-input"
+                />
+                <label for="bio" class="floating-placeholder">Bio tagline</label>
+                <div class="input-accent-line"></div>
               </div>
-              <div
-                class="gender-card glass-gender-card"
-                :class="{ active: form.gender === 'Female' }"
-                @click="form.gender = 'Female'"
-              >
-                <div class="gender-icon female-icon">♀</div>
-                <span class="gender-label">Female</span>
+              <div class="char-counter" :class="{ warn: form.bio.length > 50 }">{{ form.bio.length }}/60</div>
+            </div>
+            
+            <div class="floating-group">
+              <div class="input-floating-wrapper" :class="{ focused: focusedField === 'habits', 'has-value': form.habits.length > 0 }">
+                <input
+                  id="habits"
+                  type="text"
+                  v-model="form.habits"
+                  @focus="focusedField = 'habits'"
+                  @blur="focusedField = ''"
+                  class="floating-input"
+                />
+                <label for="habits" class="floating-placeholder">Habits & interests</label>
+                <div class="input-accent-line"></div>
               </div>
+              <p class="hint-text">Separate with commas (e.g., Traveling, Music, Photography)</p>
             </div>
-          </div>
-
-          <!-- STEP 5: Date of Birth -->
-          <div v-if="currentStep === 5">
-            <div class="field-group" :class="{ focused: f === 'dob' }">
-              <label class="fl glass-fl">Your date of birth</label>
-              <input
-                type="date"
-                v-model="form.dob"
-                :max="maxDOB"
-                class="dob-input glass-input"
-                @focus="f='dob'"
-                @blur="f=''"
-              />
-            </div>
-            <p class="field-hint-text glass-hint">You must be 18+ to use HeartLink</p>
-          </div>
-
-          <!-- STEP 6: Relationship Status -->
-          <div v-if="currentStep === 6">
-            <div class="status-grid">
-              <div
-                v-for="s in ['Single','Married','Divorced','Separated','Widowed']"
-                :key="s"
-                class="status-chip glass-status-chip"
-                :class="{ active: form.status === s }"
-                @click="form.status = s"
-              >{{ s }}</div>
-            </div>
-          </div>
-
-          <!-- STEP 7: Bio -->
-          <div v-if="currentStep === 7">
-            <div class="field-group" :class="{ focused: f === 'bio' }">
-              <label class="fl glass-fl">Your bio tagline</label>
-              <input v-model="form.subtitle" placeholder="e.g. Traveller • Coffee lover • Dog mom" @focus="f='bio'" @blur="f=''" class="glass-input" />
-            </div>
-            <div class="char-count glass-char" :class="{ warn: form.subtitle.length > 50 }">
-              {{ form.subtitle.length }} / 60
-            </div>
-          </div>
-
-          <!-- STEP 8: Habits -->
-          <div v-if="currentStep === 8">
-            <div class="field-group" :class="{ focused: f === 'habits' }">
-              <label class="fl glass-fl">Your habits & interests</label>
-              <input v-model="form.habits" placeholder="Gym, Reading, Traveling, Cooking..." @focus="f='habits'" @blur="f=''" class="glass-input" />
-            </div>
-            <p class="field-hint-text glass-hint">Separate each habit with a comma</p>
-
+            
             <div class="habit-tags" v-if="habitList.length">
-              <span v-for="h in habitList" :key="h" class="habit-tag glass-habit-tag">{{ h }}</span>
+              <span v-for="h in habitList.slice(0, 6)" :key="h" class="habit-tag">{{ h }}</span>
             </div>
           </div>
 
-          <!-- STEP 9: Add Photos -->
-          <div v-if="currentStep === 9">
-            <div class="photo-grid">
-              <div v-for="(img, i) in photos" :key="i" class="photo-thumb glass-photo-thumb">
-                <img :src="img" />
-                <button class="remove-photo glass-remove-photo" @click="removePhoto(i)">×</button>
+          <!-- Step 5: Photos Gallery -->
+          <div v-if="currentStep === 5">
+            <h2 class="step-title">Show more of your life</h2>
+            <p class="step-subtitle">Add up to 9 photos to your gallery</p>
+            
+            <div class="photo-gallery">
+              <div v-for="(photo, idx) in galleryPhotos" :key="idx" class="gallery-photo">
+                <img :src="photo" />
+                <button class="remove-photo" @click="removeGalleryPhoto(idx)">×</button>
               </div>
-              <div
-                class="photo-thumb add-thumb glass-add-thumb"
-                @click="triggerMultiUpload"
-                v-if="photos.length < 9"
-              >
-                <i class="fa fa-plus" style="font-size:20px;color:#fd5068"></i>
+              <div v-if="galleryPhotos.length < 9" class="add-photo" @click="triggerGalleryUpload">
+                <span>+</span>
+                <span>Add photo</span>
               </div>
             </div>
-            <input type="file" multiple accept="image/jpeg,image/png,image/jpg" hidden ref="multiUpload" @change="handleMultiplePhotos" />
-            <p class="field-hint-text glass-hint">Add up to 9 photos. First photo is your main profile picture.</p>
+            
+            <input type="file" ref="galleryInput" accept="image/*" multiple hidden @change="handleGallerySelect" />
           </div>
 
-          <!-- STEP 10: Address -->
-          <div v-if="currentStep === 10">
+          <!-- Step 6: Address -->
+          <div v-if="currentStep === 6">
+            <h2 class="step-title">Your address</h2>
+            <p class="step-subtitle">Used to find matches in your area</p>
+            
             <div class="two-col">
-              <div class="field-group" :class="{ focused: f === 'city' }">
-                <label class="fl glass-fl">City</label>
-                <input v-model="form.city" placeholder="Mumbai" @focus="f='city'" @blur="f=''" class="glass-input" />
+              <div class="floating-group">
+                <div class="input-floating-wrapper" :class="{ focused: focusedField === 'city', 'has-value': form.city.length > 0 }">
+                  <input
+                    id="city"
+                    type="text"
+                    v-model="form.city"
+                    @focus="focusedField = 'city'"
+                    @blur="focusedField = ''"
+                    class="floating-input"
+                  />
+                  <label for="city" class="floating-placeholder">City</label>
+                  <div class="input-accent-line"></div>
+                </div>
               </div>
-              <div class="field-group" :class="{ focused: f === 'pincode' }">
-                <label class="fl glass-fl">Pincode</label>
-                <input v-model="form.pincode" placeholder="400001" @focus="f='pincode'" @blur="f=''" class="glass-input" />
+              <div class="floating-group">
+                <div class="input-floating-wrapper" :class="{ focused: focusedField === 'pincode', 'has-value': form.pincode.length > 0 }">
+                  <input
+                    id="pincode"
+                    type="text"
+                    v-model="form.pincode"
+                    @focus="focusedField = 'pincode'"
+                    @blur="focusedField = ''"
+                    class="floating-input"
+                  />
+                  <label for="pincode" class="floating-placeholder">Pincode</label>
+                  <div class="input-accent-line"></div>
+                </div>
               </div>
             </div>
-            <div class="field-group" :class="{ focused: f === 'address' }">
-              <label class="fl glass-fl">Address</label>
-              <input v-model="form.address" placeholder="Street, area..." @focus="f='address'" @blur="f=''" class="glass-input" />
+            
+            <div class="floating-group">
+              <div class="input-floating-wrapper" :class="{ focused: focusedField === 'address', 'has-value': form.address.length > 0 }">
+                <input
+                  id="address"
+                  type="text"
+                  v-model="form.address"
+                  @focus="focusedField = 'address'"
+                  @blur="focusedField = ''"
+                  class="floating-input"
+                />
+                <label for="address" class="floating-placeholder">Address</label>
+                <div class="input-accent-line"></div>
+              </div>
             </div>
-            <div class="field-group" :class="{ focused: f === 'state' }">
-              <label class="fl glass-fl">State</label>
-              <input v-model="form.state" placeholder="Maharashtra" @focus="f='state'" @blur="f=''" class="glass-input" />
-            </div>
-            <div class="field-group">
-              <label class="fl glass-fl">Country</label>
-              <input disabled value="India" class="input-disabled glass-input-disabled" />
+            
+            <div class="two-col">
+              <div class="floating-group">
+                <div class="input-floating-wrapper" :class="{ focused: focusedField === 'state', 'has-value': form.state.length > 0 }">
+                  <input
+                    id="state"
+                    type="text"
+                    v-model="form.state"
+                    @focus="focusedField = 'state'"
+                    @blur="focusedField = ''"
+                    class="floating-input"
+                  />
+                  <label for="state" class="floating-placeholder">State</label>
+                  <div class="input-accent-line"></div>
+                </div>
+              </div>
+              <div class="floating-group">
+                <div class="input-floating-wrapper disabled-wrapper" :class="{ 'has-value': form.country.length > 0 }">
+                  <input
+                    id="country"
+                    type="text"
+                    v-model="form.country"
+                    disabled
+                    class="floating-input disabled-input"
+                  />
+                  <label for="country" class="floating-placeholder">Country</label>
+                  <div class="input-accent-line"></div>
+                </div>
+              </div>
             </div>
           </div>
-
         </div>
       </transition>
     </div>
 
-    <!-- CROP MODAL -->
-    <div v-if="showCropper" class="cropper-overlay">
-      <div class="cropper-header glass-cropper-header">
-        <button class="crop-cancel" @click="cancelCrop">Cancel</button>
-        <span class="crop-title">Adjust Photo</span>
-        <button class="crop-done" @click="confirmCrop">Done</button>
+    <!-- Navigation Buttons -->
+    <div class="bottom-nav">
+      <button v-if="currentStep > 0" class="nav-btn back" @click="currentStep--">
+        ← Back
+      </button>
+      <div v-else class="nav-placeholder"></div>
+      
+      <button class="nav-btn next" @click="nextStep" :disabled="!isStepValid">
+        <span>{{ currentStep === stepNames.length - 1 ? 'Create Account 🎉' : 'Continue' }}</span>
+        <span v-if="currentStep < stepNames.length - 1">→</span>
+      </button>
+    </div>
+
+    <!-- Cropper Modal -->
+    <div v-if="showCropper" class="cropper-modal">
+      <div class="cropper-header">
+        <button class="cropper-cancel" @click="cancelCrop">Cancel</button>
+        <span class="cropper-title">Adjust photo</span>
+        <button class="cropper-done" @click="confirmCrop">Done</button>
       </div>
       <div class="cropper-body">
         <img ref="cropperImage" :src="cropImageSrc" />
       </div>
     </div>
 
-    <!-- TOAST -->
-    <transition name="toast-pop">
-      <div v-if="toast.show" class="toast-msg glass-toast" :class="{ success: !toast.isError, error: toast.isError }">
-        <i :class="toast.isError ? 'fa fa-times-circle' : 'fa fa-check-circle'" style="font-size:16px"></i>
+    <!-- Toast Notification -->
+    <transition name="toast-fade">
+      <div v-if="toast.show" class="toast" :class="{ error: toast.isError }">
+        <span>{{ toast.isError ? '⚠️' : '✓' }}</span>
         <span>{{ toast.message }}</span>
-        <span v-if="toast.seconds > 0" class="toast-countdown">{{ toast.seconds }}s</span>
       </div>
     </transition>
-
-    <!-- Bottom Navigation - Glass style -->
-    <div class="bottom-nav glass-bottom-nav">
-      <button v-if="currentStep > 0" class="nav-back glass-nav-back" @click="currentStep--">
-        <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-          <path d="M11 4L6 9L11 14" stroke="#94a3b8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-        Back
-      </button>
-      <div v-else class="nav-back-spacer"></div>
-      <button
-        class="nav-next glass-nav-next"
-        @click="nextStep"
-        :disabled="!isStepValid || loading"
-      >
-        <span v-if="loading" class="btn-spinner white"></span>
-        <span v-else>{{ currentStep === stepTitles.length - 1 ? 'Create Account 🎉' : 'Continue' }}</span>
-        <svg v-if="!loading && currentStep < stepTitles.length - 1" width="16" height="16" viewBox="0 0 16 16" fill="none">
-          <path d="M3 8H13M9 4L13 8L9 12" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-      </button>
-    </div>
   </div>
 </template>
 
@@ -337,213 +444,229 @@ import 'cropperjs/dist/cropper.min.css'
 
 export default {
   name: 'CreateAccount',
-
+  
   data() {
     return {
-      f: '',
-      videoPreview: null,
-      toast: { show: false, message: '', seconds: 0, timer: null, isError: false },
-      cropper: null,
-      showCropper: false,
-      cropImageSrc: null,
-      selectedImageFile: null,
-      locationLoading: false,
+      currentStep: 0,
+      focusedField: '',
+      showPassword: false,
+      stepNames: ['Basics', 'Details', 'Location', 'Photo', 'Bio', 'Gallery', 'Address'],
+      statuses: ['Single', 'Married', 'Divorced', 'Separated', 'Widowed'],
+      
+      form: {
+        firstName: '', 
+        lastName: '', 
+        email: '', 
+        password: '',
+        mobile: '', 
+        countryCode: '+91',
+        dob: '', 
+        gender: '', 
+        gender_preference: 'both',
+        status: '', 
+        bio: '', 
+        habits: '',
+        city: '', 
+        address: '', 
+        pincode: '', 
+        state: '', 
+        country: 'India',
+        latitude: '', 
+        longitude: ''
+      },
+      
+      // Country selector data
+      countries: [],
+      filteredCountries: [],
+      selectedCountry: {
+        name: 'India',
+        code: 'IN',
+        dialCode: '+91',
+        flag: 'https://flagcdn.com/w320/in.png'
+      },
+      countryDropdownOpen: false,
+      countrySearch: '',
+      isLoadingCountries: false,
+      
+      profilePhoto: null,
+      profilePreview: null,
+      galleryPhotos: [],
+      galleryFiles: [],
+      
       locationGranted: false,
       locationSkipped: false,
+      locationLoading: false,
       locationStatus: '',
-      loading: false,
-      currentStep: 0,
-
-      stepTitles: [
-        'Contact Details', 'Location Access', 'Profile Photo',
-        'Intro Video', 'Gender', 'Date of Birth',
-        'Relationship Status', 'Bio', 'Habits & Interests',
-        'More Photos', 'Address'
-      ],
-
-      stepHeadings: [
-        { title: "Let's get started", sub: 'We need a few details to create your profile' },
-        { title: 'Enable location', sub: 'We show you matches close to where you are' },
-        { title: 'Your profile photo', sub: 'A great photo gets 5× more matches' },
-        { title: 'Introduce yourself', sub: 'Profiles with videos get 3× more connections' },
-        { title: 'I identify as', sub: 'This helps us find the right matches for you' },
-        { title: 'When were you born?', sub: 'You must be 18 or older to use HeartLink' },
-        { title: 'Relationship status', sub: 'Let others know where you stand' },
-        { title: 'Tell us about you', sub: 'A short tagline to show on your profile' },
-        { title: 'Your lifestyle', sub: 'Shared interests lead to better matches' },
-        { title: 'Add more photos', sub: 'Profiles with more photos get noticed more' },
-        { title: 'Your address', sub: 'Used to personalize your match radius' }
-      ],
-
-      selfiePreview: null,
-      photos: [],
-
-      form: {
-        email: '', countryCode: '+91', mobile: '',
-        firstName: '', lastName: '',
-        gender: '', dob: '', status: '',
-        subtitle: '', habits: '', about: '',
-        city: '', address: '', pincode: '', state: '', country: 'India',
-        latitude: '', longitude: '',
-        profilePhoto: null, introVideo: null, gallery: []
-      }
+      
+      showCropper: false,
+      cropImageSrc: null,
+      cropper: null,
+      pendingImageFile: null,
+      
+      toast: { show: false, message: '', isError: false, timer: null },
+      
+      loading: false
     }
   },
-
+  
   computed: {
     maxDOB() {
       const d = new Date()
       d.setFullYear(d.getFullYear() - 18)
       return d.toISOString().split('T')[0]
     },
-
+    
     habitList() {
-      return this.form.habits
-        .split(',')
-        .map(h => h.trim())
-        .filter(h => h.length > 0)
+      return this.form.habits.split(',').map(h => h.trim()).filter(h => h)
     },
-
+    
     isStepValid() {
-      switch (this.currentStep) {
-        case 0: return this.form.email && this.form.mobile && this.form.firstName && this.form.lastName
-        case 1: return this.locationGranted || this.locationSkipped
-        case 2: return !!this.form.profilePhoto
-        case 3: return true
-        case 4: return !!this.form.gender
-        case 5: {
-          if (!this.form.dob) return false
-          const age = Math.floor((Date.now() - new Date(this.form.dob)) / 31557600000)
-          return age >= 18
-        }
-        case 6: return !!this.form.status
-        case 7: return !!this.form.subtitle
-        case 8: return !!this.form.habits
-        case 9: return this.form.gallery.length > 0
-        case 10: return this.form.city && this.form.address && this.form.pincode && this.form.state
+      switch(this.currentStep) {
+        case 0: return this.form.firstName && this.form.lastName && this.form.email && this.form.password && this.form.mobile && this.form.password.length >= 6
+        case 1: return this.form.dob && this.form.gender && this.form.status
+        case 2: return this.locationGranted || this.locationSkipped
+        case 3: return !!this.profilePhoto
+        case 4: return this.form.bio && this.form.habits
+        case 5: return true
+        case 6: return this.form.city && this.form.address && this.form.pincode && this.form.state
         default: return true
       }
     }
   },
-
+  
   mounted() {
-    this.checkAndRequestPermissions()
+    this.fetchCountries()
+    // Close dropdown when clicking outside
+    document.addEventListener('click', this.handleClickOutside)
   },
-
+  
+  beforeDestroy() {
+    document.removeEventListener('click', this.handleClickOutside)
+    if (this.profilePreview) URL.revokeObjectURL(this.profilePreview)
+    this.galleryPhotos.forEach(p => URL.revokeObjectURL(p))
+    if (this.cropImageSrc) URL.revokeObjectURL(this.cropImageSrc)
+  },
+  
   methods: {
-    checkAndRequestPermissions() {
-      // Check if running in Android WebView
-      const userAgent = navigator.userAgent || navigator.vendor || window.opera;
-      if (/android/i.test(userAgent)) {
-        console.log('Running on Android device')
-      }
-      
-      // Try to request permissions if possible
-      if (navigator.permissions && navigator.permissions.query) {
-        navigator.permissions.query({ name: 'geolocation' }).then(result => {
-          if (result.state === 'granted') {
-            this.locationGranted = true
-          }
-        }).catch(err => {
-          console.log('Permission query error:', err)
-        })
-      }
-    },
-
-    // Photo upload methods with better Android support
-    triggerCamera() {
-      this.triggerCameraClick()
-    },
-
-    triggerCameraClick() {
-      // Create a temporary input for camera
-      const input = document.createElement('input')
-      input.type = 'file'
-      input.accept = 'image/jpeg,image/png,image/jpg'
-      input.capture = 'environment'
-      input.onchange = (e) => this.handleImage(e)
-      input.click()
-    },
-
-    triggerGalleryClick() {
-      this.$refs.galleryInput.click()
-    },
-
-    triggerVideoRecord() {
-      const input = document.createElement('input')
-      input.type = 'file'
-      input.accept = 'video/*'
-      input.capture = 'environment'
-      input.onchange = (e) => this.handleVideo(e)
-      input.click()
-    },
-
-    triggerMultiUpload() {
-      this.$refs.multiUpload.click()
-    },
-
-    skipLocation() {
-      this.locationSkipped = true
-      this.locationGranted = false
-      this.locationStatus = 'Location skipped - you can enable it later in settings'
-      this.currentStep++
-    },
-
-    skipVideo() {
-      this.form.introVideo = null
-      this.videoPreview = null
-      this.currentStep++
-    },
-
-    handleVideo(e) {
-      const file = e.target.files[0]
-      if (!file) {
-        this.showToast('No video selected', false, true)
-        return
-      }
-      
-      // Check file size (max 50MB)
-      if (file.size > 50 * 1024 * 1024) {
-        this.showToast('Video too large. Please keep it under 50MB', false, true)
-        return
-      }
-      
-      this.form.introVideo = file
-      this.videoPreview = URL.createObjectURL(file)
-      e.target.value = ''
-      this.showToast('Video added successfully!', false, false)
-    },
-
-    showToast(message, redirect = false, isError = false) {
-      if (this.toast.timer) clearInterval(this.toast.timer)
-      this.toast = { show: true, message, seconds: 5, timer: null, isError }
-      this.toast.timer = setInterval(() => {
-        this.toast.seconds--
-        if (this.toast.seconds <= 0) {
-          clearInterval(this.toast.timer)
-          this.toast.show = false
-          if (redirect) this.$router.push('/')
+    // Fetch all countries from REST API
+    async fetchCountries() {
+      this.isLoadingCountries = true
+      try {
+        const response = await fetch('https://restcountries.com/v3.1/all?fields=name,cca2,idd,flags')
+        const data = await response.json()
+        
+        const countryList = data
+          .filter(country => {
+            return country.idd && (country.idd.root || country.idd.suffixes)
+          })
+          .map(country => {
+            let dialCode = ''
+            if (country.idd.root) {
+              if (country.idd.suffixes && country.idd.suffixes.length > 0) {
+                dialCode = country.idd.root + country.idd.suffixes[0]
+              } else {
+                dialCode = country.idd.root
+              }
+            }
+            return {
+              name: country.name.common,
+              code: country.cca2,
+              dialCode: dialCode,
+              flag: country.flags.svg || country.flags.png
+            }
+          })
+          .sort((a, b) => a.name.localeCompare(b.name))
+        
+        this.countries = countryList
+        this.filteredCountries = countryList
+        
+        const india = this.countries.find(c => c.code === 'IN')
+        if (india) {
+          this.selectedCountry = india
+          this.form.countryCode = india.dialCode
+        } else if (this.countries.length > 0) {
+          this.selectedCountry = this.countries[0]
+          this.form.countryCode = this.countries[0].dialCode
         }
-      }, 1000)
+        
+      } catch (error) {
+        console.error('Error fetching countries:', error)
+        this.showToast('Failed to load country list', true)
+        this.loadFallbackCountries()
+      } finally {
+        this.isLoadingCountries = false
+      }
     },
-
-    requestLocation() {
+    
+    loadFallbackCountries() {
+      const fallback = [
+        { name: 'United States', code: 'US', dialCode: '+1', flag: 'https://flagcdn.com/w320/us.png' },
+        { name: 'United Kingdom', code: 'GB', dialCode: '+44', flag: 'https://flagcdn.com/w320/gb.png' },
+        { name: 'India', code: 'IN', dialCode: '+91', flag: 'https://flagcdn.com/w320/in.png' },
+        { name: 'Canada', code: 'CA', dialCode: '+1', flag: 'https://flagcdn.com/w320/ca.png' },
+        { name: 'Australia', code: 'AU', dialCode: '+61', flag: 'https://flagcdn.com/w320/au.png' },
+        { name: 'Germany', code: 'DE', dialCode: '+49', flag: 'https://flagcdn.com/w320/de.png' },
+        { name: 'France', code: 'FR', dialCode: '+33', flag: 'https://flagcdn.com/w320/fr.png' },
+        { name: 'Japan', code: 'JP', dialCode: '+81', flag: 'https://flagcdn.com/w320/jp.png' },
+        { name: 'China', code: 'CN', dialCode: '+86', flag: 'https://flagcdn.com/w320/cn.png' },
+        { name: 'Brazil', code: 'BR', dialCode: '+55', flag: 'https://flagcdn.com/w320/br.png' }
+      ]
+      this.countries = fallback
+      this.filteredCountries = fallback
+      this.selectedCountry = fallback.find(c => c.code === 'IN') || fallback[0]
+      this.form.countryCode = this.selectedCountry.dialCode
+    },
+    
+    filterCountries() {
+      const search = this.countrySearch.toLowerCase()
+      this.filteredCountries = this.countries.filter(country => 
+        country.name.toLowerCase().includes(search) || 
+        country.dialCode.includes(search)
+      )
+    },
+    
+    toggleCountryDropdown() {
+      this.countryDropdownOpen = !this.countryDropdownOpen
+      if (this.countryDropdownOpen) {
+        this.countrySearch = ''
+        this.filteredCountries = this.countries
+      }
+    },
+    
+    selectCountry(country) {
+      this.selectedCountry = country
+      this.form.countryCode = country.dialCode
+      this.countryDropdownOpen = false
+      this.countrySearch = ''
+    },
+    
+    handleClickOutside(event) {
+      const selector = document.querySelector('.phone-combined-container')
+      if (selector && !selector.contains(event.target)) {
+        this.countryDropdownOpen = false
+      }
+    },
+    
+    nextStep() {
+      if (this.currentStep < this.stepNames.length - 1) {
+        this.currentStep++
+        this.focusedField = ''
+        window.scrollTo(0, 0)
+      } else {
+        this.submitSignup()
+      }
+    },
+    
+    async requestLocation() {
       this.locationLoading = true
       this.locationStatus = 'Requesting location...'
       
       if (!navigator.geolocation) {
-        this.locationStatus = 'Geolocation is not supported by your browser'
+        this.locationStatus = 'Geolocation not supported'
         this.locationLoading = false
         return
       }
-
-      // For Android, use a more compatible approach
-      const options = {
-        enableHighAccuracy: false, // Set to false for better compatibility
-        timeout: 15000,
-        maximumAge: 60000 // Accept cached position for up to 1 minute
-      }
-
+      
       navigator.geolocation.getCurrentPosition(
         (position) => {
           this.locationGranted = true
@@ -552,1050 +675,1166 @@ export default {
           this.form.latitude = position.coords.latitude
           this.form.longitude = position.coords.longitude
           this.locationLoading = false
-          
-          // Auto proceed after successful location
-          setTimeout(() => {
-            if (this.currentStep === 1) {
-              this.currentStep++
-            }
+          setTimeout(() => { 
+            if (this.currentStep === 2) this.currentStep++ 
           }, 500)
         },
         (error) => {
-          console.error('Geolocation error:', error)
-          let errorMessage = ''
-          
+          let msg = ''
           switch(error.code) {
-            case error.PERMISSION_DENIED:
-              errorMessage = 'Location permission denied. You can skip or enable in settings.'
-              break
-            case error.POSITION_UNAVAILABLE:
-              errorMessage = 'Location information unavailable. Please try again or skip.'
-              break
-            case error.TIMEOUT:
-              errorMessage = 'Location request timed out. Please try again or skip.'
-              break
-            default:
-              errorMessage = 'An unknown error occurred. You can skip location.'
+            case error.PERMISSION_DENIED: msg = 'Permission denied. You can skip or enable later.'; break
+            case error.POSITION_UNAVAILABLE: msg = 'Location unavailable. Try again or skip.'; break
+            default: msg = 'Location error. You can skip.'
           }
-          
-          this.locationStatus = errorMessage
+          this.locationStatus = msg
           this.locationLoading = false
           this.locationGranted = false
         },
-        options
+        { enableHighAccuracy: false, timeout: 10000 }
       )
     },
-
-    async nextStep() {
-      if (this.currentStep < this.stepTitles.length - 1) {
-        this.currentStep++
+    
+    skipLocation() {
+      this.locationSkipped = true
+      this.locationGranted = false
+      this.locationStatus = 'Location skipped - can enable later'
+      this.currentStep++
+    },
+    
+    triggerPhotoUpload() { this.$refs.photoInput.click() },
+    triggerCamera() {
+      const input = document.createElement('input')
+      input.type = 'file'
+      input.accept = 'image/*'
+      input.capture = 'environment'
+      input.onchange = (e) => this.handlePhotoSelect(e)
+      input.click()
+    },
+    triggerGallery() { this.$refs.photoInput.click() },
+    triggerGalleryUpload() { this.$refs.galleryInput.click() },
+    
+    handlePhotoSelect(e) {
+      const file = e.target.files[0]
+      if (!file) return
+      if (file.size > 10 * 1024 * 1024) {
+        this.showToast('Image too large (max 10MB)', true)
         return
       }
-
-      this.loading = true
-      const formData = new FormData()
-
-      for (let key in this.form) {
-        if (key === 'gallery') {
-          this.form.gallery.forEach(f => formData.append('gallery[]', f))
-        } else if (key === 'profilePhoto') {
-          if (this.form.profilePhoto) formData.append('profile_photo', this.form.profilePhoto)
-        } else if (key === 'introVideo') {
-          if (this.form.introVideo) formData.append('introduction_video', this.form.introVideo)
-        } else {
-          formData.append(key, this.form[key] || '')
-        }
+      this.pendingImageFile = file
+      this.cropImageSrc = URL.createObjectURL(file)
+      this.showCropper = true
+      this.$nextTick(() => {
+        if (this.cropper) this.cropper.destroy()
+        this.cropper = new Cropper(this.$refs.cropperImage, {
+          aspectRatio: 1,
+          viewMode: 1,
+          background: false,
+          autoCropArea: 0.9
+        })
+      })
+      e.target.value = ''
+    },
+    
+    confirmCrop() {
+      if (!this.cropper) return
+      const canvas = this.cropper.getCroppedCanvas({ width: 600, height: 600 })
+      canvas.toBlob(blob => {
+        this.profilePhoto = new File([blob], 'profile.jpg', { type: 'image/jpeg' })
+        this.profilePreview = URL.createObjectURL(blob)
+        this.showCropper = false
+        this.cropper.destroy()
+        this.cropper = null
+        this.showToast('Photo added!', false)
+      }, 'image/jpeg', 0.9)
+    },
+    
+    cancelCrop() {
+      this.showCropper = false
+      if (this.cropper) this.cropper.destroy()
+      if (this.cropImageSrc) URL.revokeObjectURL(this.cropImageSrc)
+    },
+    
+    handleGallerySelect(e) {
+      const files = Array.from(e.target.files)
+      for (let file of files) {
+        if (file.size > 10 * 1024 * 1024) continue
+        if (this.galleryPhotos.length >= 9) break
+        this.galleryPhotos.push(URL.createObjectURL(file))
+        this.galleryFiles.push(file)
       }
-      formData.append('password', '123456')
-      formData.append('location_skipped', this.locationSkipped)
-
+      this.showToast(`${files.length} photo(s) added`, false)
+      e.target.value = ''
+    },
+    
+    removeGalleryPhoto(index) {
+      URL.revokeObjectURL(this.galleryPhotos[index])
+      this.galleryPhotos.splice(index, 1)
+      this.galleryFiles.splice(index, 1)
+    },
+    
+    async submitSignup() {
+      this.loading = true
+      this.showToast('Creating your account...', false)
+      
       try {
-        const response = await fetch('https://companion.ajaywatpade.in/api/register', {
-          method: 'POST',
-          body: formData
+        const formData = new FormData()
+        
+        formData.append('firstName', this.form.firstName)
+        formData.append('lastName', this.form.lastName)
+        formData.append('email', this.form.email)
+        formData.append('password', this.form.password)
+        formData.append('mobile', this.form.mobile)
+        formData.append('countryCode', this.form.countryCode)
+        formData.append('gender', this.form.gender)
+        formData.append('dob', this.form.dob)
+        formData.append('gender_preference', this.form.gender_preference)
+        formData.append('status', this.form.status)
+        formData.append('subtitle', this.form.bio)
+        formData.append('habits', this.form.habits)
+        formData.append('city', this.form.city)
+        formData.append('address', this.form.address)
+        formData.append('pincode', this.form.pincode)
+        formData.append('state', this.form.state)
+        formData.append('country', this.form.country)
+        
+        if (this.form.latitude) formData.append('latitude', this.form.latitude)
+        if (this.form.longitude) formData.append('longitude', this.form.longitude)
+        
+        formData.append('location_skipped', this.locationSkipped ? '1' : '0')
+        
+        if (this.profilePhoto) {
+          formData.append('profile_photo', this.profilePhoto)
+        }
+        
+        this.galleryFiles.forEach(file => {
+          formData.append('gallery[]', file)
         })
         
-        if (response.ok) {
-          this.showToast('Account created successfully 🎉 Redirecting…', true)
-        } else {
-          const error = await response.json()
-          this.showToast(error.message || 'Registration failed', false, true)
+        const response = await fetch('https://companion.ajaywatpade.in/api/register', {
+          method: 'POST',
+          body: formData,
+          headers: {
+            'Accept': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest'
+          }
+        })
+        
+        const data = await response.json()
+        
+        if (!response.ok) {
+          if (response.status === 422 && data.errors) {
+            const errorMessages = Object.values(data.errors).flat().join('\n')
+            throw new Error(errorMessages)
+          }
+          throw new Error(data.message || data.error || 'Registration failed')
         }
-      } catch (error) {
-        console.error('Registration error:', error)
-        this.showToast('Network error. Please check your connection.', false, true)
+        
+        if (data.access_token) {
+          localStorage.setItem('access_token', data.access_token)
+          localStorage.setItem('token_type', data.token_type || 'Bearer')
+          localStorage.setItem('user', JSON.stringify(data.user))
+          
+          this.showToast(data.message || 'Account created successfully! 🎉', false)
+          
+          setTimeout(() => { 
+            if (this.$router) {
+              this.$router.push('/login')
+            } else {
+              window.location.href = '/home'
+            }
+          }, 1500)
+        } else if (data.success && data.user) {
+          localStorage.setItem('user', JSON.stringify(data.user))
+          this.showToast('Account created successfully! 🎉', false)
+          setTimeout(() => { 
+            if (this.$router) {
+              this.$router.push('/login')
+            } else {
+              window.location.href = '/login'
+            }
+          }, 1500)
+        } else {
+          throw new Error(data.message || 'Registration failed - no token received')
+        }
+        
+      } catch (err) {
+        console.error('Signup error:', err)
+        this.showToast(err.message || 'Registration failed. Please try again.', true)
       } finally {
         this.loading = false
       }
     },
-
-    handleImage(e) {
-      const file = e.target.files[0]
-      if (!file) {
-        this.showToast('No file selected', false, true)
-        return
-      }
-      
-      // Check file size (max 10MB)
-      if (file.size > 10 * 1024 * 1024) {
-        this.showToast('Image too large. Please choose an image under 10MB', false, true)
-        return
-      }
-      
-      // Check if it's actually an image
-      if (!file.type.startsWith('image/')) {
-        this.showToast('Please select a valid image file', false, true)
-        return
-      }
-      
-      this.selectedImageFile = file
-      this.cropImageSrc = URL.createObjectURL(file)
-      this.showCropper = true
-      
-      this.$nextTick(() => {
-        if (this.cropper) {
-          this.cropper.destroy()
-        }
-        
-        if (this.$refs.cropperImage) {
-          this.cropper = new Cropper(this.$refs.cropperImage, {
-            aspectRatio: 1,
-            viewMode: 1,
-            dragMode: 'move',
-            background: false,
-            guides: true,
-            center: true,
-            autoCropArea: 1,
-            cropBoxResizable: true,
-            cropBoxMovable: true,
-            responsive: true,
-          })
-        }
-      })
-      
-      e.target.value = ''
-    },
-
-    confirmCrop() {
-      if (!this.cropper) return
-      
-      try {
-        const canvas = this.cropper.getCroppedCanvas({ 
-          width: 600, 
-          height: 600, 
-          imageSmoothingQuality: 'high' 
-        })
-        
-        canvas.toBlob(blob => {
-          if (blob) {
-            this.form.profilePhoto = new File([blob], 'profile.jpg', { type: 'image/jpeg' })
-            this.selfiePreview = URL.createObjectURL(blob)
-            this.showCropper = false
-            if (this.cropper) {
-              this.cropper.destroy()
-              this.cropper = null
-            }
-            this.showToast('Photo added successfully!', false, false)
-          } else {
-            this.showToast('Failed to process image', false, true)
-          }
-        }, 'image/jpeg', 0.9)
-      } catch (error) {
-        console.error('Crop error:', error)
-        this.showToast('Error processing image', false, true)
-        this.cancelCrop()
-      }
-    },
-
-    cancelCrop() {
-      this.showCropper = false
-      if (this.cropper) {
-        this.cropper.destroy()
-        this.cropper = null
-      }
-      if (this.cropImageSrc) {
-        URL.revokeObjectURL(this.cropImageSrc)
-        this.cropImageSrc = null
-      }
-      this.selectedImageFile = null
-    },
-
-    handleMultiplePhotos(e) {
-      const files = Array.from(e.target.files)
-      if (files.length === 0) return
-      
-      const validFiles = files.filter(file => {
-        if (!file.type.startsWith('image/')) {
-          this.showToast(`${file.name} is not a valid image`, false, true)
-          return false
-        }
-        if (file.size > 10 * 1024 * 1024) {
-          this.showToast(`${file.name} is too large (max 10MB)`, false, true)
-          return false
-        }
-        return true
-      })
-      
-      validFiles.forEach(file => {
-        this.photos.push(URL.createObjectURL(file))
-        this.form.gallery.push(file)
-      })
-      
-      e.target.value = ''
-      
-      if (validFiles.length > 0) {
-        this.showToast(`${validFiles.length} photo(s) added!`, false, false)
-      }
-    },
-
-    removePhoto(i) {
-      if (this.photos[i]) {
-        URL.revokeObjectURL(this.photos[i])
-      }
-      this.photos.splice(i, 1)
-      this.form.gallery.splice(i, 1)
-    }
-  },
-
-  beforeDestroy() {
-    // Clean up object URLs to prevent memory leaks
-    if (this.selfiePreview) {
-      URL.revokeObjectURL(this.selfiePreview)
-    }
-    if (this.videoPreview) {
-      URL.revokeObjectURL(this.videoPreview)
-    }
-    this.photos.forEach(photo => {
-      URL.revokeObjectURL(photo)
-    })
-    if (this.cropImageSrc) {
-      URL.revokeObjectURL(this.cropImageSrc)
+    
+    showToast(msg, isError = false) {
+      if (this.toast.timer) clearTimeout(this.toast.timer)
+      this.toast = { show: true, message: msg, isError, timer: null }
+      this.toast.timer = setTimeout(() => {
+        this.toast.show = false
+      }, 3000)
     }
   }
 }
 </script>
 
 <style scoped>
-/* Keep all your existing styles, just update the glass-bottom-nav background */
-.glass-bottom-nav {
-  background: rgba(255, 255, 255, 0.95); /* Changed from transparent to white with opacity */
-  backdrop-filter: blur(20px);
-  border-top: 1px solid rgba(253, 80, 104, 0.15);
-  box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.08);
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
 }
 
-/* Make sure inputs are visible */
-.glass-select {
-  background: rgba(255, 255, 255, 0.9); /* Increased opacity for better visibility */
-}
-
-/* Ensure buttons are clickable */
-.upload-opt-btn, .loc-btn, .nav-next, .nav-back {
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-}
-
-/* Improve touch targets for mobile */
-button, .gender-card, .status-chip, .photo-thumb {
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-}
-
-
-
-* { box-sizing: border-box; }
-
+/* Signup Page - Clean White Theme */
 .signup-wrap {
-  max-width: 420px;
-  margin: 0 auto;
-  font-family: 'Nunito', sans-serif;
-  padding: 0 0 36px;
-  /* background: #00000026; */
-  /* min-height: 100vh; */
+  min-height: 100vh;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  padding: 2rem;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  background: #ffffff;
 }
 
-/* ========= GLASS PROGRESS HEADER ========= */
+/* Progress Header */
 .progress-header {
-  position: sticky;
-  top: 0;
-  z-index: 10;
-  padding: 16px 14px 12px;
-  border-bottom-left-radius: 28px;
-  border-bottom-right-radius: 28px;
+  max-width: 800px;
+  margin: 0 auto 2rem auto;
+  width: 100%;
 }
 
-.glass-progress {
-  display: none;
-  background: rgba(255, 255, 255, 0.85);
-  backdrop-filter: blur(20px);
-  border-bottom: 1px solid rgba(253, 80, 104, 0.2);
-}
-
-.prog-top-row {
+.step-indicators {
   display: flex;
   justify-content: space-between;
+  margin-bottom: 1rem;
+}
+
+.step-indicator {
+  display: flex;
+  flex-direction: column;
   align-items: center;
-  margin-bottom: 10px;
+  gap: 0.5rem;
+  flex: 1;
 }
 
-.step-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  border-radius: 40px;
-  padding: 5px 14px;
-}
-
-.glass-step-badge {
-  background: rgba(253, 80, 104, 0.15);
-  backdrop-filter: blur(8px);
-  border: 1px solid rgba(253, 80, 104, 0.3);
-}
-
-.badge-dot {
-  width: 7px; height: 7px;
+.step-number {
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
-  background: #fd5068;
+  background: #f5f5f5;
+  border: 2px solid #e0e0e0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  color: #999;
+  transition: all 0.3s ease;
 }
 
-.step-badge span {
-  font-size: 12px;
-  font-weight: 700;
-  color: #fd5068;
+.step-indicator.active .step-number {
+  background: linear-gradient(135deg, #ff9a9e, #fad0c4);
+  border-color: #ff9a9e;
+  color: #c44569;
+  box-shadow: 0 4px 12px rgba(255, 154, 158, 0.3);
 }
 
-.step-counter {
-  font-size: 12px;
-  font-weight: 700;
-  color: rgba(0,0,0,0.5);
+.step-indicator.completed .step-number {
+  background: #10b981;
+  border-color: #10b981;
+  color: white;
 }
 
-.step-counter .of { font-weight: 400; }
-
-.prog-bar-wrap { margin-top: 4px; }
-
-.prog-bar {
-  height: 5px;
-  border-radius: 10px;
-  overflow: hidden;
-}
-
-.glass-prog-bar {
-  background: rgba(0, 0, 0, 0.08);
-}
-
-.prog-fill {
-  height: 100%;
-  background: linear-gradient(90deg, #fd5068, #ff7854);
-  border-radius: 10px;
-  transition: width 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
-}
-
-/* ========= GLASS STEP CARD ========= */
-.step-card {
-  /* margin: 16px 14px 0; */
-  border-radius: 32px;
-  padding: 24px 22px 28px;
-}
-
-.glass-card {
-  /* background: rgba(255, 255, 255, 0.9); */
-  /* backdrop-filter: blur(16px); */
-  /* border: 1px solid rgba(255, 255, 255, 0.5); */
-  /* box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08); */
-}
-
-.step-head { margin-bottom: 22px; }
-
-.step-title {
-  font-size: 22px;
-  font-weight: 800;
-  margin: 0 0 4px;
-}
-
-.glass-title {
-  color: #1a1a2e;
-  background: linear-gradient(135deg, #1a1a2e, #2d2d44);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-}
-
-.step-sub {
-  font-size: 13px;
-  margin: 0;
+.step-label {
+  font-size: 0.75rem;
+  color: #666;
   font-weight: 500;
 }
 
-.glass-sub {
-  color: rgba(255, 255, 255, 0.888);
-}
-
-/* ========= GLASS FIELD STYLES ========= */
-.fl {
-  display: block;
-  font-size: 11px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  margin-bottom: 6px;
-  transition: color 0.2s;
-}
-
-.glass-fl {
-  color: rgb(144, 140, 140);
-}
-
-.field-group { margin-bottom: 16px;  }
-.field-group.focused .glass-fl { color: #fdfdfd; }
-
-.glass-input {
-  width: 100%;
-  height: 48px;
-  border-radius: 24px;
-  border: 1.5px solid rgba(0, 0, 0, 0.1);
-  background: rgba(255,255,255,0.12);
-  padding: 0 16px;
-  font-size: 14px;
-  font-family: 'Nunito', sans-serif;
-  color: #1a1a2e;
-  outline: none;
-  transition: all 0.25s;
-  backdrop-filter: blur(4px);
-}
-
-.glass-input::placeholder { color: rgba(0, 0, 0, 0.35); }
-
-.glass-input:focus {
-  border-color: #fd5068;
-  background: rgba(255, 255, 255, 0.9);
-  box-shadow: 0 0 0 3px rgba(253, 80, 104, 0.15);
-}
-
-.glass-select {
-  width: 100%;
-  height: 48px;
-  border-radius: 24px;
-  border: 1.5px solid rgba(0, 0, 0, 0.1);
-  background: rgb(124 124 127 / 21%);
-  padding: 0 12px;
-  font-size: 14px;
-  font-family: 'Nunito', sans-serif;
-  color: #1a1a2e;
-  outline: none;
-  cursor: pointer;
-  backdrop-filter: blur(4px);
-}
-
-.glass-select:focus {
-  border-color: #fd5068;
-}
-
-.input-disabled {
-  background: rgba(0, 0, 0, 0.05) !important;
-  color: rgba(0, 0, 0, 0.4) !important;
-  cursor: not-allowed;
-}
-
-.phone-row {
-  display: grid;
-  grid-template-columns: 100px 1fr;
-  gap: 10px;
-}
-
-.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-
-.dob-input::-webkit-calendar-picker-indicator {
-  filter: invert(0.4);
-  cursor: pointer;
-}
-
-.field-hint-text {
-  font-size: 11px;
-  margin-top: -6px;
-  margin-bottom: 12px;
-}
-
-.glass-hint {
-  color: rgba(0, 0, 0, 0.45);
-}
-
-.char-count {
-  font-size: 11px;
-  text-align: right;
-  margin-top: -8px;
-}
-
-.glass-char {
-  color: rgba(0, 0, 0, 0.45);
-}
-
-.char-count.warn { color: #fd5068; }
-
-/* ========= CENTER STEP ========= */
-.center-step { text-align: center; }
-
-/* Location */
-.loc-visual {
-  position: relative;
-  width: 100px; height: 100px;
-  margin: 0 auto 20px;
-  display: flex; align-items: center; justify-content: center;
-}
-
-.loc-rings { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; }
-
-.loc-ring {
-  position: absolute;
-  border-radius: 50%;
-  border: 1.5px solid rgba(253, 80, 104, 0.3);
-  animation: ripple 2.5s ease-out infinite;
-}
-
-.r1 { width: 40px; height: 40px; animation-delay: 0s; }
-.r2 { width: 65px; height: 65px; animation-delay: 0.5s; }
-.r3 { width: 90px; height: 90px; animation-delay: 1s; }
-
-@keyframes ripple {
-  0% { transform: scale(0.8); opacity: 0.6; }
-  100% { transform: scale(1.2); opacity: 0; }
-}
-
-.loc-pin-wrap { position: relative; z-index: 1; }
-
-.glass-pin {
-  width: 52px; height: 52px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, #fd5068, #ff7854);
-  display: flex; align-items: center; justify-content: center;
-  box-shadow: 0 4px 20px rgba(253, 80, 104, 0.4);
-}
-
-.loc-note {
-  font-size: 13px;
-  line-height: 1.5;
-  margin-bottom: 20px;
-}
-
-.glass-loc-note {
-  color: rgba(0, 0, 0, 0.65);
-}
-
-.loc-btn {
-  width: 100%;
-  height: 52px;
-  border-radius: 30px;
-  border: none;
-  background: linear-gradient(135deg, #fd5068, #ff7854);
-  color: #fff;
-  font-size: 14px;
-  font-weight: 700;
-  font-family: 'Nunito', sans-serif;
-  cursor: pointer;
-  display: flex; align-items: center; justify-content: center; gap: 10px;
-  box-shadow: 0 6px 20px rgba(253, 80, 104, 0.35);
-  transition: all 0.25s;
-}
-
-.loc-btn.granted {
-  background: linear-gradient(135deg, #22c55e, #16a34a);
-  box-shadow: 0 6px 20px rgba(34, 197, 94, 0.35);
-}
-
-.loc-btn:disabled { opacity: 0.7; cursor: not-allowed; }
-
-.skip-location-btn {
-  background: none;
-  border: none;
-  font-size: 14px;
-  cursor: pointer;
-  font-family: 'Nunito', sans-serif;
-  margin-top: 16px;
-  display: inline-block;
-  width: auto;
-  text-align: center;
-  transition: all 0.2s;
-  padding: 10px 20px;
-  border-radius: 30px;
-}
-
-.glass-skip-link {
-  color: rgba(0, 0, 0, 0.45);
-}
-
-.glass-skip-link:hover { 
-  color: #fd5068; 
-  background: rgba(253, 80, 104, 0.1);
-}
-
-.loc-status {
-  font-size: 12px;
-  color: #22c55e;
-  margin-top: 12px;
+.step-indicator.active .step-label {
+  color: #c44569;
   font-weight: 600;
 }
 
-.loc-status.error { color: #ef4444; }
-
-/* Avatar Upload */
-.avatar-upload {
-  position: relative;
-  width: 140px; height: 140px;
-  border-radius: 50%;
-  margin: 0 auto 20px;
-  cursor: pointer;
-  transition: transform 0.2s;
-}
-
-.avatar-upload:hover { transform: scale(1.02); }
-
-.avatar-img {
-  width: 100%; height: 100%;
-  border-radius: 50%;
-  object-fit: cover;
-  border: 3px solid #fd5068;
-  box-shadow: 0 4px 20px rgba(253, 80, 104, 0.3);
-}
-
-.avatar-placeholder {
-  width: 100%; height: 100%;
-  border-radius: 50%;
-  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px;
-  font-size: 12px;
-  font-weight: 700;
-}
-
-.glass-avatar-placeholder {
-  background: rgba(255, 255, 255, 0.7);
-  backdrop-filter: blur(8px);
-  border: 2px dashed rgba(253, 80, 104, 0.5);
-  color: #fd5068;
-}
-
-.avatar-edit-badge {
-  position: absolute;
-  bottom: 6px; right: 6px;
-  width: 32px; height: 32px;
-  border-radius: 50%;
-  display: flex; align-items: center; justify-content: center;
-}
-
-.glass-edit-badge {
-  background: #fd5068;
-  border: 2px solid #fff;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-}
-
-.upload-options { display: flex; flex-direction: column; gap: 12px; }
-
-.glass-upload-btn {
-  height: 48px;
-  border-radius: 30px;
-  border: 1.5px solid rgba(253, 80, 104, 0.3);
-  background: rgba(255, 255, 255, 0.7);
-  backdrop-filter: blur(8px);
-  color: #fd5068;
-  font-size: 13px;
-  font-weight: 700;
-  font-family: 'Nunito', sans-serif;
-  cursor: pointer;
-  display: flex; align-items: center; justify-content: center; gap: 8px;
-  transition: all 0.2s;
-}
-
-.glass-upload-btn:hover {
-  background: linear-gradient(135deg, #fd5068, #ff7854);
-  color: #fff;
-  border-color: transparent;
-  transform: translateY(-1px);
-}
-
-/* Video */
-.video-box {
-  width: 100%;
-  height: 200px;
-  border-radius: 24px;
+.progress-bar {
+  height: 4px;
+  background: #e0e0e0;
+  border-radius: 4px;
   overflow: hidden;
-  display: flex; align-items: center; justify-content: center;
-  margin-bottom: 16px;
 }
 
-.glass-video-box {
-  background: rgba(255, 255, 255, 0.5);
-  backdrop-filter: blur(8px);
-  border: 1px solid rgba(255,255,255,0.3);
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #ff9a9e, #fad0c4);
+  border-radius: 4px;
+  transition: width 0.3s ease;
 }
 
-.video-player { width: 100%; height: 100%; object-fit: cover; }
-
-.video-placeholder {
-  text-align: center;
-  display: flex; flex-direction: column; align-items: center; gap: 10px;
-  font-size: 13px;
-  color: rgba(0,0,0,0.5);
-}
-
-.tips-card {
-  border-radius: 20px;
-  padding: 14px 18px;
-  margin-bottom: 16px;
-  text-align: left;
-}
-
-.glass-tips-card {
-  background: rgba(255, 245, 247, 0.8);
-  backdrop-filter: blur(8px);
-  border: 1px solid rgba(253, 80, 104, 0.2);
-}
-
-.tips-title {
-  font-size: 12px;
-  font-weight: 700;
-  color: #fd5068;
-  margin-bottom: 8px;
-  display: flex; align-items: center; gap: 6px;
-}
-
-.glass-tips-list {
-  margin: 0; padding-left: 20px;
-  font-size: 12px;
-  color: rgba(0, 0, 0, 0.6);
-  line-height: 1.7;
-}
-
-.btn-outline-pink {
-  height: 48px;
-  border-radius: 30px;
-  font-size: 14px;
-  font-weight: 700;
-  font-family: 'Nunito', sans-serif;
-  cursor: pointer;
-  display: flex; align-items: center; justify-content: center; gap: 8px;
-  transition: all 0.25s;
-}
-
-.glass-outline-btn {
-  border: 2px solid #fd5068;
-  background: rgba(255, 255, 255, 0.7);
-  backdrop-filter: blur(8px);
-  color: #fd5068;
-}
-
-.glass-outline-btn:hover {
-  background: linear-gradient(135deg, #fd5068, #ff7854);
-  color: #fff;
-  border-color: transparent;
-}
-
-.btn-outline-pink.full { width: 100%; }
-
-.skip-link {
-  background: none;
-  border: none;
-  font-size: 13px;
-  cursor: pointer;
-  font-family: 'Nunito', sans-serif;
-  margin-top: 14px;
-  display: block;
+/* Step Card */
+.step-card {
+  max-width: 600px;
+  margin: 0 auto;
   width: 100%;
-  text-align: center;
-  transition: all 0.2s;
+  background: #ffffff;
+  border-radius: 0;
+  padding: 2rem 0;
 }
 
-.glass-skip-link {
-  color: rgba(0, 0, 0, 0.45);
+.step-content {
+  width: 100%;
 }
 
-.glass-skip-link:hover { color: #fd5068; }
+.step-title {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: #1a1a2e;
+  margin-bottom: 0.5rem;
+  letter-spacing: -0.02em;
+}
 
-/* Gender */
-.gender-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.step-subtitle {
+  color: #666;
+  font-size: 0.95rem;
+  margin-bottom: 2rem;
+}
 
-.glass-gender-card {
-  padding: 24px 12px;
-  border-radius: 28px;
-  border: 2px solid rgba(0, 0, 0, 0.08);
-  background: rgba(255, 255, 255, 0.6);
-  backdrop-filter: blur(8px);
-  display: flex; flex-direction: column; align-items: center; gap: 12px;
+/* ===== FLOATING LABEL STYLES ===== */
+.floating-group {
+  margin-bottom: 1.5rem;
+  width: 100%;
+  display: flex;
+  gap: 9px;
+  align-items: center;
+}
+
+.input-floating-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+.floating-input, .floating-select {
+  width: 100%;
+  padding: 1rem 1rem 0.5rem 1rem;
+  font-size: 1rem;
+  font-family: inherit;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 18px;
+  background: white;
+  outline: none;
+  transition: all 0.25s cubic-bezier(0.2, 0.9, 0.4, 1.1);
+  box-sizing: border-box;
+}
+
+.floating-select {
   cursor: pointer;
-  transition: all 0.25s;
+  appearance: none;
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%238e8ea8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right 1rem center;
+  background-size: 1rem;
 }
 
-.glass-gender-card:hover { border-color: #fd5068; background: rgba(255, 245, 247, 0.8); }
+.floating-input:focus, .floating-select:focus {
+  border-color: #ff9a9e;
+  box-shadow: 0 0 0 3px rgba(255, 154, 158, 0.15);
+}
 
-.glass-gender-card.active {
-  border-color: #fd5068;
-  background: linear-gradient(145deg, rgba(255, 240, 242, 0.9), rgba(255, 224, 229, 0.9));
-  box-shadow: 0 4px 20px rgba(253, 80, 104, 0.2);
+.floating-input.disabled-input {
+  background: #f5f5f5;
+  color: #999;
+  cursor: not-allowed;
+}
+
+.floating-placeholder {
+  position: absolute;
+  left: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 1rem;
+  color: #8e8ea8;
+  pointer-events: none;
+  transition: all 0.2s cubic-bezier(0.2, 0.9, 0.4, 1.1);
+  background: transparent;
+  padding: 0 0.25rem;
+  line-height: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: calc(100% - 2rem);
+}
+
+/* FLOATING EFFECT */
+.input-floating-wrapper.focused .floating-placeholder,
+.input-floating-wrapper.has-value .floating-placeholder {
+  top: 0;
+  transform: translateY(-50%);
+  font-size: 0.75rem;
+  color: #c44569;
+  background: white;
+  left: 0.75rem;
+  padding: 0 0.35rem;
+  white-space: nowrap;
+}
+
+/* Accent line animation */
+.input-accent-line {
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  display: none;
+  width: 0;
+  height: 2px;
+  background: linear-gradient(90deg, #ff9a9e, #fad0c4);
+  transition: all 0.3s ease;
+  border-radius: 2px;
+}
+
+.input-floating-wrapper.focused .input-accent-line {
+  left: 0;
+  width: 100%;
+}
+
+/* ===== COMBINED PHONE FIELD ===== */
+.phone-combined-container {
+  display: flex;
+  width: 100%;
+  gap: 0;
+  align-items: stretch;
+  background: white;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 18px;
+  transition: all 0.25s cubic-bezier(0.2, 0.9, 0.4, 1.1);
+}
+
+.phone-combined-container:focus-within {
+  border-color: #ff9a9e;
+  box-shadow: 0 0 0 3px rgba(255, 154, 158, 0.15);
+}
+
+/* Country Code Selector */
+.country-code-selector {
+  position: relative;
+  flex-shrink: 0;
+  border-right: 1px solid #e2e8f0;
+}
+
+.selected-country {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 0.6rem;
+  background: white;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  height: 52px;
+  border-radius: 18px 0 0 18px;
+}
+
+.selected-country:hover {
+  background: #fafafa;
+}
+
+.country-flag {
+  width: 24px;
+  height: 18px;
+  object-fit: cover;
+  border-radius: 2px;
+}
+
+.country-code-text {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #333;
+}
+
+.selected-country .fa-chevron-down {
+  font-size: 0.7rem;
+  color: #999;
+  transition: transform 0.2s ease;
+}
+
+.country-code-selector.open .selected-country .fa-chevron-down {
+  transform: rotate(180deg);
+}
+
+/* Dropdown for country selector */
+.country-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  margin-top: 0.5rem;
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+  z-index: 100;
+  max-height: 320px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  width: 280px;
+  min-width: 260px;
+}
+
+.search-box {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.search-box .fa-search {
+  color: #999;
+  font-size: 0.875rem;
+}
+
+.search-box input {
+  flex: 1;
+  border: none;
+  outline: none;
+  font-size: 0.875rem;
+  padding: 0.25rem 0;
+}
+
+.search-box input::placeholder {
+  color: #bbb;
+}
+
+.country-list {
+  overflow-y: auto;
+  max-height: 260px;
+}
+
+.country-option {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.625rem 0.75rem;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.country-option:hover {
+  background: #f5f5f5;
+}
+
+.country-option .country-flag {
+  width: 24px;
+  height: 18px;
+}
+
+.country-option .country-name {
+  flex: 1;
+  font-size: 0.875rem;
+  color: #333;
+}
+
+.country-option .country-dial {
+  font-size: 0.75rem;
+  color: #999;
+}
+
+.no-results {
+  padding: 1rem;
+  text-align: center;
+  color: #999;
+  font-size: 0.875rem;
+}
+
+/* Mobile Input - Takes remaining space */
+.mobile-input-combined {
+  flex: 1;
+}
+
+.mobile-input-combined .input-floating-wrapper {
+  width: 100%;
+  height: 100%;
+}
+
+.combined-input {
+  border: none !important;
+  border-radius: 0 18px 18px 0 !important;
+  padding: 1rem 1rem 0.5rem 0.5rem !important;
+  box-shadow: none !important;
+}
+
+.combined-input:focus {
+  box-shadow: none !important;
+}
+
+.mobile-input-combined .input-floating-wrapper .floating-placeholder {
+  left: 0.5rem;
+}
+
+.mobile-input-combined .input-floating-wrapper.focused .floating-placeholder,
+.mobile-input-combined .input-floating-wrapper.has-value .floating-placeholder {
+  left: 0.25rem;
+}
+
+/* Field label static */
+.field-label-static {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 0.75rem;
+}
+
+.hint-text {
+  font-size: 0.7rem;
+  color: #999;
+  margin-top: 0.25rem;
+}
+
+.char-counter {
+  text-align: right;
+  font-size: 0.7rem;
+  color: #999;
+  margin-top: 0.25rem;
+}
+
+.char-counter.warn {
+  color: #dc2626;
+}
+
+/* Gender Grid */
+.gender-grid {
+  display: flex;
+  gap: 1rem;
+}
+
+.gender-card {
+  flex: 1;
+  padding: 1rem;
+  border: 2px solid #e0e0e0;
+  border-radius: 14px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  background: #ffffff;
+}
+
+.gender-card.active {
+  border-color: #ff9a9e;
+  background: linear-gradient(135deg, rgba(255, 154, 158, 0.05) 0%, rgba(250, 208, 196, 0.05) 100%);
 }
 
 .gender-icon {
-  width: 52px; height: 52px;
-  border-radius: 50%;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 24px;
-  font-weight: 700;
+  font-size: 2rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
 }
 
-.male-icon { background: #e0eeff; color: #3b82f6; }
-.female-icon { background: #ffe0e8; color: #fd5068; }
+.gender-icon.male { color: #3b82f6; }
+.gender-icon.female { color: #ec489a; }
 
-.gender-label { font-size: 15px; font-weight: 700; color: rgba(0,0,0,0.7); }
-.glass-gender-card.active .gender-label { color: #fd5068; }
+/* Status Chips */
+.status-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
 
-/* Status */
-.status-grid { display: flex; flex-wrap: wrap; gap: 12px; }
-
-.glass-status-chip {
-  padding: 10px 20px;
-  border-radius: 40px;
-  border: 1.5px solid rgba(0, 0, 0, 0.1);
-  background: rgba(255, 255, 255, 0.6);
-  backdrop-filter: blur(4px);
-  font-size: 13px;
-  font-weight: 700;
-  color: rgba(0, 0, 0, 0.6);
+.status-chip {
+  padding: 0.5rem 1.25rem;
+  border-radius: 30px;
+  background: #f5f5f5;
+  color: #666;
+  font-size: 0.85rem;
   cursor: pointer;
-  transition: all 0.2s;
-  font-family: 'Nunito', sans-serif;
+  transition: all 0.2s ease;
+  border: 1px solid transparent;
 }
 
-.glass-status-chip:hover { border-color: #fd5068; color: #fd5068; background: rgba(255, 245, 247, 0.8); }
+.status-chip.active {
+  background: linear-gradient(135deg, #ff9a9e, #fad0c4);
+  color: #c44569;
+  box-shadow: 0 4px 12px rgba(255, 154, 158, 0.3);
+}
 
-.glass-status-chip.active {
-  background: linear-gradient(135deg, #fd5068, #ff7854);
-  color: #fff;
-  border-color: transparent;
-  box-shadow: 0 4px 14px rgba(253, 80, 104, 0.3);
+.status-chip:hover {
+  transform: translateY(-2px);
+}
+
+/* Center Step */
+.center-step {
+  text-align: center;
+}
+
+.location-visual {
+  position: relative;
+  width: 120px;
+  height: 120px;
+  margin: 2rem auto;
+}
+
+.pulse-ring {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background: rgba(255, 154, 158, 0.15);
+  animation: pulse 1.5s infinite;
+}
+
+.location-pin {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 48px;
+  height: 48px;
+  background: linear-gradient(135deg, #ff9a9e, #fad0c4);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  box-shadow: 0 8px 20px rgba(255, 154, 158, 0.3);
+}
+
+@keyframes pulse {
+  0% { transform: scale(1); opacity: 0.6; }
+  100% { transform: scale(1.5); opacity: 0; }
+}
+
+.location-btn {
+  background: linear-gradient(135deg, #ff9a9e, #fad0c4);
+  color: #c44569;
+  border: none;
+  padding: 1rem 2rem;
+  font-size: 1rem;
+  font-weight: 600;
+  border-radius: 40px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+  transition: all 0.3s ease;
+  box-shadow: 0 8px 20px rgba(255, 154, 158, 0.3);
+}
+
+.location-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 28px rgba(255, 154, 158, 0.4);
+}
+
+.skip-btn {
+  background: none;
+  border: none;
+  color: #c44569;
+  font-size: 0.9rem;
+  cursor: pointer;
+  font-weight: 500;
+}
+
+.location-status {
+  margin-top: 1rem;
+  font-size: 0.8rem;
+  color: #10b981;
+}
+
+.location-status.error {
+  color: #dc2626;
+}
+
+/* Avatar Container */
+.avatar-container {
+  width: 160px;
+  height: 160px;
+  margin: 1.5rem auto;
+  border-radius: 50%;
+  background: #f5f5f5;
+  border: 3px dashed #d0d0d0;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.2s ease;
+}
+
+.avatar-container:hover {
+  border-color: #ff9a9e;
+}
+
+.avatar-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.avatar-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  color: #999;
+  font-size: 0.85rem;
+}
+
+.avatar-placeholder span:first-child {
+  font-size: 2rem;
+}
+
+.avatar-edit {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  background: linear-gradient(135deg, #ff9a9e, #fad0c4);
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #c44569;
+  font-size: 0.8rem;
+}
+
+.upload-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.upload-btn {
+  padding: 0.75rem 1.5rem;
+  background: #f5f5f5;
+  border: none;
+  border-radius: 40px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: #333;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: all 0.2s ease;
+}
+
+.upload-btn:hover {
+  background: #e0e0e0;
 }
 
 /* Habit Tags */
 .habit-tags {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
-  margin-top: 12px;
+  gap: 0.5rem;
+  margin-top: 1rem;
 }
 
-.glass-habit-tag {
-  background: rgba(255, 240, 242, 0.8);
-  backdrop-filter: blur(4px);
-  color: #fd5068;
-  border: 1px solid rgba(253, 80, 104, 0.3);
+.habit-tag {
+  padding: 0.4rem 1rem;
+  background: linear-gradient(135deg, #ff9a9e, #fad0c4);
+  color: #c44569;
   border-radius: 30px;
-  padding: 5px 14px;
-  font-size: 12px;
-  font-weight: 700;
+  font-size: 0.75rem;
+  font-weight: 500;
 }
 
-/* Photo Grid */
-.photo-grid {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-  margin-bottom: 14px;
+/* Photo Gallery */
+.photo-gallery {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+  margin-top: 1rem;
 }
 
-.photo-thumb {
-  width: 100px; height: 100px;
-  border-radius: 20px;
+.gallery-photo {
+  aspect-ratio: 1;
+  border-radius: 12px;
   overflow: hidden;
   position: relative;
 }
 
-.glass-photo-thumb {
-  border: 2px solid rgba(0, 0, 0, 0.1);
-  background: rgba(255, 255, 255, 0.5);
+.gallery-photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
-.photo-thumb img { width: 100%; height: 100%; object-fit: cover; }
-
-.glass-add-thumb {
-  background: rgba(255, 245, 247, 0.7);
-  backdrop-filter: blur(8px);
-  border: 2px dashed rgba(253, 80, 104, 0.4);
-  display: flex; align-items: center; justify-content: center;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.glass-add-thumb:hover { border-color: #fd5068; background: rgba(255, 224, 229, 0.8); }
-
-.glass-remove-photo {
+.remove-photo {
   position: absolute;
-  top: 6px; right: 6px;
-  width: 26px; height: 26px;
+  top: 0.5rem;
+  right: 0.5rem;
+  width: 24px;
+  height: 24px;
   border-radius: 50%;
-  background: rgba(253, 80, 104, 0.9);
-  color: #fff;
+  background: rgba(0, 0, 0, 0.6);
+  color: white;
   border: none;
-  font-size: 16px;
-  line-height: 1;
   cursor: pointer;
-  display: flex; align-items: center; justify-content: center;
-  font-family: 'Nunito', sans-serif;
-  backdrop-filter: blur(4px);
-}
-
-/* Bottom Nav - Glass */
-.bottom-nav {
-  position: fixed;
-  bottom: 0; left: 50%;
-  transform: translateX(-50%);
-  width: 100%; max-width: 420px;
-  padding: 12px 20px;
-  /* border-top-left-radius: 28px;
-  border-top-right-radius: 28px; */
+  font-size: 1rem;
   display: flex;
-  gap: 14px;
   align-items: center;
-  z-index: 20;
+  justify-content: center;
 }
 
-.glass-bottom-nav {
-  background: rgba(255, 255, 255, 0);
-  backdrop-filter: blur(20px);
-  border-top: 1px solid rgba(253, 80, 104, 0.15);
-  box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.08);
-}
-
-.nav-back {
-  border: none;
-  height: 39px;
-  border-radius: 30px;
-  padding: 0 20px;
-  display: flex; align-items: center; gap: 6px;
-  font-size: 13px;
-  font-weight: 700;
+.add-photo {
+  aspect-ratio: 1;
+  border: 2px dashed #d0d0d0;
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  color: #999;
   cursor: pointer;
-  font-family: 'Nunito', sans-serif;
-  transition: all 0.2s;
-  white-space: nowrap;
+  transition: all 0.2s ease;
 }
 
-.glass-nav-back {
-  background: rgba(0, 0, 0, 0.05);
-  backdrop-filter: blur(4px);
-  color: rgba(0, 0, 0, 0.6);
+.add-photo:hover {
+  border-color: #ff9a9e;
+  color: #c44569;
 }
 
-.glass-nav-back:hover { background: rgba(253, 80, 104, 0.15); color: #fd5068; }
+.add-photo span:first-child {
+  font-size: 1.5rem;
+}
 
-.nav-back-spacer { width: 60px; }
+/* Navigation Buttons */
+.bottom-nav {
+  max-width: 600px;
+  margin: 2rem auto 0 auto;
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
 
-.nav-next {
-  flex: 1;
-  height: 39px;
-  border-radius: 30px;
-  border: none;
-  background: linear-gradient(135deg, #fd5068, #ff7854);
-  color: #fff;
-  font-size: 15px;
-  font-weight: 700;
-  font-family: 'Nunito', sans-serif;
+.nav-placeholder {
+  width: 100px;
+}
+
+.nav-btn {
+  padding: 0.875rem 2rem;
+  border-radius: 40px;
+  font-size: 0.95rem;
+  font-weight: 600;
   cursor: pointer;
-  display: flex; align-items: center; justify-content: center; gap: 8px;
-  box-shadow: 0 6px 20px rgba(253, 80, 104, 0.35);
-  transition: all 0.25s;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  border: none;
 }
 
-.nav-next:hover:not(:disabled) {
+.nav-btn.back {
+  background: #f5f5f5;
+  color: #333;
+}
+
+.nav-btn.back:hover {
+  background: #e0e0e0;
+}
+
+.nav-btn.next {
+  background: linear-gradient(135deg, #ff9a9e, #fad0c4);
+  color: #c44569;
+  box-shadow: 0 4px 12px rgba(255, 154, 158, 0.3);
+}
+
+.nav-btn.next:hover:not(:disabled) {
   transform: translateY(-2px);
-  box-shadow: 0 10px 28px rgba(253, 80, 104, 0.45);
+  box-shadow: 0 8px 20px rgba(255, 154, 158, 0.4);
 }
 
-.nav-next:disabled { opacity: 0.5; cursor: not-allowed; box-shadow: none; transform: none; }
+.nav-btn.next:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Two Column Layout */
+.two-col {
+  display: flex;
+  gap: 0.5rem;
+}
 
 /* Spinner */
-.btn-spinner {
-  width: 18px; height: 18px;
-  border: 2.5px solid rgba(255,255,255,0.4);
-  border-top-color: #fff;
+.spinner {
+  width: 18px;
+  height: 18px;
+  border: 2px solid rgba(196, 69, 105, 0.3);
+  border-top: 2px solid #c44569;
   border-radius: 50%;
-  animation: spin 0.7s linear infinite;
+  animation: spin 0.8s linear infinite;
+  display: inline-block;
 }
-@keyframes spin { to { transform: rotate(360deg); } }
 
-/* Cropper */
-.cropper-overlay {
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Cropper Modal */
+.cropper-modal {
   position: fixed;
-  inset: 0;
-  background: #000;
-  z-index: 9999;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.9);
+  z-index: 1000;
   display: flex;
   flex-direction: column;
 }
 
-.glass-cropper-header {
-  height: 60px;
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 0 20px;
-  border-bottom: 1px solid #222;
+.cropper-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem;
+  background: #1a1a2e;
+  color: white;
 }
 
-.crop-title { color: #fff; font-size: 15px; font-weight: 700; }
-
-.crop-cancel, .crop-done {
-  background: none; border: none;
-  font-size: 14px; font-weight: 700;
-  font-family: 'Nunito', sans-serif;
+.cropper-cancel, .cropper-done {
+  background: none;
+  border: none;
+  color: white;
+  font-size: 1rem;
   cursor: pointer;
-  padding: 8px 16px;
-  border-radius: 8px;
+  padding: 0.5rem;
 }
 
-.crop-cancel { color: #aaa; }
-.crop-done { color: #22c55e; background: rgba(34, 197, 94, 0.1); }
+.cropper-done {
+  color: #ff9a9e;
+  font-weight: 600;
+}
+
+.cropper-title {
+  font-weight: 500;
+}
 
 .cropper-body {
   flex: 1;
-  display: flex; align-items: center; justify-content: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
 }
 
-.cropper-body img { max-width: 100%; max-height: 100%; }
+.cropper-body img {
+  max-width: 100%;
+  max-height: 100%;
+}
 
 /* Toast */
-.toast-msg {
+.toast {
   position: fixed;
-  top: 20px;
+  bottom: 2rem;
   left: 50%;
   transform: translateX(-50%);
-  padding: 14px 22px;
+  background: #1a1a2e;
+  color: white;
+  padding: 0.75rem 1.5rem;
   border-radius: 40px;
-  font-size: 13px;
-  font-weight: 700;
-  display: flex; align-items: center; gap: 10px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
-  z-index: 99999;
-  white-space: nowrap;
-  font-family: 'Nunito', sans-serif;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 0.85rem;
+  z-index: 1001;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
 }
 
-.glass-toast {
-  background: rgba(34, 197, 94, 0.95);
-  backdrop-filter: blur(12px);
-  color: #fff;
-  border: 1px solid rgba(255,255,255,0.2);
+.toast.error {
+  background: #dc2626;
 }
 
-.glass-toast.error { background: rgba(239, 68, 68, 0.95); }
+.toast-fade-enter-active,
+.toast-fade-leave-active {
+  transition: opacity 0.3s ease;
+}
 
-.toast-countdown { opacity: 0.8; font-weight: 400; }
-
-.toast-pop-enter-active { animation: toastIn 0.35s ease; }
-.toast-pop-leave-active { animation: toastIn 0.3s ease reverse; }
-@keyframes toastIn {
-  from { opacity: 0; transform: translate(-50%, -12px) scale(0.95); }
-  to { opacity: 1; transform: translate(-50%, 0) scale(1); }
+.toast-fade-enter-from,
+.toast-fade-leave-to {
+  opacity: 0;
 }
 
 /* Step Transitions */
-.step-fade-enter-active, .step-fade-leave-active { transition: all 0.25s ease; }
-.step-fade-enter-from { opacity: 0; transform: translateY(6px); }
-.step-fade-leave-to { opacity: 0; transform: translateY(-6px); }
+.step-fade-enter-active,
+.step-fade-leave-active {
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
 
-.step-slide-enter-active, .step-slide-leave-active { transition: all 0.3s ease; }
-.step-slide-enter-from { opacity: 0; transform: translateX(24px); }
-.step-slide-leave-to { opacity: 0; transform: translateX(-24px); position: absolute; }
+.step-fade-enter-from {
+  opacity: 0;
+  transform: translateX(20px);
+}
+
+.step-fade-leave-to {
+  opacity: 0;
+  transform: translateX(-20px);
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+  .signup-wrap {
+    padding: 1rem;
+  }
+  
+  .step-card {
+    padding: 1rem 0;
+  }
+  
+  .step-title {
+    font-size: 1.5rem;
+  }
+  
+  .phone-combined-container {
+    flex-wrap: wrap;
+  }
+  
+  .country-code-selector {
+    width: 100%;
+    border-right: none;
+    border-bottom: 1px solid #e2e8f0;
+  }
+  
+  .selected-country {
+    /* justify-content: space-between; */
+    border-radius: 18px 18px 0 0;
+  }
+  
+  .country-dropdown {
+    width: 100%;
+    left: 0;
+    right: 0;
+  }
+  
+  .combined-input {
+    border-radius: 0 0 18px 18px !important;
+  }
+  
+  .gender-grid {
+    flex-direction: column;
+  }
+  
+  .photo-gallery {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .step-indicator .step-label {
+    display: none;
+  }
+  
+  .step-number {
+    width: 32px;
+    height: 32px;
+    font-size: 0.8rem;
+  }
+  
+  .bottom-nav {
+    margin-top: 1rem;
+  }
+  
+  .nav-btn {
+    padding: 0.75rem 1.5rem;
+  }
+}
 </style>

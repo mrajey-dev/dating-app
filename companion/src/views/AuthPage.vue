@@ -1,186 +1,206 @@
 <template>
-  <div class="auth-page">
-    <!-- FULLSCREEN ROMANTIC BANNER (Image Slider) -->
-    <div class="fullscreen-banner">
-      <div class="banner-overlay"></div>
-      <div class="banner-slider" :style="sliderStyle">
-        <div 
-          v-for="(image, idx) in bannerImages" 
-          :key="idx"
-          class="banner-slide"
-          :style="{ backgroundImage: `url(${image.url})` }"
-        >
-          <div class="slide-caption">
-            <h3>{{ image.caption }}</h3>
-            <p>{{ image.subtext }}</p>
+  <div class="app-containers">
+    <!-- WELCOME PAGE (LANDING) -->
+    <transition name="fade-scale">
+      <div v-if="showWelcome" class="welcome-page">
+        <!-- Fullscreen background image slider with romantic couple photos -->
+        <div class="hero-slider">
+          <div v-for="(img, index) in romanticImages" 
+               :key="index"
+               class="slide"
+               :class="{ active: currentSlide === index }"
+               :style="{ backgroundImage: `url(${img})` }">
           </div>
-        </div>
-      </div>
-      <button class="banner-nav prev" @click="prevSlide">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
-          <path d="M15 18L9 12L15 6" />
-        </svg>
-      </button>
-      <button class="banner-nav next" @click="nextSlide">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
-          <path d="M9 18L15 12L9 6" />
-        </svg>
-      </button>
-      <div class="banner-dots">
-        <span 
-          v-for="(_, idx) in bannerImages" 
-          :key="idx"
-          :class="['dot', { active: currentSlide === idx }]"
-          @click="currentSlide = idx"
-        ></span>
-      </div>
-    </div>
-
-    <!-- TRANSPARENT / GLASS AUTH CARD -->
-    <div class="auth-card glass-card" :class="{ 'slide-up': activeTab === 'signup' }">
-      <!-- Hero Header - More subtle -->
-      <div class="hero-header glass-header">
-        <div class="hero-circles">
-          <div class="hc hc-1"></div>
-          <div class="hc hc-2"></div>
-          <div class="hc hc-3"></div>
-        </div>
-        <div class="brand-wrap">
-          <div class="heart-badge glass-badge">
-            <svg width="22" height="20" viewBox="0 0 22 20" fill="none">
-              <path d="M11 18.5C11 18.5 1 12.5 1 6C1 3.2 3.2 1 6 1C8.1 1 9.9 2.3 11 4C12.1 2.3 13.9 1 16 1C18.8 1 21 3.2 21 6C21 12.5 11 18.5 11 18.5Z" fill="white"/>
-            </svg>
-          </div>
-          <h1 class="brand-name"><span class="brand-heart">Heart</span>Link</h1>
-          <p class="brand-tagline">Find your perfect match</p>
-        </div>
-      </div>
-
-      <!-- Card Body - Glassmorphism -->
-      <div class="card-body glass-body">
-
-        <!-- Tab Switcher - Transparent style -->
-        <div class="tab-switcher glass-tabs">
-          <div class="tab-track">
-            <div class="tab-thumb" :class="{ right: activeTab === 'signup' }"></div>
-            <button class="tab-btn" :class="{ active: activeTab === 'login' }" @click="activeTab = 'login'">Login</button>
-            <button class="tab-btn" :class="{ active: activeTab === 'signup' }" @click="activeTab = 'signup'">Sign Up</button>
-          </div>
+          <div class="overlay-gradient"></div>
         </div>
 
-        <!-- LOGIN FORM - Transparent inputs -->
-        <transition name="fade-slide">
-          <div v-if="activeTab === 'login'" key="login" class="form-section">
-            
-            <div class="field-group" :class="{ focused: focusedField === 'email', filled: login.email }">
-              <label class="field-label glass-label">Email address</label>
-              <div class="field-wrap">
-                <svg class="field-icon" width="16" height="16" viewBox="0 0 16 16" fill="none">
-                  <rect x="1" y="3" width="14" height="10" rx="2" stroke="currentColor" stroke-width="1.3"/>
-                  <path d="M1 6L8 10L15 6" stroke="currentColor" stroke-width="1.3"/>
-                </svg>
-                <input
-                  type="email"
-                  v-model="login.email"
-                  placeholder="you@example.com"
-                  @focus="focusedField = 'email'"
-                  @blur="focusedField = ''"
-                  autocomplete="email"
-                  class="glass-input"
-                />
-              </div>
+        <!-- Content overlay -->
+        <div class="welcome-content">
+          <div class="brand-heart">
+            <div class="logo-ring">
+              <svg width="48" height="48" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M16 27C16 27 2 19 2 11C2 7.5 4.5 5 8 5C11.5 5 14 7.5 16 11C18 7.5 20.5 5 24 5C27.5 5 30 7.5 30 11C30 19 16 27 16 27Z" fill="currentColor"/>
+              </svg>
             </div>
-
-            <div class="field-group" :class="{ focused: focusedField === 'password', filled: login.password }">
-              <label class="field-label glass-label">Password</label>
-              <div class="field-wrap">
-                <svg class="field-icon" width="16" height="16" viewBox="0 0 16 16" fill="none">
-                  <rect x="3" y="7" width="10" height="7" rx="1.5" stroke="currentColor" stroke-width="1.3"/>
-                  <path d="M5 7V5C5 3.3 6.3 2 8 2C9.7 2 11 3.3 11 5V7" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
-                </svg>
-                <input
-                  :type="showPassword ? 'text' : 'password'"
-                  v-model="login.password"
-                  placeholder="Enter your password"
-                  @focus="focusedField = 'password'"
-                  @blur="focusedField = ''"
-                  autocomplete="current-password"
-                  class="glass-input"
-                />
-                <button class="eye-btn glass-icon-btn" @click="showPassword = !showPassword" tabindex="-1">
-                  <svg v-if="!showPassword" width="16" height="16" viewBox="0 0 16 16" fill="none">
-                    <path d="M1 8C1 8 3.5 3 8 3C12.5 3 15 8 15 8C15 8 12.5 13 8 13C3.5 13 1 8 1 8Z" stroke="currentColor" stroke-width="1.3"/>
-                    <circle cx="8" cy="8" r="2" stroke="currentColor" stroke-width="1.3"/>
-                  </svg>
-                  <svg v-else width="16" height="16" viewBox="0 0 16 16" fill="none">
-                    <path d="M2 2L14 14M6.5 6.6C6.2 6.9 6 7.4 6 8C6 9.1 6.9 10 8 10C8.6 10 9.1 9.8 9.4 9.5M4.3 4.4C2.8 5.4 1.8 6.9 1 8C1 8 3.5 13 8 13C9.8 13 11.3 12.3 12.5 11.4M7 3.1C7.3 3 7.7 3 8 3C12.5 3 15 8 15 8C14.6 8.7 14.1 9.4 13.5 10" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
-                  </svg>
-                </button>
-              </div>
-            </div>
-
-            <button class="forgot-btn glass-link" @click="forgotPassword">Forgot password?</button>
-
-            <transition name="fade">
-              <div v-if="error" class="error-banner glass-error">
-                <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                  <circle cx="7" cy="7" r="6" stroke="currentColor" stroke-width="1.3"/>
-                  <path d="M7 4V7M7 10H7.01" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-                </svg>
-                {{ error }}
-              </div>
-            </transition>
-
-            <button class="btn-primary glass-primary-btn" @click="submitLogin" :disabled="loading || !login.email || !login.password">
-              <span v-if="loading" class="btn-spinner"></span>
-              <span v-else>Login to HeartLink</span>
-              <svg v-if="!loading" width="16" height="16" viewBox="0 0 16 16" fill="none">
-                <path d="M3 8H13M9 4L13 8L9 12" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            <h1 class="welcome-title">Heart<span>Link</span></h1>
+          </div>
+          <p class="tagline-main">Where two hearts become one journey</p>
+          <p class="description">Every great love story starts with a single step.<br>Begin yours today.</p>
+          
+          <!-- Bottom Action Buttons -->
+          <div class="action-buttons">
+            <button class="btn-primary" @click="navigateToLogin">
+              <span>Login</span>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M15 3h6v6M14 10L21 3M10 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5" />
+                <polyline points="16 15 21 15 21 20" />
+                <line x1="9" y1="9" x2="21" y2="21" />
               </svg>
             </button>
-
-            <!-- <div class="divider glass-divider">
-              <span>or continue with</span>
-            </div> -->
-
-            <div class="social-row">
-              <button class="social-btn glass-social">
-                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                  <path d="M15.5 8.2C15.5 7.6 15.4 7 15.3 6.5H8V9.7H12.2C12 10.7 11.4 11.5 10.5 12.1V14.1H13.1C14.6 12.7 15.5 10.6 15.5 8.2Z" fill="#4285F4"/>
-                  <path d="M8 16C10.1 16 11.9 15.3 13.1 14.1L10.5 12.1C9.8 12.6 8.9 12.9 8 12.9C5.9 12.9 4.1 11.5 3.5 9.5H0.8V11.6C2 13.9 4.8 16 8 16Z" fill="#34A853"/>
-                  <path d="M3.5 9.5C3.3 8.9 3.2 8.2 3.2 7.5C3.2 6.8 3.3 6.1 3.5 5.5V3.4H0.8C0.3 4.5 0 5.7 0 7C0 8.3 0.3 9.5 0.8 10.6L3.5 8.5V9.5Z" fill="#FBBC05"/>
-                  <path d="M8 3.1C9 3.1 9.9 3.5 10.6 4.1L13.2 1.5C11.9 0.4 10.1 0 8 0C4.8 0 2 2.1 0.8 4.4L3.5 6.5C4.1 4.5 5.9 3.1 8 3.1Z" fill="#EA4335"/>
-                </svg>
-                Google
-              </button>
-              <button class="social-btn glass-social">
-                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                  <path d="M16 8C16 3.6 12.4 0 8 0C3.6 0 0 3.6 0 8C0 12 2.9 15.3 6.7 15.9V10.3H4.7V8H6.7V6.2C6.7 4.2 7.9 3.1 9.7 3.1C10.6 3.1 11.5 3.3 11.5 3.3V5.2H10.5C9.5 5.2 9.2 5.8 9.2 6.4V8H11.4L11 10.3H9.2V15.9C13 15.3 16 12 16 8Z" fill="#1877F2"/>
-                </svg>
-                Facebook
-              </button>
-            </div>
-
-            <p class="switch-text glass-switch">
-              New to HeartLink?
-              <button class="link-btn glass-link-btn" @click="activeTab = 'signup'">Create account →</button>
-            </p>
-
+            <button class="btn-secondary" @click="navigateToSignup">
+              <span>Sign Up</span>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+                <circle cx="9" cy="7" r="4" />
+                <line x1="19" y1="8" x2="19" y2="14" />
+                <line x1="22" y1="11" x2="16" y2="11" />
+              </svg>
+            </button>
           </div>
-        </transition>
-
-        <!-- SIGNUP FORM (with glass styling) -->
-        <transition name="fade-slide">
-          <div v-if="activeTab === 'signup'" key="signup" class="form-section">
-            <SignupForm />
-            <!-- <p class="switch-text glass-switch">
-              Already have an account?
-              <button class="link-btn glass-link-btn" @click="activeTab = 'login'">← Back to Login</button>
-            </p> -->
+          <div class="footer-note">
+            <span>✨ The beginning of something beautiful ✨</span>
           </div>
-        </transition>
+        </div>
+
+        <!-- Slide indicators -->
+        <div class="slide-dots">
+          <button v-for="(_, idx) in romanticImages" 
+                  :key="idx"
+                  class="dot"
+                  :class="{ active: currentSlide === idx }"
+                  @click="currentSlide = idx">
+          </button>
+        </div>
       </div>
-    </div>
+    </transition>
+
+    <!-- AUTH PAGE (LOGIN / SIGNUP CARD) -->
+    <transition name="fade-slide-up">
+      <div v-if="!showWelcome" class="auth-page-wrapper">
+        <div class="auth-card">
+          <!-- Back to welcome button -->
+          <button class="back-to-welcome" @click="backToWelcome">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M19 12H5M12 19l-7-7 7-7"/>
+            </svg>
+            Back
+          </button>
+
+          <!-- Brand Section -->
+          <div class="brand-section">
+            <div class="logo-wrapper">
+              <div class="logo-icon">
+                <svg width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M14 23.5C14 23.5 2 16.5 2 9.5C2 6.5 4.5 4 7.5 4C10.5 4 13 6.5 14 9.5C15 6.5 17.5 4 20.5 4C23.5 4 26 6.5 26 9.5C26 16.5 14 23.5 14 23.5Z" fill="currentColor"/>
+                </svg>
+              </div>
+              <h1 class="brand-name">Heart<span>Link</span></h1>
+            </div>
+            <p class="brand-tagline">{{ activeTab === 'login' ? 'Welcome back. Sign in to continue your journey.' : 'Create your account and start your journey.' }}</p>
+          </div>
+
+          <!-- Tab Switcher -->
+          <div class="tab-switcher">
+            <div class="tab-track">
+              <div class="tab-thumb" :class="{ right: activeTab === 'signup' }"></div>
+              <button class="tab-btn" :class="{ active: activeTab === 'login' }" @click="activeTab = 'login'">Login</button>
+              <button class="tab-btn" :class="{ active: activeTab === 'signup' }" @click="activeTab = 'signup'">Sign Up</button>
+            </div>
+          </div>
+
+          <!-- Login Form with Floating Label Email Input -->
+          <transition name="fade-slide">
+            <form v-if="activeTab === 'login'" @submit.prevent="submitLogin" class="login-form" key="login">
+              
+              <!-- FLOATING LABEL EMAIL FIELD -->
+              <div class="floating-group">
+                <div class="input-floating-wrapper" :class="{ focused: focusedField === 'email', 'has-value': login.email.length > 0 }">
+                  <input
+                    id="floating-email"
+                    type="email"
+                    v-model="login.email"
+                    @focus="focusedField = 'email'"
+                    @blur="focusedField = ''"
+                    class="floating-input"
+                    :class="{ 'error-border': errors.email }"
+                  />
+                  <label for="floating-email" class="floating-placeholder">
+                    Email address
+                  </label>
+                  <div class="input-accent-line"></div>
+                </div>
+                <span v-if="errors.email" class="error-message">{{ errors.email }}</span>
+              </div>
+
+              <!-- PASSWORD FIELD (standard with floating label) -->
+              <div class="floating-group">
+                <div class="input-floating-wrapper" :class="{ focused: focusedField === 'password', 'has-value': login.password.length > 0 }">
+                  <input
+                    id="floating-password"
+                    :type="showPassword ? 'text' : 'password'"
+                    v-model="login.password"
+                    @focus="focusedField = 'password'"
+                    @blur="focusedField = ''"
+                    class="floating-input"
+                    :class="{ 'error-border': errors.password }"
+                  />
+                  <label for="floating-password" class="floating-placeholder">
+                    Password
+                  </label>
+                  <button type="button" class="eye-toggle-floating" @click="showPassword = !showPassword">
+                    <svg v-if="!showPassword" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M1 12C1 12 5 4 12 4C19 4 23 12 23 12C23 12 19 20 12 20C5 20 1 12 1 12Z"/>
+                      <circle cx="12" cy="12" r="3"/>
+                    </svg>
+                    <svg v-else width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M9.9 4.24C10.6 4.08 11.3 4 12 4C19 4 23 12 23 12C22.6 12.7 22.1 13.5 21.4 14.2M14.1 17.8C13.4 17.9 12.7 18 12 18C5 18 1 12 1 12C1.9 10.6 3 9.3 4.3 8.2M8 12C8 13.1 8.9 14 10 14C11.1 14 12 13.1 12 12"/>
+                      <path d="M2 2L22 22"/>
+                    </svg>
+                  </button>
+                  <div class="input-accent-line"></div>
+                </div>
+                <span v-if="errors.password" class="error-message">{{ errors.password }}</span>
+              </div>
+
+              <!-- Forgot Password & Remember -->
+              <div class="form-footer">
+                <label class="checkbox-label">
+                  <input type="checkbox" v-model="rememberMe">
+                  <span class="checkmark"></span>
+                  <span>Remember me</span>
+                </label>
+                <button type="button" class="forgot-link" @click="forgotPassword">Forgot password?</button>
+              </div>
+
+              <!-- Error Banner -->
+              <transition name="fade">
+                <div v-if="error" class="error-banner">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"/>
+                    <line x1="12" y1="8" x2="12" y2="12"/>
+                    <line x1="12" y1="16" x2="12.01" y2="16"/>
+                  </svg>
+                  {{ error }}
+                </div>
+              </transition>
+
+              <!-- Submit Button -->
+              <button type="submit" class="submit-btn" :disabled="loading || !isFormValid">
+                <span v-if="loading" class="spinner"></span>
+                <span v-else>Sign in</span>
+                <svg v-if="!loading" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <line x1="5" y1="12" x2="19" y2="12"/>
+                  <polyline points="12 5 19 12 12 19"/>
+                </svg>
+              </button>
+
+              <!-- Sign Up Link -->
+              <p class="signup-prompt">
+                Don't have an account?
+                <button type="button" class="link-btn" @click="activeTab = 'signup'">Create account →</button>
+              </p>
+            </form>
+          </transition>
+
+          <!-- Signup Component -->
+          <transition name="fade-slide">
+            <div v-if="activeTab === 'signup'" key="signup" class="form-section">
+              <SignupForm @switch-to-login="activeTab = 'login'" />
+            </div>
+          </transition>
+        </div>
+      </div>
+    </transition>
   </div>
 </template>
 
@@ -189,613 +209,728 @@ import axios from 'axios'
 import SignupForm from '@/components/CreateAccount.vue'
 
 export default {
-  name: 'AuthPage',
+  name: 'App',
   components: { SignupForm },
-
   data() {
     return {
+      showWelcome: true,
+      currentSlide: 0,
+      slideInterval: null,
+      romanticImages: [
+        'https://img.freepik.com/premium-photo/beach-hug-happy-couple-celebrate-love-dating-marriage-sea-ocean-water-luxury-vacation-travel-man-woman-smile-date-celebration-surprise-joy-sunset-summer-holiday_590464-85391.jpg?semt=ais_hybrid&w=740&q=80',
+        'https://www.shutterstock.com/image-photo/couple-love-laughing-embracing-closely-600nw-2586055147.jpg',
+        'https://i.pinimg.com/736x/c1/f9/77/c1f977715f386ecd7e8f3df367184336.jpg',
+        'https://img.freepik.com/premium-photo/together-beach-happiness-with-hug-holiday-having-fun-with-sunset-weekend-couple-vacation-laughing-with-face-ocean-travel-summer-relaxing-time_590464-186788.jpg?semt=ais_hybrid&w=740&q=80',
+        'https://images.pexels.com/photos/30924512/pexels-photo-30924512/free-photo-of-romantic-black-and-white-couples-photography.jpeg',
+        'https://images.pexels.com/photos/2808658/pexels-photo-2808658.jpeg',
+      ],
       activeTab: 'login',
       focusedField: '',
       showPassword: false,
       loading: false,
+      rememberMe: false,
       login: {
         email: '',
         password: ''
       },
-      error: '',
-      currentSlide: 0,
-      bannerImages: [
-        {
-          url: 'https://images.pexels.com/photos/1689731/pexels-photo-1689731.jpeg?auto=compress&cs=tinysrgb&w=1600',
-          caption: 'Find Your Spark',
-          subtext: 'Meaningful connections start here'
-        },
-        {
-          url: 'https://images.pexels.com/photos/2253879/pexels-photo-2253879.jpeg?auto=compress&cs=tinysrgb&w=1600',
-          caption: 'Real Love Stories',
-          subtext: 'Thousands found their soulmate'
-        },
-        {
-          url: 'https://images.pexels.com/photos/3823497/pexels-photo-3823497.jpeg?auto=compress&cs=tinysrgb&w=1600',
-          caption: 'Adventure Awaits',
-          subtext: 'Share your journey together'
-        },
-        {
-          url: 'https://images.pexels.com/photos/3768131/pexels-photo-3768131.jpeg?auto=compress&cs=tinysrgb&w=1600',
-          caption: 'Heartfelt Moments',
-          subtext: 'Where chemistry meets destiny'
-        }
-      ],
-      autoPlayInterval: null
+      errors: {
+        email: '',
+        password: ''
+      },
+      error: ''
     }
   },
-
   computed: {
-    sliderStyle() {
-      return {
-        transform: `translateX(-${this.currentSlide * 100}%)`
-      }
+    isFormValid() {
+      return this.login.email.trim() !== '' && this.login.password.trim() !== ''
     }
   },
-
   mounted() {
-    const token = localStorage.getItem('token')
-    if (token) this.$router.push('/home')
-    this.startAutoPlay()
+    this.startSlideShow();
+    const token = localStorage.getItem('token');
+    if (token && !this.showWelcome) {
+      this.$router?.push('/home');
+    }
+    const rememberedEmail = localStorage.getItem('rememberedEmail');
+    if (rememberedEmail) {
+      this.login.email = rememberedEmail;
+      this.rememberMe = true;
+    }
   },
-
-  beforeDestroy() {
-    this.stopAutoPlay()
+  beforeUnmount() {
+    if (this.slideInterval) clearInterval(this.slideInterval);
   },
-
   methods: {
-    startAutoPlay() {
-      this.autoPlayInterval = setInterval(() => {
-        this.nextSlide()
-      }, 5000)
+    startSlideShow() {
+      this.slideInterval = setInterval(() => {
+        this.currentSlide = (this.currentSlide + 1) % this.romanticImages.length;
+      }, 5000);
     },
-    stopAutoPlay() {
-      if (this.autoPlayInterval) {
-        clearInterval(this.autoPlayInterval)
-        this.autoPlayInterval = null
+    navigateToLogin() {
+      this.showWelcome = false;
+      this.activeTab = 'login';
+    },
+    navigateToSignup() {
+      this.showWelcome = false;
+      this.activeTab = 'signup';
+    },
+    backToWelcome() {
+      this.showWelcome = true;
+      this.error = '';
+      this.login.password = '';
+      this.errors = { email: '', password: '' };
+    },
+    validateEmail(email) {
+      const re = /^[^\s@]+@([^\s@.,]+\.)+[^\s@.,]{2,}$/;
+      return re.test(email);
+    },
+    validateForm() {
+      let isValid = true;
+      this.errors = { email: '', password: '' };
+
+      if (!this.login.email.trim()) {
+        this.errors.email = 'Email address is required';
+        isValid = false;
+      } else if (!this.validateEmail(this.login.email)) {
+        this.errors.email = 'Please enter a valid email address';
+        isValid = false;
       }
-    },
-    nextSlide() {
-      this.currentSlide = (this.currentSlide + 1) % this.bannerImages.length
-      this.resetAutoPlayTimer()
-    },
-    prevSlide() {
-      this.currentSlide = (this.currentSlide - 1 + this.bannerImages.length) % this.bannerImages.length
-      this.resetAutoPlayTimer()
-    },
-    resetAutoPlayTimer() {
-      this.stopAutoPlay()
-      this.startAutoPlay()
+
+      if (!this.login.password) {
+        this.errors.password = 'Password is required';
+        isValid = false;
+      } else if (this.login.password.length < 6) {
+        this.errors.password = 'Password must be at least 6 characters';
+        isValid = false;
+      }
+      return isValid;
     },
     async submitLogin() {
-      this.error = ''
-      this.loading = true
+      this.error = '';
+      if (!this.validateForm()) return;
+      this.loading = true;
       try {
-        const res = await axios.post('https://companion.ajaywatpade.in/api/login', {
+        const response = await axios.post('https://companion.ajaywatpade.in/api/login', {
           email: this.login.email,
           password: this.login.password
-        })
-        localStorage.setItem('token', res.data.token)
-        localStorage.setItem('user', JSON.stringify(res.data.user))
-        this.$router.push('/home')
+        });
+        localStorage.setItem('token', response.data.token);
+        localStorage.setItem('user', JSON.stringify(response.data.user));
+        if (this.rememberMe) {
+          localStorage.setItem('rememberedEmail', this.login.email);
+        } else {
+          localStorage.removeItem('rememberedEmail');
+        }
+        if (this.$router) {
+          this.$router.push('/home');
+        } else {
+          alert('Login successful! (Router not configured, you would be redirected to /home)');
+        }
       } catch (err) {
-        this.error = err.response?.data?.message || 'Login failed. Please try again.'
+        this.error = err.response?.data?.message || 'Invalid email or password. Please try again.';
+        this.login.password = '';
       } finally {
-        this.loading = false
+        this.loading = false;
       }
     },
     forgotPassword() {
-      alert('Reset link will be sent to your email.')
+      if (this.login.email && this.validateEmail(this.login.email)) {
+        alert(`✨ A romantic password reset link has been sent to ${this.login.email} ✨`);
+      } else {
+        alert('Please enter your email address to receive reset instructions 💌');
+      }
     }
   }
 }
 </script>
 
 <style scoped>
-@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap');
-
 * {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
 }
 
-.auth-page {
+.app-containers {
+  width: 100%;
   min-height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-family: 'Nunito', sans-serif;
-  position: relative;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  background: #ffffff;
   overflow-x: hidden;
-  padding: 20px;
+  padding-top: 0!important;
 }
 
-/* ========= FULLSCREEN BANNER ========= */
-.fullscreen-banner {
+/* ----- WELCOME PAGE ----- */
+.welcome-page {
   position: fixed;
   top: 0;
   left: 0;
   width: 100%;
-  height: 100%;
-  z-index: 0;
+  height: 100vh;
   overflow: hidden;
+  z-index: 100;
 }
 
-.banner-overlay {
+.hero-slider {
   position: absolute;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  background: linear-gradient(135deg, rgba(0,0,0,0.2) 0%, rgba(0,0,0,0.4) 100%);
-  z-index: 1;
 }
 
-.banner-slider {
-  display: flex;
+.slide {
+  position: absolute;
+  top: 0;
+  left: 0;
   width: 100%;
-  height: 100%;
-  transition: transform 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-}
-
-.banner-slide {
-  min-width: 100%;
   height: 100%;
   background-size: cover;
   background-position: center;
-  background-repeat: no-repeat;
-  position: relative;
-  display: flex;
-  align-items: flex-end;
-  justify-content: center;
+  opacity: 0;
+  transition: opacity 1.5s ease-in-out;
+  z-index: 0;
 }
 
-.slide-caption {
+.slide.active {
+  opacity: 1;
+  z-index: 1;
+}
+
+.overlay-gradient {
   position: absolute;
-  bottom: 15%;
+  top: 0;
   left: 0;
-  right: 0;
-  text-align: center;
-  color: white;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, rgba(0,0,0,0.3) 0%, rgba(0,0,0,0.5) 100%);
   z-index: 2;
-  text-shadow: 0 2px 12px rgba(0,0,0,0.3);
-  animation: fadeUp 0.6s ease-out;
+  backdrop-filter: brightness(0.9);
 }
 
-.slide-caption h3 {
-  font-size: 28px;
-  font-weight: 800;
-  margin-bottom: 8px;
-  letter-spacing: -0.3px;
-}
-
-.slide-caption p {
-  font-size: 16px;
-  font-weight: 400;
-  opacity: 0.9;
-}
-
-@keyframes fadeUp {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.banner-nav {
-  position: absolute;
-  top: 50%;
-  transform: translateY(-50%);
-  background: rgba(255,255,255,0.2);
-  backdrop-filter: blur(8px);
-  border: none;
-  width: 44px;
-  height: 44px;
-  border-radius: 50%;
+.welcome-content {
+  position: relative;
+  z-index: 10;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  cursor: pointer;
-  z-index: 3;
-  transition: all 0.2s ease;
+  text-align: center;
+  height: 100%;
+  padding: 2rem;
   color: white;
+  text-shadow: 0 2px 20px rgba(0,0,0,0.3);
 }
 
-.banner-nav:hover {
-  background: rgba(255,255,255,0.4);
-  transform: translateY(-50%) scale(1.05);
+.brand-heart {
+  margin-bottom: 1rem;
+  animation: fadeInUp 1s ease;
 }
 
-.banner-nav.prev { left: 20px; }
-.banner-nav.next { right: 20px; }
+.logo-ring {
+  display: inline-flex;
+  background: rgba(255,255,255,0.2);
+  backdrop-filter: blur(12px);
+  border-radius: 60px;
+  padding: 16px;
+  margin-bottom: 1rem;
+  box-shadow: 0 20px 35px -10px rgba(0,0,0,0.2);
+}
 
-.banner-dots {
+.logo-ring svg {
+  color: #ffb7c5;
+  width: 48px;
+  height: 48px;
+  filter: drop-shadow(0 4px 6px rgba(0,0,0,0.1));
+}
+
+.welcome-title {
+  font-size: 3.8rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  background: linear-gradient(135deg, #FFFFFF, #FFD6E0);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.welcome-title span {
+  background: linear-gradient(135deg, #FFB7C5, #FF8A9F);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.tagline-main {
+  font-size: 1.5rem;
+  font-weight: 500;
+  margin-top: 0.5rem;
+  letter-spacing: -0.3px;
+  backdrop-filter: blur(4px);
+  padding: 0.25rem 1rem;
+  border-radius: 40px;
+  display: inline-block;
+  display: none;
+}
+
+.description {
+  font-size: 1.05rem;
+  margin-top: 1rem;
+  opacity: 0.9;
+  font-weight: 400;
+  max-width: 500px;
+  line-height: 1.5;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 1.5rem;
+  margin-top: 3rem;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.btn-primary, .btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem 2.2rem;
+  font-size: 1.1rem;
+  font-weight: 600;
+  border-radius: 60px;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.2, 0.9, 0.4, 1.1);
+  border: none;
+  font-family: inherit;
+  backdrop-filter: blur(8px);
+}
+
+.btn-primary {
+  background: #E91E63;
+  color: #ffffff;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+}
+
+.btn-primary:hover {
+  transform: translateY(-5px);
+  /* background: white;
+  box-shadow: 0 20px 30px -8px rgba(0,0,0,0.25); */
+}
+
+.btn-secondary {
+  background: rgb(255, 255, 255);
+  backdrop-filter: blur(12px);
+  color: #E91E63;
+  border: 1.5px solid rgba(255,255,255,0.6);
+  font-weight: 800!important;
+}
+
+.btn-secondary:hover {
+  /* background: rgba(255, 255, 255, 0.35); */
+  transform: translateY(-5px);
+  /* border-color: white; */
+}
+
+.footer-note {
   position: absolute;
-  bottom: 30px;
+  bottom: 2rem;
+  font-size: 0.8rem;
+  opacity: 0.7;
+  letter-spacing: 0.5px;
+}
+
+.slide-dots {
+  position: absolute;
+  bottom: 2rem;
   left: 0;
   right: 0;
   display: flex;
   justify-content: center;
   gap: 12px;
-  z-index: 3;
+  z-index: 20;
+  display: none;
 }
 
 .dot {
   width: 8px;
   height: 8px;
-  border-radius: 50%;
+  border-radius: 10px;
   background: rgba(255,255,255,0.5);
+  border: none;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.3s ease;
+  padding: 0;
 }
 
 .dot.active {
   width: 28px;
-  border-radius: 6px;
-  background: #fd5068;
-  box-shadow: 0 0 8px rgba(253,80,104,0.6);
+  background: white;
+  box-shadow: 0 0 8px rgba(255,255,255,0.8);
 }
 
-/* ========= GLASS CARD (TRANSPARENT & BEAUTIFUL) ========= */
-.auth-card {
-  position: relative;
-  z-index: 10;
+/* ----- FLOATING LABEL STYLES (Key Feature) ----- */
+.floating-group {
+  margin-bottom: 1.5rem;
   width: 100%;
-  max-width: 420px;
-  transition: all 0.4s ease;
 }
 
-.glass-card {
-  background: rgba(255, 255, 255, 0.15);
-  backdrop-filter: blur(20px);
-  border-top-right-radius: 54px;
-  border-top-left-radius: 54px;
-  border: 1px solid rgba(255, 255, 255, 0.25);
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25), 0 0 0 0.5px rgba(255,255,255,0.2) inset;
-  overflow: hidden;
-}
-
-/* Hero Header Glass */
-.hero-header {
-  padding: 32px 24px 28px;
-  text-align: center;
+.input-floating-wrapper {
   position: relative;
-  overflow: hidden;
-  background: rgba(253, 80, 104, 0.2);
-  backdrop-filter: blur(8px);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+  width: 100%;
 }
 
-.hero-circles { position: absolute; inset: 0; pointer-events: none; }
-.hc {
-  position: absolute;
-  border-radius: 50%;
-  background: rgba(255,255,255,0.1);
-}
-.hc-1 { width: 180px; height: 180px; top: -60px; right: -40px; }
-.hc-2 { width: 100px; height: 100px; bottom: -20px; left: -20px; }
-.hc-3 { width: 60px; height: 60px; top: 20px; left: 30px; background: rgba(255,255,255,0.07); }
-
-.brand-wrap { position: relative; z-index: 1; }
-
-.heart-badge {
-  width: 52px; height: 52px;
+.floating-input {
+  width: 100%;
+  padding: 1rem 1rem 0.5rem 1rem;
+  font-size: 1rem;
+  font-family: inherit;
+  border: 1.5px solid #e2e8f0;
   border-radius: 18px;
-  background: rgba(255,255,255,0.25);
-  backdrop-filter: blur(12px);
-  border: 1.5px solid rgba(255,255,255,0.4);
-  display: flex; align-items: center; justify-content: center;
-  margin: 0 auto 12px;
-  animation: heartPulse 2.5s ease-in-out infinite;
+  background: white;
+  outline: none;
+  transition: all 0.25s cubic-bezier(0.2, 0.9, 0.4, 1.1);
+  /* height: 64px; */
+  box-sizing: border-box;
 }
-@keyframes heartPulse {
-  0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.08); }
+
+.floating-input:focus {
+  border-color: #ff9a9e;
+  box-shadow: 0 0 0 3px rgba(255, 154, 158, 0.15);
+}
+
+.floating-input.error-border {
+  border-color: #e74c3c;
+}
+
+.floating-placeholder {
+  position: absolute;
+  left: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 1rem;
+  color: #8e8ea8;
+  pointer-events: none;
+  transition: all 0.2s cubic-bezier(0.2, 0.9, 0.4, 1.1);
+  background: transparent;
+  padding: 0 0.25rem;
+  line-height: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: calc(100% - 2rem);
+}
+
+/* FLOATING EFFECT - moves to border when focused OR has value */
+.input-floating-wrapper.focused .floating-placeholder,
+.input-floating-wrapper.has-value .floating-placeholder {
+  top: 0;
+  transform: translateY(-50%);
+  font-size: 0.75rem;
+  color: #c44569;
+  background: white;
+  left: 0.75rem;
+  padding: 0 0.35rem;
+  white-space: nowrap;
+}
+
+/* Accent line animation */
+.input-accent-line {
+  position: absolute;
+  bottom: 0;
+  display: none;
+  left: 50%;
+  width: 0;
+  height: 2px;
+  background: linear-gradient(90deg, #ff9a9e, #fad0c4);
+  transition: all 0.3s ease;
+  border-radius: 2px;
+}
+
+.input-floating-wrapper.focused .input-accent-line {
+  left: 0;
+  width: 100%;
+}
+
+/* Eye toggle inside floating field */
+.eye-toggle-floating {
+  position: absolute;
+  right: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #888;
+  z-index: 5;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.eye-toggle-floating:hover {
+  color: #c44569;
+}
+
+.error-message {
+  font-size: 0.75rem;
+  color: #e74c3c;
+  margin-top: 0.35rem;
+  margin-left: 0.5rem;
+  display: block;
+}
+
+/* ----- AUTH PAGE STYLES ----- */
+.auth-page-wrapper {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #ffffff;
+  /* padding: 2rem; */
+  position: relative;
+  min-height: 100vh;
+}
+
+.auth-card {
+  width: 100%;
+  max-width: 520px;
+  background: white;
+  border-radius: 2rem;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15);
+  position: relative;
+  transition: all 0.2s;
+  padding: 2rem 2rem 2.5rem;
+}
+
+.back-to-welcome {
+  position: absolute;
+  top: 1.5rem;
+  left: 1.5rem;
+  background: transparent;
+  border: none;
+  display: none;
+  align-items: center;
+  gap: 6px;
+  padding: 0.5rem 1rem;
+  border-radius: 40px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  color: #555;
+  transition: all 0.2s;
+  font-family: inherit;
+}
+
+.back-to-welcome:hover {
+  background: #e6e6e6;
+  color: #c44569;
+}
+
+.brand-section {
+  text-align: center;
+  margin-bottom: 2rem;
+  margin-top: 1rem;
+}
+
+.logo-wrapper {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.logo-icon {
+  width: 48px;
+  height: 48px;
+  background: linear-gradient(135deg, #ff000a 0%, #871e00 100%);
+  border-radius: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
 }
 
 .brand-name {
-  font-size: 28px;
-  font-weight: 800;
-  color: #fff;
-  letter-spacing: -0.5px;
-  margin: 0 0 4px;
-  text-shadow: 0 2px 10px rgba(0,0,0,0.2);
-}
-.brand-heart { color: #ffd6dc; }
-.brand-tagline {
-  font-size: 13px;
-  color: rgba(255,255,255,0.9);
-  font-weight: 500;
-  margin: 0;
-  text-shadow: 0 1px 4px rgba(0,0,0,0.1);
+  font-size: 1.9rem;
+  font-weight: 700;
+  background: linear-gradient(135deg, #ff0048, #651300);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
 }
 
-/* Card Body */
-.card-body { padding: -1px 24px 32px; background: transparent; }
+.brand-tagline {
+  color: #6c5b7b;
+  font-size: 0.8rem;
+}
+
+.tab-switcher {
+  margin-bottom: 2rem;
+  max-width: 280px;
+  margin-left: auto;
+  margin-right: auto;
+}
 
 .tab-track {
   position: relative;
-  display: none;
-  background: rgba(255,255,255,0.15);
-  backdrop-filter: blur(8px);
-  border-radius: 60px;
+  display: flex;
+  background: #f1f2f6;
+  border-radius: 50px;
   padding: 4px;
-  gap: 4px;
-  border: 1px solid rgba(255,255,255,0.2);
 }
+
 .tab-thumb {
   position: absolute;
-  top: 4px; left: 4px;
+  top: 4px;
+  left: 4px;
   width: calc(50% - 6px);
   height: calc(100% - 8px);
-  background: rgba(255,255,255,0.95);
-  border-radius: 60px;
-  box-shadow: 0 2px 12px rgba(0,0,0,0.1);
-  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-  pointer-events: none;
+  background: white;
+  border-radius: 40px;
+  transition: transform 0.3s cubic-bezier(0.2, 0.9, 0.4, 1.1);
 }
-.tab-thumb.right { transform: translateX(calc(100% + 4px)); }
+
+.tab-thumb.right {
+  transform: translateX(calc(100% + 4px));
+}
+
 .tab-btn {
   flex: 1;
-  padding: 10px 0;
-  border: none;
+  padding: 10px;
   background: transparent;
-  border-radius: 60px;
-  font-size: 14px;
+  border: none;
+  font-weight: 600;
+  cursor: pointer;
+  z-index: 1;
+  position: relative;
+  color: #5f5f7a;
+}
+
+.tab-btn.active {
+  color: #c44569;
+}
+
+.form-footer {
+  display: flex;
+  justify-content: space-between;
+  margin: 0.5rem 0 1.5rem;
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.forgot-link {
+  background: none;
+  border: none;
+  color: #c44569;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.submit-btn {
+  width: 100%;
+  background: linear-gradient(120deg, #ff9a9e, #fad0c4);
+  border: none;
+  padding: 0.9rem;
+  border-radius: 40px;
   font-weight: 700;
-  color: rgba(255,255,255,0.7);
+  font-size: 1rem;
+  color: #4a2b33;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
   cursor: pointer;
   transition: all 0.3s;
-  font-family: 'Nunito', sans-serif;
-  position: relative;
-  z-index: 1;
-}
-.tab-btn.active { color: #fd5068; background: transparent; }
-
-/* Glass Form Fields */
-.field-group { margin-bottom: 20px; padding: 8px;}
-.field-label {
-  display: block;
-  font-size: 11px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: rgba(255,255,255,0.7);
-  margin-bottom: 6px;
-  transition: color 0.2s;
-}
-.field-group.focused .field-label { color: #ffb6c1; }
-
-.field-wrap {
-  position: relative;
-  display: flex;
-  align-items: center;
-}
-.field-icon {
-  position: absolute;
-  left: 16px;
-  color: rgba(255,255,255,0.6);
-  transition: color 0.2s;
-  pointer-events: none;
-}
-.field-group.focused .field-icon { color: #ffb6c1; }
-
-.glass-input {
-  width: 100%;
-  height: 52px;
-  border-radius: 30px;
-  border: 1px solid rgba(255,255,255,0.25);
-  background: rgba(255,255,255,0.12);
-  backdrop-filter: blur(8px);
-  padding: 0 48px 0 44px;
-  font-size: 15px;
-  font-family: 'Nunito', sans-serif;
-  color: white;
-  outline: none;
-  transition: all 0.25s;
-}
-.glass-input::placeholder { color: rgba(255,255,255,0.5); }
-.glass-input:focus {
-  border-color: #fd5068;
-  background: rgba(255,255,255,0.2);
-  box-shadow: 0 0 0 3px rgba(253, 80, 104, 0.2);
-}
-.glass-input:-webkit-autofill,
-.glass-input:-webkit-autofill:focus {
-  -webkit-text-fill-color: white;
-  -webkit-box-shadow: 0 0 0px 1000px rgba(255,255,255,0.15) inset;
-  transition: background-color 5000s ease-in-out 0s;
 }
 
-.eye-btn {
-  position: absolute;
-  right: 16px;
-  background: transparent;
-  border: none;
-  cursor: pointer;
-  color: rgba(255,255,255,0.6);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 6px;
-  transition: color 0.2s;
-  border-radius: 50%;
+.submit-btn:hover:not(:disabled) {
+  transform: scale(1.02);
+  box-shadow: 0 10px 20px -5px rgba(196, 69, 105, 0.3);
 }
-.eye-btn:hover { color: #fd5068; background: rgba(255,255,255,0.1); }
 
-.forgot-btn {
-  background: transparent;
-  border: none;
-  font-size: 13px;
-  font-weight: 600;
-  color: rgba(255,255,255,0.8);
-  cursor: pointer;
-  font-family: 'Nunito', sans-serif;
-  text-align-last: center;
-  padding: 0;
-  margin-bottom: 20px;
-  display: block;
-  text-align: right;
-  width: 100%;
-  transition: all 0.2s;
-}
-.forgot-btn:hover { color: #ffb6c1; text-shadow: 0 0 6px rgba(253,80,104,0.5); }
-
-/* Error Banner */
 .error-banner {
+  background: #ffe3e3;
+  border-radius: 40px;
+  padding: 0.6rem 1rem;
+  font-size: 0.8rem;
+  color: #c0392b;
   display: flex;
   align-items: center;
-  gap: 8px;
-  background: rgba(255, 240, 242, 0.9);
-  backdrop-filter: blur(12px);
-  border: 1px solid #ffd0d7;
-  border-radius: 20px;
-  padding: 12px 16px;
-  font-size: 13px;
-  color: #d44;
-  margin-bottom: 16px;
-  animation: shake 0.4s ease;
-}
-@keyframes shake {
-  0%, 100% { transform: translateX(0); }
-  20% { transform: translateX(-6px); }
-  40% { transform: translateX(6px); }
-  60% { transform: translateX(-4px); }
-  80% { transform: translateX(4px); }
+  gap: 0.5rem;
+  margin: 1rem 0;
 }
 
-/* Glass Primary Button */
-.btn-primary {
-  width: 100%;
-  height: 54px;
-  border-radius: 40px;
-  border: none;
-  background: linear-gradient(135deg, #fd5068, #ff7854);
-  color: white;
-  font-size: 15px;
-  font-weight: 800;
-  font-family: 'Nunito', sans-serif;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  transition: all 0.25s;
-  box-shadow: 0 8px 24px rgba(253, 80, 104, 0.4);
-  margin-bottom: 8px;
-}
-.btn-primary:hover:not(:disabled) {
-  transform: translateY(-2px);
-  box-shadow: 0 12px 32px rgba(253, 80, 104, 0.5);
-}
-.btn-primary:active:not(:disabled) { transform: translateY(0); }
-.btn-primary:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-.btn-spinner {
-  width: 18px; height: 18px;
-  border: 2px solid rgba(255,255,255,0.4);
-  border-top-color: #fff;
+.spinner {
+  width: 18px;
+  height: 18px;
+  border: 2px solid rgba(0,0,0,0.1);
+  border-top: 2px solid #c44569;
   border-radius: 50%;
   animation: spin 0.7s linear infinite;
 }
-@keyframes spin { to { transform: rotate(360deg); } }
 
-/* Divider */
-.divider {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin: 22px 0 18px;
-  font-size: 12px;
-  color: rgba(255,255,255,0.6);
-}
-.divider::before,
-.divider::after {
-  content: '';
-  flex: 1;
-  height: 1px;
-  background: rgba(255,255,255,0.25);
-}
-
-/* Glass Social Buttons */
-.social-row { display: none; gap: 12px; margin-bottom: 20px; }
-.social-btn {
-  flex: 1;
-  height: 48px;
-  border-radius: 40px;
-  border: 1px solid rgba(255,255,255,0.3);
-  background: rgba(255,255,255,0.12);
-  backdrop-filter: blur(8px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  font-size: 13px;
-  font-weight: 600;
-  color: white;
-  cursor: pointer;
-  font-family: 'Nunito', sans-serif;
-  transition: all 0.2s;
-}
-.social-btn:hover {
-  border-color: #fd5068;
-  background: rgba(255,255,255,0.25);
-  transform: translateY(-1px);
-}
-
-/* Switch Text */
-.switch-text {
-  font-size: 13px;
-  color: rgba(255,255,255,0.7);
+.signup-prompt {
   text-align: center;
-  margin-top: 10px;
-    margin-bottom: 15px;
+  margin-top: 1.5rem;
+  font-size: 0.85rem;
+  color: #666;
 }
+
 .link-btn {
   background: none;
   border: none;
-  font-size: 13px;
-  font-weight: 700;
-  color: #ffb6c1;
+  color: #c44569;
+  font-weight: 600;
   cursor: pointer;
-  font-family: 'Nunito', sans-serif;
-  padding: 0;
-  margin-left: 6px;
-  transition: all 0.2s;
+  font-size: 0.85rem;
 }
-.link-btn:hover { color: white; text-shadow: 0 0 6px #fd5068; }
+
+@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(30px); }
+  to { opacity: 1; transform: translateY(0); }
+}
 
 /* Transitions */
-.fade-slide-enter-active,
-.fade-slide-leave-active {
-  transition: all 0.3s ease;
+.fade-slide-enter-active, .fade-slide-leave-active {
+  transition: all 0.25s ease;
 }
-.fade-slide-enter-from { opacity: 0; transform: translateX(20px); }
-.fade-slide-leave-to { opacity: 0; transform: translateX(-20px); position: absolute; }
+.fade-slide-enter-from { opacity: 0; transform: translateX(12px); }
+.fade-slide-leave-to { opacity: 0; transform: translateX(-12px); }
 
-.fade-enter-active, .fade-leave-active { transition: opacity 0.3s; }
-.fade-enter-from, .fade-leave-to { opacity: 0; }
+.fade-scale-enter-active, .fade-scale-leave-active {
+  transition: all 0.4s ease;
+}
+.fade-scale-enter-from, .fade-scale-leave-to {
+  opacity: 0;
+  transform: scale(0.98);
+}
 
-/* Responsive */
-@media (max-width: 480px) {
-  .auth-card { max-width: 100%; position: absolute; }
-  .hero-header { padding: 24px 20px; }
-  /* .card-body { padding: 24px 20px; } */
-  .glass-input { height: 38px; font-size: 14px; }
-  .banner-nav { width: 36px; height: 36px; }
-  .slide-caption h3 { font-size: 22px; }
-  .slide-caption p { font-size: 13px; }
+.fade-slide-up-enter-active, .fade-slide-up-leave-active {
+  transition: all 0.4s cubic-bezier(0.2, 0.9, 0.4, 1.1);
+}
+.fade-slide-up-enter-from { opacity: 0; transform: translateY(40px); }
+.fade-slide-up-leave-to { opacity: 0; transform: translateY(20px); }
+
+.fade-enter-active, .fade-leave-active {
+  transition: opacity 0.2s;
+}
+.fade-enter-from, .fade-leave-to {
+  opacity: 0;
+}
+
+@media (max-width: 640px) {
+  .welcome-title { font-size: 2.5rem; }
+  .action-buttons { flex-direction: column; width: 80%; margin-top: 2rem; gap: 1rem; }
+  .btn-primary, .btn-secondary { justify-content: center; }
+  /* .auth-card { padding: 1.5rem; } */
+  .back-to-welcome { top: 0.5rem; left: 0.5rem; }
 }
 </style>
