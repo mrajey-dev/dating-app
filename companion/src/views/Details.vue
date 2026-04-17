@@ -242,6 +242,19 @@ export default {
   name: "Details",
   components: { ChatPopup },
 
+  // ✅ ADD THIS - Reset scroll before component even loads
+  beforeRouteEnter(to, from, next) {
+    // Scroll to top immediately when navigating to this route
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' })
+    next()
+  },
+
+  // ✅ ADD THIS - Reset scroll when route changes within same component
+  beforeRouteUpdate(to, from, next) {
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' })
+    next()
+  },
+
   data() {
     return {
       confirmDialog: { show: false, message: "", onConfirm: null },
@@ -262,6 +275,9 @@ export default {
   },
 
   mounted() {
+    // ✅ Force scroll to top when component mounts
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' })
+    
     this.loggedInUserId = Number(localStorage.getItem("user_id")) || 0
     this.fetchPerson()
     this.refreshInterval = setInterval(() => this.checkMatchStatus(), 5000)
@@ -367,92 +383,88 @@ export default {
       this.$router.push(`/date-planner/${this.person.id}`)
     },
 
-  async handleMatch() {
-  if (this.matchLoading || !this.person) return
-  this.matchLoading = true
+    async handleMatch() {
+      if (this.matchLoading || !this.person) return
+      this.matchLoading = true
 
-  try {
-    if (this.matchStatus === null) {
-      const res = await axios.post(
-        "https://companion.ajaywatpade.in/api/send-match-request",
-        { user_id: this.person.id },
-        { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } }
-      )
-      if (res.data.success) {
-        this.matchStatus = 'requested'
-        this.notificationStore.increment()
-        this.showToast(`✨ Request sent to ${this.person.first_name}`, "success")
-      }
-    } else if (this.matchStatus === 'requested') {
-      const res = await axios.post(
-        "https://companion.ajaywatpade.in/api/cancel-match-request",
-        { user_id: this.person.id },
-        { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } }
-      )
-      if (res.data.success) {
-        this.matchStatus = null
-        this.showToast("Request cancelled", "success")
-      }
-    } else if (this.matchStatus === 'matched') {
-      this.confirmDialog = {
-        show: true,
-        message: `Remove ${this.person.first_name} from your connections?`,
-        onConfirm: async () => {
-          this.matchLoading = true
-          try {
-            const res = await axios.post(
-              "https://companion.ajaywatpade.in/api/remove-match",
-              { user_id: this.person.id },
-              { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } }
-            )
-            if (res.data.success) {
-              this.matchStatus = null
-              this.showToast(`${this.person.first_name} removed`, "success")
+      try {
+        if (this.matchStatus === null) {
+          const res = await axios.post(
+            "https://companion.ajaywatpade.in/api/send-match-request",
+            { user_id: this.person.id },
+            { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } }
+          )
+          if (res.data.success) {
+            this.matchStatus = 'requested'
+            this.notificationStore.increment()
+            this.showToast(`✨ Request sent to ${this.person.first_name}`, "success")
+          }
+        } else if (this.matchStatus === 'requested') {
+          const res = await axios.post(
+            "https://companion.ajaywatpade.in/api/cancel-match-request",
+            { user_id: this.person.id },
+            { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } }
+          )
+          if (res.data.success) {
+            this.matchStatus = null
+            this.showToast("Request cancelled", "success")
+          }
+        } else if (this.matchStatus === 'matched') {
+          this.confirmDialog = {
+            show: true,
+            message: `Remove ${this.person.first_name} from your connections?`,
+            onConfirm: async () => {
+              this.matchLoading = true
+              try {
+                const res = await axios.post(
+                  "https://companion.ajaywatpade.in/api/remove-match",
+                  { user_id: this.person.id },
+                  { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } }
+                )
+                if (res.data.success) {
+                  this.matchStatus = null
+                  this.showToast(`${this.person.first_name} removed`, "success")
+                }
+              } catch (e) {
+                this.showToast("Something went wrong", "error")
+              } finally {
+                this.matchLoading = false
+                this.confirmDialog.show = false
+              }
             }
-          } catch (e) {
-            this.showToast("Something went wrong", "error")
-          } finally {
-            this.matchLoading = false
-            this.confirmDialog.show = false
+          }
+          return
+        }
+        
+        await this.checkMatchStatus()
+        
+      } catch (e) {
+        this.showToast("Action failed", "error")
+      } finally {
+        if (this.matchStatus !== 'matched') this.matchLoading = false
+      }
+    },
+
+    async checkMatchStatus() {
+      if (!this.person) return
+      try {
+        const res = await axios.post(
+          "https://companion.ajaywatpade.in/api/match-status",
+          { user_id: this.person.id },
+          { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } }
+        )
+        const newStatus = res.data.status === 'accepted' ? 'matched' : (res.data.status ?? null)
+        
+        if (this.matchStatus !== newStatus) {
+          this.matchStatus = newStatus
+          if (newStatus === 'matched') {
+            this.showToast(`✨ You matched with ${this.person.first_name}!`, "success")
           }
         }
+      } catch (e) {
+        console.error("Match status failed", e)
       }
-      return
-    }
-    
-    // IMPORTANT: Immediately check match status after sending/cancelling
-    await this.checkMatchStatus()
-    
-  } catch (e) {
-    this.showToast("Action failed", "error")
-  } finally {
-    if (this.matchStatus !== 'matched') this.matchLoading = false
-  }
-},
-
- // Add this method to check status more frequently or after certain actions
-async checkMatchStatus() {
-  if (!this.person) return
-  try {
-    const res = await axios.post(
-      "https://companion.ajaywatpade.in/api/match-status",
-      { user_id: this.person.id },
-      { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } }
-    )
-    const newStatus = res.data.status === 'accepted' ? 'matched' : (res.data.status ?? null)
-    
-    // Only update if status changed
-    if (this.matchStatus !== newStatus) {
-      this.matchStatus = newStatus
-      // Show a notification when status changes to matched
-      if (newStatus === 'matched') {
-        this.showToast(`✨ You matched with ${this.person.first_name}!`, "success")
-      }
-    }
-  } catch (e) {
-    console.error("Match status failed", e)
-  }
-},
+    },
 
     async fetchPerson() {
       try {
@@ -472,6 +484,18 @@ async checkMatchStatus() {
           await this.checkFollowStatus()
           await this.checkMatchStatus()
           this.loading = false
+          
+          // ✅ Scroll to top after profile loads (multiple ways to ensure it works)
+          this.$nextTick(() => {
+            window.scrollTo({ top: 0, left: 0, behavior: 'instant' })
+            // Also try scrolling the main container
+            const app = document.querySelector('.dating-app')
+            if (app) app.scrollTop = 0
+            // Also try scrolling body
+            document.body.scrollTop = 0
+            document.documentElement.scrollTop = 0
+          })
+          
           if (this.$route.query.chat && this.matchStatus === 'matched') this.openChat()
         }
       } catch (e) {

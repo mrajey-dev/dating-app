@@ -175,8 +175,21 @@ export default {
     }
   },
   mounted() {
+    // Scroll to top immediately when component mounts
+    this.scrollToTop()
     this.safeFetchNotifications();
     this.startNotificationPolling();
+  },
+  beforeRouteEnter(to, from, next) {
+    // For Vue Router - scroll to top before entering the route
+    next(vm => {
+      vm.scrollToTop()
+    })
+  },
+  beforeRouteUpdate(to, from, next) {
+    // For Vue Router - scroll to top when navigating within the same component
+    this.scrollToTop()
+    next()
   },
   watch: {
     $route() {
@@ -187,6 +200,28 @@ export default {
     if (this.pollingInterval) clearInterval(this.pollingInterval);
   },
   methods: {
+    // Scroll to top with smooth behavior
+    scrollToTop() {
+      // Use multiple methods to ensure scrolling works across different browsers and scenarios
+      window.scrollTo({
+        top: 0,
+        left: 0,
+        behavior: 'smooth'
+      })
+      
+      // Fallback for older browsers
+      document.documentElement.scrollTop = 0
+      document.body.scrollTop = 0
+      
+      // Also scroll any scrollable containers
+      const scrollableElements = document.querySelectorAll('.notifications-page, .notifications-container')
+      scrollableElements.forEach(element => {
+        if (element.scrollTop) {
+          element.scrollTop = 0
+        }
+      })
+    },
+
     showToast(message, type = "success") {
       this.toast.message = message;
       this.toast.type = type;

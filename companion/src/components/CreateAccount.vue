@@ -162,7 +162,7 @@
             <h2 class="step-title">Tell us more about you</h2>
             <p class="step-subtitle">This helps us find your perfect match</p>
             
-            <div class="floating-group">
+            <div class="floating-groups">
               <div class="input-floating-wrapper" :class="{ focused: focusedField === 'dob', 'has-value': form.dob.length > 0 }">
                 <input
                   id="dob"
@@ -236,8 +236,8 @@
             <div class="avatar-container" @click="triggerPhotoUpload">
               <img v-if="profilePreview" :src="profilePreview" class="avatar-image" />
               <div v-else class="avatar-placeholder">
-                📷
-                <span>Add photo</span>
+                
+                <span style="font-size: 15px">Add photo</span>
               </div>
               <div v-if="profilePreview" class="avatar-edit">
                 ✎
@@ -246,10 +246,10 @@
             
             <div class="upload-buttons">
               <button class="upload-btn" @click.stop="triggerCamera">
-                📷 Take selfie
+                Take selfie
               </button>
               <button class="upload-btn" @click.stop="triggerGallery">
-                🖼️ From gallery
+                From gallery
               </button>
             </div>
             
@@ -275,10 +275,10 @@
                 <label for="bio" class="floating-placeholder">Bio tagline</label>
                 <div class="input-accent-line"></div>
               </div>
-              <div class="char-counter" :class="{ warn: form.bio.length > 50 }">{{ form.bio.length }}/60</div>
+              <!-- <div class="char-counter" :class="{ warn: form.bio.length > 50 }">{{ form.bio.length }}/60</div> -->
             </div>
             
-            <div class="floating-group">
+            <div class="floating-groups">
               <div class="input-floating-wrapper" :class="{ focused: focusedField === 'habits', 'has-value': form.habits.length > 0 }">
                 <input
                   id="habits"
@@ -288,7 +288,7 @@
                   @blur="focusedField = ''"
                   class="floating-input"
                 />
-                <label for="habits" class="floating-placeholder">Habits & interests</label>
+                <label for="habits" class="floating-placeholder">Hobbies & interests</label>
                 <div class="input-accent-line"></div>
               </div>
               <p class="hint-text">Separate with commas (e.g., Traveling, Music, Photography)</p>
@@ -411,7 +411,7 @@
       <div v-else class="nav-placeholder"></div>
       
       <button class="nav-btn next" @click="nextStep" :disabled="!isStepValid">
-        <span>{{ currentStep === stepNames.length - 1 ? 'Create Account 🎉' : 'Continue' }}</span>
+        <span>{{ currentStep === stepNames.length - 1 ? 'Create Account' : 'Continue' }}</span>
         <span v-if="currentStep < stepNames.length - 1">→</span>
       </button>
     </div>
@@ -931,9 +931,9 @@ export default {
 }
 
 .step-indicator.active .step-number {
-  background: linear-gradient(135deg, #ff9a9e, #fad0c4);
+  background: linear-gradient(135deg, #E91E63, #E91E63);
   border-color: #ff9a9e;
-  color: #c44569;
+  color: #ffffff;
   box-shadow: 0 4px 12px rgba(255, 154, 158, 0.3);
 }
 
@@ -1003,8 +1003,18 @@ export default {
   display: flex;
   gap: 9px;
   align-items: center;
+  
 }
+.floating-groups {
+     margin-bottom: 1.5rem;
+    width: 100%;
+    display: flex;
+    gap: 9px;
+    align-items: center;
+    flex-direction: column;
 
+  
+}
 .input-floating-wrapper {
   position: relative;
   width: 100%;
@@ -1016,7 +1026,7 @@ export default {
   font-size: 1rem;
   font-family: inherit;
   border: 1.5px solid #e2e8f0;
-  border-radius: 18px;
+  border-radius: 10px;
   background: white;
   outline: none;
   transition: all 0.25s cubic-bezier(0.2, 0.9, 0.4, 1.1);
@@ -1329,9 +1339,10 @@ export default {
 
 /* Status Chips */
 .status-grid {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.75rem;
+ display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    justify-content: space-around;
 }
 
 .status-chip {
@@ -1346,8 +1357,8 @@ export default {
 }
 
 .status-chip.active {
-  background: linear-gradient(135deg, #ff9a9e, #fad0c4);
-  color: #c44569;
+  background: linear-gradient(135deg, #E91E63, #E91E63);
+  color: #ffffff;
   box-shadow: 0 4px 12px rgba(255, 154, 158, 0.3);
 }
 
@@ -1383,7 +1394,7 @@ export default {
   transform: translate(-50%, -50%);
   width: 48px;
   height: 48px;
-  background: linear-gradient(135deg, #ff9a9e, #fad0c4);
+  background: linear-gradient(135deg, #E91E63, #E91E63);
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -1398,8 +1409,8 @@ export default {
 }
 
 .location-btn {
-  background: linear-gradient(135deg, #ff9a9e, #fad0c4);
-  color: #c44569;
+  background: linear-gradient(135deg, #E91E63, #E91E63);
+  color: #ffffff;
   border: none;
   padding: 1rem 2rem;
   font-size: 1rem;
@@ -1482,14 +1493,14 @@ export default {
   position: absolute;
   bottom: 0;
   right: 0;
-  background: linear-gradient(135deg, #ff9a9e, #fad0c4);
+  background: linear-gradient(135deg, #E91E63, #E91E63);
   width: 36px;
   height: 36px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #c44569;
+  color: #f1f1f1;
   font-size: 0.8rem;
 }
 
@@ -1529,8 +1540,8 @@ export default {
 
 .habit-tag {
   padding: 0.4rem 1rem;
-  background: linear-gradient(135deg, #ff9a9e, #fad0c4);
-  color: #c44569;
+  background: linear-gradient(135deg, #E91E63, #E91E63);
+  color: #ffffff;
   border-radius: 30px;
   font-size: 0.75rem;
   font-weight: 500;
@@ -1634,8 +1645,8 @@ export default {
 }
 
 .nav-btn.next {
-  background: linear-gradient(135deg, #ff9a9e, #fad0c4);
-  color: #c44569;
+  background: linear-gradient(135deg, #E91E63, #E91E63);
+  color: #ffffff;
   box-shadow: 0 4px 12px rgba(255, 154, 158, 0.3);
 }
 
@@ -1812,7 +1823,7 @@ export default {
   }
   
   .gender-grid {
-    flex-direction: column;
+    /* flex-direction: column; */
   }
   
   .photo-gallery {

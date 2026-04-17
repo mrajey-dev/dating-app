@@ -379,6 +379,9 @@ export default {
     },
   },
   async mounted() {
+    // Scroll to top immediately when component mounts
+    this.scrollToTop()
+    
     const storedUser = JSON.parse(localStorage.getItem("user"))
     if (!storedUser) return
 
@@ -431,7 +434,40 @@ export default {
       this.user.photo_gallery = galleryArr
     }
   },
+  beforeRouteEnter(to, from, next) {
+    // For Vue Router - scroll to top before entering the route
+    next(vm => {
+      vm.scrollToTop()
+    })
+  },
+  beforeRouteUpdate(to, from, next) {
+    // For Vue Router - scroll to top when navigating within the same component
+    this.scrollToTop()
+    next()
+  },
   methods: {
+    // Scroll to top with smooth behavior
+    scrollToTop() {
+      // Use multiple methods to ensure scrolling works across different browsers and scenarios
+      window.scrollTo({
+        top: 0,
+        left: 0,
+        behavior: 'smooth'
+      })
+      
+      // Fallback for older browsers
+      document.documentElement.scrollTop = 0
+      document.body.scrollTop = 0
+      
+      // Also scroll any scrollable containers
+      const scrollableElements = document.querySelectorAll('.profile-page, .profile-container, .profile-card')
+      scrollableElements.forEach(element => {
+        if (element.scrollTop) {
+          element.scrollTop = 0
+        }
+      })
+    },
+    
     // Custom Confirmation Modal Methods
     showConfirmModal(options) {
       return new Promise((resolve) => {

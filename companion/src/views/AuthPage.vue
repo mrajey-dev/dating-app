@@ -247,10 +247,24 @@ export default {
   },
   mounted() {
     this.startSlideShow();
+    
+    // CHECK IF USER IS ALREADY LOGGED IN
     const token = localStorage.getItem('token');
-    if (token && !this.showWelcome) {
-      this.$router?.push('/home');
+    const user = localStorage.getItem('user');
+    
+    // If user is already logged in, redirect to home page
+    if (token && user) {
+      // Check if router is available
+      if (this.$router) {
+        this.$router.push('/home');
+      } else {
+        // Fallback if router isn't available yet
+        window.location.href = '/home';
+      }
+      return; // Stop further execution
     }
+    
+    // Only check for remembered email if not logged in
     const rememberedEmail = localStorage.getItem('rememberedEmail');
     if (rememberedEmail) {
       this.login.email = rememberedEmail;
@@ -267,10 +281,28 @@ export default {
       }, 5000);
     },
     navigateToLogin() {
+      // Double-check authentication before navigating
+      const token = localStorage.getItem('token');
+      const user = localStorage.getItem('user');
+      
+      if (token && user) {
+        this.$router.push('/home');
+        return;
+      }
+      
       this.showWelcome = false;
       this.activeTab = 'login';
     },
     navigateToSignup() {
+      // Double-check authentication before navigating
+      const token = localStorage.getItem('token');
+      const user = localStorage.getItem('user');
+      
+      if (token && user) {
+        this.$router.push('/home');
+        return;
+      }
+      
       this.showWelcome = false;
       this.activeTab = 'signup';
     },

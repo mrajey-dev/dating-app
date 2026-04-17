@@ -199,6 +199,9 @@ export default {
   },
 
   async mounted() {
+    // Scroll to top immediately when component mounts
+    this.scrollToTop()
+    
     await this.getMatches()
     await this.fetchIncomingInvites()
     await this.fetchSentInvites()
@@ -218,6 +221,19 @@ export default {
     }, 10000)
   },
 
+  beforeRouteEnter(to, from, next) {
+    // For Vue Router - scroll to top before entering the route
+    next(vm => {
+      vm.scrollToTop()
+    })
+  },
+
+  beforeRouteUpdate(to, from, next) {
+    // For Vue Router - scroll to top when navigating within the same component
+    this.scrollToTop()
+    next()
+  },
+
   beforeUnmount() {
     if (this.unreadInterval) clearInterval(this.unreadInterval)
     if (this.incomingInviteInterval) clearInterval(this.incomingInviteInterval)
@@ -232,6 +248,28 @@ export default {
   },
 
   methods: {
+    // Scroll to top with smooth behavior
+    scrollToTop() {
+      // Use multiple methods to ensure scrolling works across different browsers and scenarios
+      window.scrollTo({
+        top: 0,
+        left: 0,
+        behavior: 'smooth'
+      })
+      
+      // Fallback for older browsers
+      document.documentElement.scrollTop = 0
+      document.body.scrollTop = 0
+      
+      // Also scroll any scrollable containers
+      const scrollableElements = document.querySelectorAll('.matches-page, .content-area')
+      scrollableElements.forEach(element => {
+        if (element.scrollTop) {
+          element.scrollTop = 0
+        }
+      })
+    },
+
     async fetchPlannedDates() {
       try {
         const token = localStorage.getItem("token")
