@@ -73,9 +73,9 @@
           </div>
 
           <!-- Action -->
-          <button class="renew-button" @click="$router.push(`/upgrade`)">
+          <!-- <button class="renew-button" @click="$router.push(`/upgrade`)">
             <span>⟳</span> Renew Subscription
-          </button>
+          </button> -->
         </div>
       </div>
     </div>

@@ -841,7 +841,7 @@ export default {
 .glass-effect {
   background: rgba(255, 255, 255, 0.96);
   backdrop-filter: blur(10px);
-  border-radius: 30px;
+  /* border-radius: 30px; */
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
   overflow: hidden;
   animation: slideUp 0.6s cubic-bezier(0.2, 0.9, 0.4, 1.1);

@@ -1,194 +1,203 @@
 <template>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
-  <div class="app">
-    <!-- Side Menu Overlay -->
-    <div class="overlay" v-if="isMenuOpen" @click="closeMenu"></div>
-
-    <!-- Header -->
-    <div class="header">
-      <h1 class="page-title">Choose a Companion</h1>
-
-      <div class="search-filter-wrapper">
-        <input
-          v-if="showSearchBar"
-          ref="searchInput"
-          type="text"
-          v-model="search"
-          placeholder="Search"
-          class="search-input"
-        />
-        <div class="filter-icon" @click="toggleFilter">
-          <i class="fa fa-sliders" style="font-size:24px"></i>
+  <div class="dating-app">
+    <!-- Gradient Header with Glow -->
+    <div class="hero-header">
+      <div class="header-glow"></div>
+      <div class="header-content">
+        <div class="greeting-badge">
+          <span class="wave-emoji">✨</span>
+          <span>Discover</span>
         </div>
+        <h1 class="main-title">Find Your<span class="accent"> Vibe</span></h1>
+        <p class="sub-headline">Meaningful connections start here</p>
+      </div>
+      
+      <!-- Search & Filter Bar -->
+      <div class="action-bar">
+        <div class="search-container" :class="{ focused: searchFocused }">
+          <i class="fas fa-search search-icon"></i>
+          <input 
+            type="text" 
+            v-model="search" 
+            placeholder="Search by name, city..."
+            class="search-input-modern"
+            @focus="searchFocused = true"
+            @blur="searchFocused = false"
+          />
+        </div>
+        <!-- <button class="filter-chip" @click="toggleFilter" :class="{ active: showFilter }">
+          <i class="fas fa-sliders-h"></i>
+          <span>Filters</span>
+        </button> -->
       </div>
     </div>
 
-    <!-- FILTER POPUP -->
-    <transition name="slide-down">
-      <div v-if="showFilter" class="filter-popup">
-        <div class="filter-header">
-          <h3>Advanced Filters</h3>
-          <span class="close-btn" @click="toggleFilter">✖</span>
+    <!-- Advanced Filter Modal (Slide Down) -->
+    <transition name="filter-slide">
+      <div v-if="showFilter" class="filter-modal">
+        <div class="filter-modal-header">
+          <h3><i class="fas fa-magic"></i> Refine Magic</h3>
+          <button class="close-filter" @click="showFilter = false"><i class="fas fa-times"></i></button>
         </div>
-        <div class="filter-body">
-          <div class="filter-group">
-            <label>Status</label>
-            <input v-model="filters.status" placeholder="Enter status" />
+        <div class="filter-grid">
+          <div class="filter-field">
+            <label><i class="fas fa-user-check"></i> Status</label>
+            <input type="text" v-model="filters.status" placeholder="e.g., Active, Busy">
           </div>
-          <div class="filter-group">
-            <label>Subtitle</label>
-            <input v-model="filters.subtitle" placeholder="Enter subtitle" />
+          <div class="filter-field">
+            <label><i class="fas fa-tag"></i> Subtitle</label>
+            <input type="text" v-model="filters.subtitle" placeholder="Interests, vibe">
           </div>
-          <div class="filter-group">
-            <label>City</label>
-            <input v-model="filters.city" placeholder="Enter city" />
+          <div class="filter-field">
+            <label><i class="fas fa-city"></i> City</label>
+            <input type="text" v-model="filters.city" placeholder="City">
           </div>
-          <div class="filter-group">
-            <label>State</label>
-            <input v-model="filters.state" placeholder="Enter state" />
+          <div class="filter-field">
+            <label><i class="fas fa-map-marker-alt"></i> State</label>
+            <input type="text" v-model="filters.state" placeholder="State">
           </div>
-          <div class="filter-group">
-            <label>Verified Badge</label>
+          <div class="filter-field">
+            <label><i class="fas fa-certificate"></i> Verified</label>
             <select v-model="filters.verified_badge">
-              <option value="">All</option>
+              <option value="">Everyone</option>
               <option value="1">Verified Only</option>
             </select>
           </div>
-          <div class="filter-group">
-            <label>Habits</label>
-            <input v-model="filters.habits" placeholder="Smoking, Gym, etc" />
+          <div class="filter-field">
+            <label><i class="fas fa-heartbeat"></i> Habits</label>
+            <input type="text" v-model="filters.habits" placeholder="Gym, Yoga, Coffee">
           </div>
-          <div class="filter-actions">
-            <button class="clear-btn" @click="clearFilters"><i class="fa fa-remove" style="font-size:14px"></i> Clear</button>
-            <button class="apply-btn" @click="closeFilter"><i class="fa fa-check" style="font-size:14px"></i> Apply</button>
-          </div>
+        </div>
+        <div class="filter-actions">
+          <button class="btn-clear" @click="clearFilters"><i class="fas fa-eraser"></i> Clear</button>
+          <button class="btn-apply" @click="applyFilters"><i class="fas fa-check-circle"></i> Apply</button>
         </div>
       </div>
     </transition>
 
-    <!-- Results -->
-    <div class="content">
-      <div v-if="people.length">
-        <div
-          class="deal-card"
-          v-for="person in filteredPeople"
+    <!-- Cards Grid / Feed -->
+    <div class="feed-container">
+      <div v-if="loading && people.length === 0" class="loading-skeleton">
+        <div class="skeleton-card" v-for="i in 3" :key="i"></div>
+      </div>
+      
+      <div v-else-if="people.length === 0" class="empty-state">
+        <i class="fas fa-heart-broken"></i>
+        <h3>No companions found</h3>
+        <p>Try adjusting your filters or check back later</p>
+      </div>
+
+      <transition-group name="card-list" tag="div" class="cards-grid">
+        <div 
+          class="companion-card" 
+          v-for="person in filteredPeople" 
           :key="person.id"
           :data-id="person.id"
-          ref="cards"
+          :ref="'card-' + person.id"
         >
-          <!-- Top -->
-          <div class="deal-top">
-            <div class="deal-rating">🥇 {{ person.rating || 0 }}</div>
-            <button
-              class="fav-btn"
-              :class="{ active: person.liked }"
-              @click.stop="toggleFavourite(person)"
-            >
-              {{ person.liked ? "❤️" : "🤍" }}
-            </button>
-          </div>
-
-          <!-- Media Section -->
-          <div v-if="person.introduction_video" class="video-wrapper" @click="showControls(person.id)">
-            <video
-              :ref="setVideoRef"
-              :data-video-id="person.id"
-              class="deal-img no-fullscreen"
-              :src="person.introduction_video"
-              preload="metadata"
-              loop
-              playsinline
-              controlsList="nodownload noplaybackrate noremoteplayback"
-              disablePictureInPicture
-              @click.stop="toggleVideo(person.id)"
-              @play="onVideoPlay(person.id)"
-              @pause="onVideoPause(person.id)"
-            ></video>
-
-            <!-- Controls Wrapper -->
-            <div v-if="controlsVisible[person.id]" class="video-controls">
-              <div class="play-btn" @click.stop="toggleVideo(person.id)">
-                {{ playingVideo === person.id ? '❚❚' : '▶' }}
+          <!-- Media Section (Video/Image) -->
+          <div class="media-wrapper" @click="goToDetails(person.id)">
+            <div v-if="person.introduction_video" class="video-container">
+              <video 
+                :ref="el => setVideoRef(el, person.id)"
+                :data-video-id="person.id"
+                class="card-media"
+                :src="person.introduction_video"
+                preload="metadata"
+                muted
+                loop
+                playsinline
+                @click.stop
+                @play="onVideoPlay(person.id)"
+                @pause="onVideoPause(person.id)"
+              ></video>
+              <div class="video-overlay" v-if="controlsVisible[person.id]" @click.stop>
+                <button class="video-ctrl" @click.stop="toggleVideo(person.id)">
+                  <i :class="playingVideo === person.id ? 'fas fa-pause' : 'fas fa-play'"></i>
+                </button>
+                <button class="video-ctrl" @click.stop="toggleSound(person.id)">
+                  <i :class="videoMuted[person.id] ? 'fas fa-volume-mute' : 'fas fa-volume-up'"></i>
+                </button>
               </div>
-              <div class="sound-btn" @click.stop="toggleSound(person.id)">
-                {{ videoMuted[person.id] ? '🔇' : '🔊' }}
+            </div>
+            <img v-else class="card-media" :src="person.profile_photo" alt="profile" />
+            
+            <!-- Top Badges -->
+            <div class="card-badges">
+              <div class="rating-badge">
+                <i class="fas fa-star"></i> {{ person.rating || 'New' }}
               </div>
+              <button class="like-btn" :class="{ liked: person.liked }" @click.stop="toggleFavourite(person)">
+                <i class="fas fa-heart"></i>
+                <span class="like-count" v-if="person.like_count > 0">{{ person.like_count }}</span>
+              </button>
             </div>
           </div>
 
-          <!-- Otherwise show image -->
-          <img
-            v-else
-            class="deal-img"
-            :src="person.profile_photo || 'https://via.placeholder.com/200'"
-            alt="Profile"
-          />
-
-          <!-- Content -->
-          <div class="deal-content">
-            <h3>
-              {{ person.first_name || person.name }}
-              <img
-                v-if="person.verified_badge == 1"
-                src="@/assets/verified1.png"
-                class="verified"
-                alt="Verified"
-              />
-            </h3>
-            <p class="sub">{{ person.status || '' }}</p>
+          <!-- Card Content -->
+          <div class="card-info">
+            <div class="name-row">
+              <h3>
+                {{ person.first_name || person.name }}
+                <i v-if="person.verified_badge == 1" class="fas fa-check-circle verified-icon"></i>
+              </h3>
+              <span class="distance"><i class="fas fa-map-pin"></i> {{ person.city || 'Nearby' }}</span>
+            </div>
+            <p class="status-tag">{{ person.status || '✨ Open to connect' }}</p>
+            <p class="subtitle" v-if="person.subtitle">{{ person.subtitle }}</p>
+            <div class="action-row">
+              <button class="chat-preview-btn" @click="goToDetails(person.id)">
+                Connect <i class="fas fa-arrow-right"></i>
+              </button>
+            </div>
           </div>
-
-          <!-- Arrow -->
-          <button class="deal-next" @click="goToDetails(person.id)">››</button>
         </div>
+      </transition-group>
 
-        <div v-if="loadingMore" class="loading-more">Loading more companions...</div>
+      <!-- Loading More Indicator -->
+      <div v-if="loadingMore" class="loader-more">
+        <div class="dot-floating"></div>
+        <span>Loading more sparks...</span>
       </div>
-
-      <div v-else class="empty-state">No companions available. Make sure you are logged in!</div>
     </div>
 
-    <!-- Instagram Style Footer -->
-    <div class="bottom-footer">
-      <div class="footer-item" @click="goHome">
-        <i class="fa fa-home" style="font-size:24px"></i>
+    <!-- Stylish Bottom Navigation -->
+    <div class="bottom-nav">
+      <div class="nav-item" :class="{ active: activeNav === 'home' }" @click="goHome">
+        <i class="fas fa-compass"></i>
+        <span>Discover</span>
       </div>
-      <div class="footer-item" @click="openSearch">
-        <i class="fa fa-search" style="font-size:20px"></i>
+      <div class="nav-item" @click="openSearchFocus">
+        <i class="fas fa-search"></i>
+        <span>Search</span>
       </div>
-      <div class="footer-item" v-if="showPlansIcon" @click="$router.push('/myplans')">
-        <img src="@/assets/golden.png" class="footer-icon" />
+      <div class="nav-item center-btn" v-if="showPlansIcon" @click="$router.push('/myplans')">
+        <i class="fas fa-crown"></i>
       </div>
-      <div class="footer-item" @click="$router.push('/mymatches')">
-        <i class='fa fa-heart' style='font-size:20px'></i>
+      <div class="nav-item" @click="$router.push('/mymatches')">
+        <i class="fas fa-heart"></i>
+        <span>Matches</span>
       </div>
-      <div class="footer-item" @click="$router.push('/profile')">
-        <img :src="user.profile_photo" class="footer-avatar" />
+      <div class="nav-item" @click="$router.push('/profile')">
+        <img :src="user.profile_photo" class="nav-avatar" />
+        <span>Profile</span>
       </div>
     </div>
   </div>
 </template>
 
 <script>
-import axios from "axios"
-import _ from "lodash"
+import axios from "axios";
+import _ from "lodash";
 
 export default {
-  name: "Home",
-  
+  name: "DatingHome",
   data() {
     return {
       userGender: null,
-      showSearchBar: true,
-      videoMuted: {},
-      controlsVisible: {},
-      controlTimeouts: {},
-      playingVideo: null,
-      currentPage: 1,
-      lastPage: 1,
-      loadingMore: false,
-      scrollHandler: null,
+      searchFocused: false,
       showFilter: false,
+      search: "",
       filters: {
         status: "",
         subtitle: "",
@@ -197,152 +206,129 @@ export default {
         verified_badge: "",
         habits: ""
       },
-      showOnlyFavourites: false,
-      isMenuOpen: false,
-      refreshInterval: null,
       people: [],
-      search: "",
-      visibleUsers: new Set(),
+      originalPeople: [],
+      currentPage: 1,
+      lastPage: 1,
+      loading: false,
+      loadingMore: false,
+      playingVideo: null,
+      videoMuted: {},
+      controlsVisible: {},
+      controlTimeouts: {},
+      videoRefs: {},
+      user: {
+        first_name: "",
+        last_name: "",
+        city: "",
+        profile_photo: ""
+      },
+      activeNav: "home",
       observer: null,
-      user: { first_name: "", last_name: "", city: "", profile_photo: "" },
-      videoRefs: {} // Store video refs by ID
-    }
+      visibleUsers: new Set()
+    };
   },
-
-  async mounted() {
-    const user = JSON.parse(localStorage.getItem('user'))
-    this.userGender = user?.gender || null
-    await this.loadUser()
-    await this.loadUsers(1)
-    
-    // Small delay to ensure DOM is ready
-    await this.$nextTick()
-    this.setupObserver()
-    this.refreshVisibleUsers()
-
-    this.scrollHandler = this.handleScroll
-    window.addEventListener("scroll", this.scrollHandler)
-  },
-
-  beforeUnmount() {
-    if (this.refreshInterval) clearInterval(this.refreshInterval)
-    if (this.observer) this.observer.disconnect()
-    window.removeEventListener("scroll", this.scrollHandler)
-    
-    // Clean up video refs
-    this.videoRefs = {}
-  },
-
-  beforeRouteEnter(to, from, next) {
-    next(vm => vm.loadUser())
-  },
-
-  beforeRouteUpdate(to, from, next) {
-    this.loadUser()
-    next()
-  },
-
   computed: {
     showPlansIcon() {
-      const gender = (this.userGender || '').trim().toLowerCase()
-      return gender !== 'female'
+      const gender = (this.userGender || "").trim().toLowerCase();
+      return gender !== "female";
     },
     filteredPeople() {
-      return this.people
+      return this.people;
     }
   },
-
   watch: {
-    search() {
-      this.debounceSearch()
-    },
+    search: _.debounce(function() {
+      this.currentPage = 1;
+      this.loadUsers(1);
+    }, 500),
     filters: {
-      handler() {
-        this.debounceFilter()
-      },
-      deep: true
+      deep: true,
+      handler: _.debounce(function() {
+        if (!this.showFilter) {
+          this.currentPage = 1;
+          this.loadUsers(1);
+        }
+      }, 400)
     }
   },
-
+  async mounted() {
+    const storedUser = JSON.parse(localStorage.getItem("user"));
+    this.userGender = storedUser?.gender || null;
+    await this.loadUser();
+    await this.loadUsers(1);
+    this.$nextTick(() => {
+      this.setupIntersectionObserver();
+    });
+    window.addEventListener("scroll", this.handleScroll);
+  },
+  beforeDestroy() {
+    window.removeEventListener("scroll", this.handleScroll);
+    if (this.observer) this.observer.disconnect();
+    Object.values(this.controlTimeouts).forEach(clearTimeout);
+  },
   methods: {
-    // Set video ref dynamically
-    setVideoRef(el) {
-      if (el && el.dataset && el.dataset.videoId) {
-        const videoId = parseInt(el.dataset.videoId)
-        this.videoRefs[videoId] = el
-      }
+    setVideoRef(el, id) {
+      if (el) this.videoRefs[id] = el;
     },
-
     getVideoElement(id) {
-      return this.videoRefs[id]
+      return this.videoRefs[id];
     },
-
-    showControls(id) {
-      this.controlsVisible[id] = true
-      if (this.controlTimeouts[id]) clearTimeout(this.controlTimeouts[id])
-      this.controlTimeouts[id] = setTimeout(() => {
-        this.controlsVisible[id] = false
-      }, 2000)
-    },
-
     onVideoPlay(id) {
-      this.playingVideo = id
+      this.playingVideo = id;
+      this.showControls(id);
     },
-
     onVideoPause(id) {
-      if (this.playingVideo === id) {
-        this.playingVideo = null
-      }
+      if (this.playingVideo === id) this.playingVideo = null;
     },
-
+    showControls(id) {
+      this.controlsVisible[id] = true;
+      if (this.controlTimeouts[id]) clearTimeout(this.controlTimeouts[id]);
+      this.controlTimeouts[id] = setTimeout(() => {
+        this.controlsVisible[id] = false;
+      }, 2000);
+    },
     toggleVideo(id) {
-      this.showControls(id)
-      const video = this.getVideoElement(id)
-      if (!video) return
-
+      const video = this.getVideoElement(id);
+      if (!video) return;
+      this.showControls(id);
       if (this.playingVideo === id) {
-        video.pause()
+        video.pause();
       } else {
-        // Pause all other videos
-        Object.keys(this.videoRefs).forEach(videoId => {
-          const otherVideo = this.videoRefs[videoId]
-          if (otherVideo && parseInt(videoId) !== id && !otherVideo.paused) {
-            otherVideo.pause()
-            otherVideo.currentTime = 0
+        Object.keys(this.videoRefs).forEach(vid => {
+          const other = this.videoRefs[vid];
+          if (other && parseInt(vid) !== id && !other.paused) {
+            other.pause();
+            other.currentTime = 0;
           }
-        })
-
-        video.play().catch(err => console.log("Play blocked:", err))
+        });
+        video.play().catch(e => console.log("play error", e));
       }
     },
-
     toggleSound(id) {
-      const video = this.getVideoElement(id)
-      if (!video) return
-      video.muted = !video.muted
-      this.videoMuted[id] = video.muted
-    },
-
-    handleScroll() {
-      const scrollTop = window.scrollY
-      const windowHeight = window.innerHeight
-      const fullHeight = document.documentElement.scrollHeight
-
-      if (
-        scrollTop + windowHeight >= fullHeight - 200 &&
-        !this.loadingMore &&
-        this.currentPage < this.lastPage
-      ) {
-        this.loadingMore = true
-        this.loadUsers(this.currentPage + 1)
+      const video = this.getVideoElement(id);
+      if (video) {
+        video.muted = !video.muted;
+        this.videoMuted[id] = video.muted;
       }
     },
-
-    toggleFilter() {
-      this.showFilter = !this.showFilter
-      if (!this.showFilter) this.loadUsers()
+    handleScroll() {
+      const scrollTop = window.scrollY;
+      const windowHeight = window.innerHeight;
+      const fullHeight = document.documentElement.scrollHeight;
+      if (scrollTop + windowHeight >= fullHeight - 300 && !this.loadingMore && this.currentPage < this.lastPage) {
+        this.loadingMore = true;
+        this.loadUsers(this.currentPage + 1);
+      }
     },
-
+    toggleFilter() {
+      this.showFilter = !this.showFilter;
+    },
+    applyFilters() {
+      this.showFilter = false;
+      this.currentPage = 1;
+      this.loadUsers(1);
+    },
     clearFilters() {
       this.filters = {
         status: "",
@@ -351,129 +337,23 @@ export default {
         state: "",
         verified_badge: "",
         habits: ""
+      };
+      this.showFilter = false;
+      this.currentPage = 1;
+      this.loadUsers(1);
+    },
+    shuffleArray(array) {
+      const shuffled = [...array];
+      for (let i = shuffled.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
       }
+      return shuffled;
     },
-
-    closeFilter() {
-      this.showFilter = false
-    },
-
-    debounceSearch: _.debounce(function () {
-      this.currentPage = 1
-      this.lastPage = 1
-      this.loadUsers(1)
-    }, 500),
-
-    debounceFilter: _.debounce(function () {
-      this.currentPage = 1
-      this.lastPage = 1
-      this.loadUsers(1)
-    }, 500),
-
-    setupObserver() {
-      if (this.observer) this.observer.disconnect()
-
-      this.observer = new IntersectionObserver(
-        (entries) => {
-          // Get all visible entries sorted by position
-          const visibleEntries = entries
-            .filter(entry => entry.isIntersecting)
-            .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top)
-
-          // Pause videos that are not visible
-          entries.forEach(entry => {
-            if (!entry.isIntersecting) {
-              const id = parseInt(entry.target.dataset.id)
-              const video = this.getVideoElement(id)
-              if (video && !video.paused) {
-                video.pause()
-                video.currentTime = 0
-              }
-            }
-          })
-
-          // Auto-play the topmost visible video if none is playing
-          if (visibleEntries.length > 0 && this.playingVideo === null) {
-            const topVisible = visibleEntries[0]
-            const id = parseInt(topVisible.target.dataset.id)
-            const video = this.getVideoElement(id)
-            
-            if (video && video.src) {
-              video.muted = false
-              this.videoMuted[id] = false
-              video.play().catch(err => {
-                console.log("Auto-play blocked:", err)
-              })
-            }
-          }
-        },
-        { threshold: 0.5 }
-      )
-
-      this.observeCards()
-    },
-
-    observeCards() {
-      if (this.$refs.cards) {
-        this.$refs.cards.forEach(card => {
-          if (card && this.observer) {
-            this.observer.observe(card)
-          }
-        })
-      }
-    },
-
-    goHome() {
-      window.location.href = '/home'
-    },
-
-    openSearch() {
-      this.showSearchBar = true
-      this.$nextTick(() => {
-        if (this.$refs.searchInput) {
-          this.$refs.searchInput.focus()
-        }
-      })
-    },
-
-    async refreshVisibleUsers() {
-      if (!this.visibleUsers.size) return
-      const token = localStorage.getItem("token")
-      if (!token) return
-
-      try {
-        const res = await axios.get("https://companion.ajaywatpade.in/api/users", {
-          headers: { Authorization: `Bearer ${token}` }
-        })
-
-        res.data.data.forEach(updated => {
-          if (this.visibleUsers.has(updated.id)) {
-            const index = this.people.findIndex(p => p.id === updated.id)
-            if (index !== -1) {
-              this.people.splice(index, 1, {
-                ...this.people[index],
-                rating: updated.rating,
-                like_count: updated.like_count,
-                status: updated.status,
-                rate: updated.rate,
-                liked: updated.liked
-              })
-            }
-          }
-        })
-
-        this.$nextTick(() => {
-          this.observeCards()
-        })
-      } catch (e) {
-        console.error("Visible refresh failed", e)
-      }
-    },
-
     async loadUsers(page = 1) {
-      const token = localStorage.getItem("token")
-      if (!token) return
-
+      const token = localStorage.getItem("token");
+      if (!token) return;
+      if (page === 1) this.loading = true;
       try {
         const res = await axios.get("https://companion.ajaywatpade.in/api/users", {
           headers: { Authorization: `Bearer ${token}` },
@@ -487,613 +367,562 @@ export default {
             verified_badge: this.filters.verified_badge,
             habits: this.filters.habits
           }
-        })
-
-        const newUsers = res.data.data.map(person => ({
-          ...person,
-          profile_photo: person.profile_photo
-            ? `https://companion.ajaywatpade.in/${person.profile_photo}`
-            : "https://via.placeholder.com/200",
-          introduction_video: person.introduction_video
-            ? `https://companion.ajaywatpade.in/dating-backend/public/storage/${person.introduction_video}`
+        });
+        let newUsers = res.data.data.map(p => ({
+          ...p,
+          profile_photo: p.profile_photo
+            ? `https://companion.ajaywatpade.in/${p.profile_photo}`
+            : "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400",
+          introduction_video: p.introduction_video
+            ? `https://companion.ajaywatpade.in/dating-backend/public/storage/${p.introduction_video}`
             : null,
-          liked: person.liked || false
-        }))
-
+          liked: p.liked || false,
+          like_count: p.like_count || 0
+        }));
+        newUsers = this.shuffleArray(newUsers);
         if (page === 1) {
-          this.people = newUsers
-          // Clear video refs when loading fresh data
-          this.videoRefs = {}
+          this.originalPeople = newUsers;
+          this.people = newUsers;
+          this.videoRefs = {};
         } else {
-          this.people = [...this.people, ...newUsers]
+          this.people = [...this.people, ...newUsers];
         }
-
-        this.currentPage = res.data.current_page
-        this.lastPage = res.data.last_page
-
-        // Re-setup observer after DOM updates
-        await this.$nextTick()
-        this.observeCards()
-
+        this.currentPage = res.data.current_page;
+        this.lastPage = res.data.last_page;
+        this.$nextTick(() => {
+          this.setupIntersectionObserver();
+          this.refreshVisibleUsers();
+        });
       } catch (err) {
-        console.error("Failed to load users:", err)
+        console.error("Load error", err);
       } finally {
-        this.loadingMore = false
+        this.loading = false;
+        this.loadingMore = false;
       }
     },
-
     async loadUser() {
-      const storedUser = JSON.parse(localStorage.getItem("user"))
-      if (!storedUser || !localStorage.getItem("token")) {
-        this.$router.replace("/")
-        return
+      const stored = JSON.parse(localStorage.getItem("user"));
+      if (!stored || !localStorage.getItem("token")) {
+        this.$router.replace("/");
+        return;
       }
-
       this.user = {
-        first_name: storedUser.first_name || "",
-        last_name: storedUser.last_name || "",
-        city: storedUser.city || "Unknown",
-        profile_photo: storedUser.profile_photo
-          ? `https://companion.ajaywatpade.in/dating-backend/public/storage/${storedUser.profile_photo}`
-          : "https://via.placeholder.com/100",
-      }
+        first_name: stored.first_name || "",
+        last_name: stored.last_name || "",
+        city: stored.city || "World",
+        profile_photo: stored.profile_photo
+          ? `https://companion.ajaywatpade.in/dating-backend/public/storage/${stored.profile_photo}`
+          : "https://randomuser.me/api/portraits/women/68.jpg"
+      };
     },
-
     async toggleFavourite(person) {
-      const token = localStorage.getItem("token")
-      if (!token) return
-
+      const token = localStorage.getItem("token");
+      if (!token) return;
       try {
         const res = await axios.post(
           `https://companion.ajaywatpade.in/api/users/${person.id}/toggle-like`,
           {},
           { headers: { Authorization: `Bearer ${token}` } }
-        )
-
-        person.liked = res.data.liked
-        person.like_count = res.data.like_count
-      } catch (err) {
-        console.error(err)
+        );
+        person.liked = res.data.liked;
+        person.like_count = res.data.like_count;
+      } catch (e) {
+        console.error(e);
       }
     },
-
     goToDetails(id) {
-      this.$router.push(`/details/${id}`)
+      this.$router.push(`/details/${id}`);
     },
-
-    goToBookings() {
-      this.isMenuOpen = false
-      this.$router.push("/my-bookings")
+    goHome() {
+      this.activeNav = "home";
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      this.loadUsers(1);
     },
-
-    toggleMenu() {
-      this.isMenuOpen = true
+    openSearchFocus() {
+      this.searchFocused = true;
+      document.querySelector(".search-input-modern")?.focus();
     },
-
-    closeMenu() {
-      this.isMenuOpen = false
+    setupIntersectionObserver() {
+      if (this.observer) this.observer.disconnect();
+      this.observer = new IntersectionObserver(
+        (entries) => {
+          const visibleEntries = entries.filter(e => e.isIntersecting).sort((a,b) => a.boundingClientRect.top - b.boundingClientRect.top);
+          entries.forEach(entry => {
+            if (!entry.isIntersecting) {
+              const id = parseInt(entry.target.dataset.id);
+              const vid = this.getVideoElement(id);
+              if (vid && !vid.paused) {
+                vid.pause();
+                vid.currentTime = 0;
+              }
+            }
+          });
+          if (visibleEntries.length > 0 && this.playingVideo === null) {
+            const topId = parseInt(visibleEntries[0].target.dataset.id);
+            const topVideo = this.getVideoElement(topId);
+            if (topVideo && topVideo.src) {
+              topVideo.muted = false;
+              this.videoMuted[topId] = false;
+              topVideo.play().catch(() => {});
+            }
+          }
+        },
+        { threshold: 0.4 }
+      );
+      this.people.forEach(p => {
+        const card = this.$refs[`card-${p.id}`];
+        if (card && card[0]) {
+          card[0].setAttribute("data-id", p.id);
+          this.observer.observe(card[0]);
+        }
+      });
     },
+    async refreshVisibleUsers() {
+      const token = localStorage.getItem("token");
+      if (!token) return;
+      try {
+        const res = await axios.get("https://companion.ajaywatpade.in/api/users", {
+          headers: { Authorization: `Bearer ${token}` },
+          params: { per_page: 50 }
+        });
+        const updatedMap = new Map(res.data.data.map(u => [u.id, u]));
+        this.people = this.people.map(p => {
+          const fresh = updatedMap.get(p.id);
+          if (fresh) {
+            return {
+              ...p,
+              rating: fresh.rating,
+              like_count: fresh.like_count,
+              status: fresh.status,
+              liked: fresh.liked
+            };
+          }
+          return p;
+        });
+      } catch(e) {}
+    }
   }
-}
+};
 </script>
 
 <style scoped>
-/* Your existing styles remain the same */
-.app {
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+.dating-app {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  background: #fef9ff;
   min-height: 100vh;
-  font-family: 'Inter', sans-serif;
-  position: relative;
-  overflow-x: hidden;
-}
-
-.header {
-  background-image: url(https://png.pngtree.com/thumb_back/fh260/background/20241126/pngtree-abstract-pink-background-vector-image_16667423.jpg);
-  padding: 7px 48px 63px;
-  border-bottom-left-radius: 40px;
-  border-bottom-right-radius: 40px;
-  color: white;
-  position: relative;
-}
-
-.top-bar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.menu {
-  font-size: 22px;
-}
-
-.avatar {
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-}
-
-.header h1 {
-  margin-top: 20px;
-  font-size: 22px;
-  font-weight: 600;
-}
-
-.content {
-  padding: 20px;
-  margin-top: -101px;
   padding-bottom: 80px;
 }
 
-.results {
-  font-size: 14px;
-  color: #444;
-  margin-bottom: 14px;
-}
-
-.rating {
-  background: #ffb703;
-  color: white;
-  display: inline-block;
-  padding: 4px 10px;
-  border-radius: 10px;
-  font-size: 12px;
-}
-
-.card-body {
-  display: flex;
-  align-items: center;
-  margin-top: 10px;
-}
-
-.profile-img {
-  width: 90px;
-  height: 60px;
-  border-radius: 12px;
-  object-fit: cover;
-}
-
-.info {
-  flex: 1;
-  padding-left: 12px;
-}
-
-.info h3 {
-  font-size: 15px;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.verified {
-  width: 16px;
-}
-
-.sub {
-  font-size: 12px;
-  color: #666;
-}
-
-.price {
-  font-weight: 700;
-  margin-top: 4px;
-}
-
-.next {
-  position: absolute;
-  right: 14px;
-  bottom: 14px;
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  background: #ff4791;
-  color: white;
-  border: none;
-  font-size: 20px;
-}
-
-.deal-card {
-  background: white;
-  border-radius: 26px;
-  padding: 16px;
-  margin-top: 28px;
-  margin-bottom: 18px;
+/* Hero Header */
+.hero-header {
+  background: linear-gradient(135deg, #FF6B9E 0%, #FF8E53 100%);
+  border-radius: 0 0 48px 48px;
+  padding: 32px 24px 56px;
   position: relative;
-  box-shadow: 0px 0px 20px 5px #0000001f;
+  overflow: hidden;
 }
-
-.deal-rating {
+.header-glow {
   position: absolute;
-  top: 14px;
-  left: 14px;
-  background: #e0ebfc;
-  color: #000000;
-  padding: 4px 10px;
-  border-radius: 12px;
-  font-size: 12px;
-  font-weight: 600;
-}
-
-.deal-img {
-  width: 100%;
-  height: auto;
-  object-fit: cover;
-  border-radius: 18px;
-  margin-top: 43px;
-}
-
-.deal-content {
-  margin-top: 12px;
-}
-
-.deal-content h3 {
-  font-size: 16px;
-  color: #000000;
-  font-weight: 600;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.sub {
-  font-size: 13px;
-  color: #666;
-  margin-top: 2px;
-}
-
-.price {
-  font-size: 14px;
-  font-weight: 700;
-  margin-top: 4px;
-}
-
-.deal-next {
-  position: absolute;
-  right: 14px;
-  bottom: 14px;
-  width: 42px;
-  height: 42px;
+  top: -40%;
+  right: -20%;
+  width: 250px;
+  height: 250px;
+  background: radial-gradient(circle, rgba(255,255,255,0.3) 0%, rgba(255,255,255,0) 70%);
   border-radius: 50%;
-  background: #ff4791;
-  color: white;
-  border: none;
-  font-size: 22px;
-  cursor: pointer;
 }
-
-.search-box {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  background: #ffffff;
-  border-radius: 999px;
-  padding: 7px 4px;
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
-  width: 100%;
-  max-width: 360px;
-  margin: 0 auto;
-}
-
-.location {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 14px;
-  font-weight: 500;
-  color: #333;
-}
-
-.location-icon {
-  font-size: 16px;
-}
-
-.overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.4);
-  z-index: 9;
-}
-
-.side-menu {
-  position: fixed;
-  top: 0;
-  left: -280px;
-  width: 280px;
-  height: 100vh;
-  background: #ffffff;
-  z-index: 10;
-  transition: 0.3s ease;
-  box-shadow: 6px 0 20px rgba(0, 0, 0, 0.15);
-  border-top-right-radius: 24px;
-  border-bottom-right-radius: 24px;
-}
-
-.side-menu.open {
-  left: 0;
-}
-
-.menu-header {
-  padding: 24px 16px;
-  background: linear-gradient(135deg, #ff5fa2, #ff8ccf);
-  color: white;
-  text-align: center;
-  border-top-right-radius: 24px;
-}
-
-.menu-avatar {
-  width: 72px;
-  height: 72px;
-  border-radius: 50%;
-  margin-bottom: 10px;
-  object-fit: cover;
-}
-
-.menu-list {
-  list-style: none;
-  padding: 16px;
-}
-
-.menu-list li {
-  padding: 14px 12px;
-  font-size: 15px;
-  border-radius: 12px;
-  cursor: pointer;
-  transition: 0.2s;
-}
-
-.menu-list li:hover {
-  background: #f5f5f5;
-}
-
-.menu-list .logout {
-  color: #ff3b3b;
-  margin-top: 12px;
-}
-
-.deal-top {
-  position: absolute;
-  top: 14px;
-  left: 14px;
-  right: 14px;
-  display: flex;
-  justify-content: flex-end;
-  align-items: center;
+.header-content {
+  position: relative;
   z-index: 2;
 }
-
-.fav-btn {
-  width: 34px;
-  height: 34px;
-  border-radius: 50%;
-  border: none;
-  background: rgba(255, 255, 255, 0.9);
-  font-size: 16px;
-  cursor: pointer;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-  display: flex;
+.greeting-badge {
+  display: inline-flex;
   align-items: center;
-  justify-content: center;
-  transition: transform 0.15s ease, background 0.2s ease;
-}
-
-.fav-btn:active {
-  transform: scale(0.85);
-}
-
-.fav-btn.active {
-  background: #fdfdfd;
-  animation: pop 0.3s ease;
-}
-
-@keyframes pop {
-  0% { transform: scale(0.6); }
-  60% { transform: scale(1.2); }
-  100% { transform: scale(1); }
-}
-
-.fav-btn:hover {
-  transform: scale(1.1);
-}
-
-.search-input {
-  width: 100%;
-  padding: 9px 14px;
-  margin: 10px 0 16px;
-  border-radius: 30px;
-  border: 1px solid #ddd;
+  gap: 8px;
+  background: rgba(255,255,255,0.2);
+  backdrop-filter: blur(8px);
+  padding: 6px 16px;
+  border-radius: 60px;
   font-size: 14px;
+  font-weight: 500;
+  color: white;
+  margin-bottom: 16px;
 }
-
-.bottom-footer {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  width: 100%;
-  height: 60px;
-  background: #ffffff;
-  border-top: 1px solid #eee;
+.main-title {
+  font-size: 30px;
+  font-weight: 800;
+  color: white;
+  letter-spacing: -0.5px;
+  line-height: 1.2;
+}
+.accent {
+  background: linear-gradient(120deg, #FFE259, #FFA751);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  display: inline-block;
+}
+.sub-headline {
+  color: rgba(255,255,255,0.9);
+  margin-top: 8px;
+  font-weight: 500;
+}
+.action-bar {
   display: flex;
-  justify-content: space-around;
-  align-items: center;
-  z-index: 20;
+  gap: 12px;
+  margin-top: 28px;
+  position: relative;
+  z-index: 3;
 }
-
-.footer-item {
-  font-size: 22px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.footer-item:active {
-  transform: scale(0.85);
-}
-
-.footer-avatar {
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  object-fit: cover;
-}
-
-.footer-icon {
-  width: 24px;
-  height: 24px;
-  object-fit: contain;
-  user-select: none;
-  -webkit-user-drag: none;
-}
-
-.search-filter-wrapper {
+.search-container {
+  flex: 1;
+  background: white;
+  border-radius: 60px;
   display: flex;
   align-items: center;
-  gap: 10px;
+  padding: 0 18px;
+  gap: 12px;
+  transition: all 0.2s ease;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.1);
 }
-
-.filter-popup {
-  position: fixed;
-  top: 58px;
-  left: 0;
-  width: 100%;
+.search-container.focused {
+  box-shadow: 0 0 0 3px rgba(255,255,255,0.6), 0 8px 20px rgba(0,0,0,0.15);
+  transform: scale(1.01);
+}
+.search-icon {
+  color: #FF6B9E;
+  font-size: 18px;
+}
+.search-input-modern {
+  flex: 1;
+  border: none;
+  padding: 14px 0;
+  font-size: 16px;
+  background: transparent;
+  outline: none;
+}
+.filter-chip {
   background: rgba(255,255,255,0.95);
-  backdrop-filter: blur(10px);
-  padding: 20px;
-  z-index: 999;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-  border-bottom-left-radius: 20px;
-  border-bottom-right-radius: 20px;
+  border: none;
+  padding: 0 20px;
+  border-radius: 60px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #FF5F8F;
+  cursor: pointer;
+  transition: 0.2s;
+  backdrop-filter: blur(4px);
 }
+.filter-chip.active {
+  background: #FF3B6F;
+  color: white;
+}
+/* Filter Modal */
+.filter-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  background: white;
+  z-index: 1000;
+  padding: 24px;
+  border-radius: 0 0 32px 32px;
+  box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+  animation: slideDown 0.3s ease;
+}
+@keyframes slideDown {
+  from { transform: translateY(-100%); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+.filter-slide-enter-active, .filter-slide-leave-active { transition: all 0.3s ease; }
+.filter-slide-enter, .filter-slide-leave-to { transform: translateY(-100%); opacity: 0; }
 
-.filter-header {
+.filter-modal-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  margin-bottom: 20px;
+  font-size: 20px;
 }
-
-.filter-body {
-  margin-top: 15px;
+.filter-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-  gap: 15px;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
 }
-
-.filter-group label {
+.filter-field label {
   font-size: 12px;
-  font-weight: bold;
-  color: #555;
+  font-weight: 600;
+  color: #666;
+  display: block;
+  margin-bottom: 6px;
 }
-
-.filter-group input,
-.filter-group select {
+.filter-field input, .filter-field select {
   width: 100%;
-  padding: 8px;
-  border-radius: 8px;
-  border: 1px solid #ddd;
+  padding: 12px;
+  border-radius: 16px;
+  border: 1px solid #eee;
+  background: #fafafa;
+  transition: 0.2s;
 }
-
 .filter-actions {
-  grid-column: 1 / -1;
   display: flex;
   justify-content: flex-end;
-  gap: 10px;
-  margin-top: 10px;
+  gap: 12px;
+  margin-top: 24px;
 }
-
-.apply-btn {
-  background: #ff4d6d;
-  color: white;
-  padding: 8px 18px;
-  border-radius: 8px;
-  border: none;
-  cursor: pointer;
-  transition: 0.3s;
-}
-
-.apply-btn:hover {
-  background: #e63c5d;
-}
-
-.clear-btn {
-  background: #ddd;
-  padding: 8px 18px;
-  border-radius: 8px;
-  border: none;
-  cursor: pointer;
-}
-
-.slide-down-enter-active,
-.slide-down-leave-active {
-  transition: all 0.4s ease;
-}
-
-.slide-down-enter-from {
-  transform: translateY(-100%);
-  opacity: 0;
-}
-
-.slide-down-leave-to {
-  transform: translateY(-100%);
-  opacity: 0;
-}
-
-.filter-icon {
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.filter-img {
-  width: 22px;
-  height: 22px;
-  object-fit: contain;
-}
-
-.loading-more {
-  text-align: center;
-  padding: 20px;
+.btn-clear, .btn-apply {
+  padding: 12px 24px;
+  border-radius: 40px;
   font-weight: 600;
+  border: none;
+  cursor: pointer;
 }
+.btn-clear { background: #f0f0f0; color: #555; }
+.btn-apply { background: linear-gradient(135deg, #FF6B9E, #FF8E53); color: white; }
 
-.video-wrapper {
+/* Feed Grid */
+.feed-container {
+  padding: 24px 16px;
+}
+.cards-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+.companion-card {
+  background: white;
+  border-radius: 36px;
+  overflow: hidden;
+  box-shadow: 0 15px 35px rgba(0,0,0,0.05), 0 5px 12px rgba(0,0,0,0.08);
+  transition: transform 0.2s ease, box-shadow 0.2s;
+}
+.companion-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 25px 40px rgba(0,0,0,0.12);
+}
+.media-wrapper {
+  position: relative;
+  cursor: pointer;
+}
+.card-media {
+  width: 100%;
+  aspect-ratio: 4 / 5;
+  object-fit: cover;
+  display: block;
+}
+.video-container {
   position: relative;
 }
-
-video.no-fullscreen::-webkit-media-controls-fullscreen-button {
-  display: none;
-}
-
-video.no-fullscreen::-moz-fullscreen-button {
-  display: none;
-}
-
-video.no-fullscreen::-ms-fullscreen-button {
-  display: none;
-}
-
-.video-controls {
+.video-overlay {
   position: absolute;
-  bottom: 10px;
+  bottom: 16px;
   left: 0;
   right: 0;
   display: flex;
   justify-content: center;
   gap: 20px;
-  background: rgba(0,0,0,0.5);
-  padding: 8px;
-  border-radius: 20px;
-  width: fit-content;
-  margin: 0 auto;
+  z-index: 5;
 }
-
-.play-btn, .sound-btn {
-  background: white;
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
+.video-ctrl {
+  background: rgba(0,0,0,0.7);
+  backdrop-filter: blur(8px);
+  border: none;
+  width: 44px;
+  height: 44px;
+  border-radius: 60px;
+  color: white;
+  font-size: 18px;
+  cursor: pointer;
+}
+.card-badges {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  right: 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.rating-badge {
+  background: rgba(0,0,0,0.6);
+  backdrop-filter: blur(8px);
+  padding: 6px 12px;
+  border-radius: 40px;
+  color: gold;
+  font-weight: 600;
+  font-size: 13px;
+}
+.like-btn {
+  background: rgba(255,255,255,0.9);
+  border: none;
+  width: 44px;
+  height: 44px;
+  border-radius: 60px;
+  font-size: 20px;
+  color: #aaa;
+  cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  cursor: pointer;
-  font-size: 16px;
+  gap: 4px;
+  transition: 0.2s;
 }
+.like-btn.liked {
+  color: #FF3366;
+  background: white;
+  transform: scale(1.05);
+}
+.like-count {
+  font-size: 12px;
+  font-weight: bold;
+}
+.card-info {
+  padding: 20px;
+}
+.name-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+.name-row h3 {
+  font-size: 20px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.verified-icon {
+  color: #1DA1F2;
+  font-size: 18px;
+}
+.distance {
+  font-size: 13px;
+  color: #888;
+}
+.status-tag {
+  background: #FFE9F0;
+  display: inline-block;
+  padding: 5px 14px;
+  border-radius: 50px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #FF5F8F;
+  margin: 12px 0 8px;
+}
+.subtitle {
+  color: #666;
+  font-size: 14px;
+  margin-bottom: 16px;
+}
+.action-row {
+  margin-top: 8px;
+}
+.chat-preview-btn {
+  background: linear-gradient(90deg, #FF6B9E, #FF8E53);
+  border: none;
+  padding: 12px 20px;
+  border-radius: 60px;
+  color: white;
+  font-weight: 700;
+  width: 100%;
+  cursor: pointer;
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  transition: 0.2s;
+}
+/* Bottom Nav */
+.bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  background: rgba(255,255,255,0.96);
+  backdrop-filter: blur(20px);
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  padding: 12px 20px 28px;
+  border-top: 1px solid rgba(0,0,0,0.05);
+  z-index: 100;
+}
+.nav-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: #888;
+  cursor: pointer;
+  transition: 0.2s;
+}
+.nav-item i, .nav-avatar {
+  font-size: 22px;
+}
+.nav-item.active {
+  color: #FF5F8F;
+  transform: translateY(-3px);
+}
+.center-btn {
+  background: #FF5F8F;
+  width: 52px;
+  height: 52px;
+  border-radius: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white !important;
+  margin-top: -20px;
+  box-shadow: 0 8px 20px rgba(255,95,143,0.4);
+}
+.nav-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+.loading-skeleton, .empty-state {
+  text-align: center;
+  padding: 60px 20px;
+  color: #aaa;
+}
+.skeleton-card {
+  height: 480px;
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: loading 1.5s infinite;
+  border-radius: 36px;
+  margin-bottom: 24px;
+}
+@keyframes loading {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+.loader-more {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+  padding: 20px;
+}
+.dot-floating {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #FF6B9E;
+  animation: pulse 0.8s infinite alternate;
+}
+@keyframes pulse {
+  from { opacity: 0.3; transform: scale(0.8); }
+  to { opacity: 1; transform: scale(1.2); }
+}
+.card-list-enter-active, .card-list-leave-active { transition: all 0.4s; }
+.card-list-enter, .card-list-leave-to { opacity: 0; transform: translateY(30px); }
 </style>

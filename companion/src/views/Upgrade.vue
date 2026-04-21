@@ -135,17 +135,23 @@ export default {
     async selectPlan(plan) {
       try {
         const token = localStorage.getItem("token");
-        const loggedInUserId = localStorage.getItem("userId");
         const chatUserId = this.$route.query.targetUserId;
 
-        if (!token || !loggedInUserId || !chatUserId) {
-          throw new Error("Missing authentication or user info");
+        // ✅ Validate targetUserId exists
+        if (!chatUserId) {
+          this.showErrorToast("Missing user information. Please try again from the chat.");
+          return;
         }
 
+        if (!token) {
+          this.showErrorToast("Please login again to continue.");
+          return;
+        }
+
+        // ✅ Send ONLY target_user_id (backend gets current user from token)
         const response = await axios.post(
           'https://companion.ajaywatpade.in/api/upgrade-plan',
           {
-            user_id: loggedInUserId,
             target_user_id: chatUserId,
             plan: plan.toLowerCase()
           },
@@ -158,16 +164,29 @@ export default {
         this.showPlanPopup = true;
 
       } catch (error) {
-        console.error(error.response?.data || error.message);
-        alert('Failed to select plan: ' + (error.response?.data?.message || error.message));
+        console.error('Upgrade error:', error.response?.data || error.message);
+        
+        // ✅ Better error handling
+        const errorMessage = error.response?.data?.message || 
+                            error.response?.data?.error || 
+                            "Failed to select plan. Please try again.";
+        
+        alert(errorMessage);
       }
     },
+    
     goToHome() {
       this.showPlanPopup = false;
       this.$router.push({ path: '/home' });
     },
+    
     closePopup() {
       this.showPlanPopup = false;
+    },
+    
+    showErrorToast(message) {
+      // You can replace this with your toast component
+      alert(message);
     }
   }
 };

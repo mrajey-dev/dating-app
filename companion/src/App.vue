@@ -358,7 +358,6 @@ export default {
 
 .app-title {
   font-size: 24px;
-  font-weight: 800;
   letter-spacing: -0.5px;
 }
 
@@ -739,7 +738,7 @@ export default {
   
   .app-title {
     font-size: 20px;
-    font-weight: 800;
+    font-weight: 700!important;
   }
   
   .heart-icon {
