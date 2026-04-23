@@ -1,5 +1,21 @@
 <template>
   <div class="dating-app">
+    <!-- Network Error Warning Toast -->
+    <transition name="toast-slide">
+      <div v-if="showNetworkWarning" class="network-warning-toast" :class="{ 'offline': isOffline }">
+        <div class="toast-content">
+          <i :class="isOffline ? 'fas fa-wifi' : 'fas fa-exclamation-triangle'"></i>
+          <span>{{ networkWarningMessage }}</span>
+        </div>
+        <button v-if="!isOffline" class="toast-retry" @click="retryFailedRequests">
+          <i class="fas fa-sync-alt"></i> Retry
+        </button>
+        <button class="toast-close" @click="dismissNetworkWarning">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+    </transition>
+
     <!-- Gradient Header with Glow -->
     <div class="hero-header">
       <div class="header-glow"></div>
@@ -16,19 +32,20 @@
       <div class="action-bar">
         <div class="search-container" :class="{ focused: searchFocused }">
           <i class="fas fa-search search-icon"></i>
-          <input 
-            type="text" 
-            v-model="search" 
-            placeholder="Search by name, city..."
-            class="search-input-modern"
-            @focus="searchFocused = true"
-            @blur="searchFocused = false"
-          />
+          <div class="search-input-wrapper">
+            <input 
+              type="text" 
+              v-model="search" 
+              class="search-input-modern"
+              @focus="searchFocused = true"
+              @blur="searchFocused = false"
+            />
+            <div class="animated-placeholder" :class="{ hidden: search || searchFocused }">
+              <span class="placeholder-text">{{ currentPlaceholder }}</span>
+              <span class="cursor"></span>
+            </div>
+          </div>
         </div>
-        <!-- <button class="filter-chip" @click="toggleFilter" :class="{ active: showFilter }">
-          <i class="fas fa-sliders-h"></i>
-          <span>Filters</span>
-        </button> -->
       </div>
     </div>
 
@@ -75,10 +92,43 @@
       </div>
     </transition>
 
+    <!-- Offline Mode Indicator -->
+    <transition name="offline-banner-slide">
+      <div v-if="isOffline" class="offline-mode-banner">
+        <i class="fas fa-cloud-download-alt"></i>
+        <span>You're offline. Check your connection.</span>
+      </div>
+    </transition>
+
     <!-- Cards Grid / Feed -->
     <div class="feed-container">
-      <div v-if="loading && people.length === 0" class="loading-skeleton">
-        <div class="skeleton-card" v-for="i in 3" :key="i"></div>
+      <!-- Skeleton Loading State - Exact match to actual cards -->
+      <div v-if="loading && people.length === 0" class="skeleton-container">
+        <div class="skeleton-card" v-for="i in 3" :key="'skeleton-' + i">
+          <!-- Media Skeleton -->
+          <div class="media-wrapper skeleton-media">
+            <div class="card-media skeleton shimmer"></div>
+            
+            <!-- Badges Skeleton -->
+            <div class="card-badges">
+              <div class="rating-badge skeleton-text shimmer"></div>
+              <div class="like-btn skeleton-icon shimmer"></div>
+            </div>
+          </div>
+
+          <!-- Content Skeleton -->
+          <div class="card-info">
+            <div class="name-row">
+              <div class="skeleton-text name-skeleton shimmer"></div>
+              <div class="skeleton-text distance-skeleton shimmer"></div>
+            </div>
+            <div class="status-tag skeleton-text status-skeleton shimmer"></div>
+            <div class="subtitle skeleton-text subtitle-skeleton shimmer"></div>
+            <div class="action-row">
+              <div class="chat-preview-btn skeleton-button shimmer"></div>
+            </div>
+          </div>
+        </div>
       </div>
       
       <div v-else-if="people.length === 0" class="empty-state">
@@ -138,10 +188,15 @@
           <div class="card-info">
             <div class="name-row">
               <h3>
-                {{ person.first_name || person.name }}
-                <i v-if="person.verified_badge == 1" class="fas fa-check-circle verified-icon"></i>
+                {{ person.first_name || person.name }} {{ person.last_name || '' }} 
+                <img 
+                  v-if="person.verified_badge == 1" 
+                  src="/verified.png" 
+                  alt="Verified"
+                  class="verified-icon"
+                >
               </h3>
-              <span class="distance"><i class="fas fa-map-pin"></i> {{ person.city || 'Nearby' }}</span>
+              <span class="distance"><i class="fa fa-map-marker" style="color: red;"></i> {{ person.city || 'Nearby' }}</span>
             </div>
             <p class="status-tag">{{ person.status || '✨ Open to connect' }}</p>
             <p class="subtitle" v-if="person.subtitle">{{ person.subtitle }}</p>
@@ -175,7 +230,7 @@
         <i class="fas fa-crown"></i>
       </div>
       <div class="nav-item" @click="$router.push('/mymatches')">
-        <i class="fas fa-heart"></i>
+        <i class="fas fa-heart" style="color: red;"></i>
         <span>Matches</span>
       </div>
       <div class="nav-item" @click="$router.push('/profile')">
@@ -225,7 +280,25 @@ export default {
       },
       activeNav: "home",
       observer: null,
-      visibleUsers: new Set()
+      visibleUsers: new Set(),
+      // Animated placeholder data
+      placeholderIndex: 0,
+      currentPlaceholder: "",
+      currentDisplayText: "",
+      placeholders: ["Search by name", "Search by city", "Search by vibes"],
+      typingSpeed: 80,
+      deletingSpeed: 50,
+      pauseDuration: 2000,
+      typingTimeout: null,
+      isDeleting: false,
+      // Network monitoring
+      isOnline: true,
+      isOffline: false,
+      showNetworkWarning: false,
+      networkWarningMessage: "",
+      networkWarningTimeout: null,
+      failedRequests: [],
+      networkStatusCheckInterval: null
     };
   },
   computed: {
@@ -255,8 +328,13 @@ export default {
   async mounted() {
     const storedUser = JSON.parse(localStorage.getItem("user"));
     this.userGender = storedUser?.gender || null;
+    
+    // Initialize network monitoring
+    this.initNetworkMonitoring();
+    
     await this.loadUser();
     await this.loadUsers(1);
+    this.startTypingAnimation();
     this.$nextTick(() => {
       this.setupIntersectionObserver();
     });
@@ -266,8 +344,154 @@ export default {
     window.removeEventListener("scroll", this.handleScroll);
     if (this.observer) this.observer.disconnect();
     Object.values(this.controlTimeouts).forEach(clearTimeout);
+    if (this.typingTimeout) clearTimeout(this.typingTimeout);
+    if (this.networkWarningTimeout) clearTimeout(this.networkWarningTimeout);
+    if (this.networkStatusCheckInterval) clearInterval(this.networkStatusCheckInterval);
+    window.removeEventListener('online', this.handleOnline);
+    window.removeEventListener('offline', this.handleOffline);
   },
   methods: {
+    // Network monitoring methods
+    initNetworkMonitoring() {
+      // Set initial network status
+      this.isOnline = navigator.onLine;
+      this.isOffline = !navigator.onLine;
+      
+      if (!this.isOnline) {
+        this.showOfflineWarning();
+      }
+      
+      // Listen to online/offline events
+      window.addEventListener('online', this.handleOnline);
+      window.addEventListener('offline', this.handleOffline);
+      
+      // Periodic network checks (every 30 seconds)
+      this.networkStatusCheckInterval = setInterval(() => {
+        this.checkNetworkStatus();
+      }, 30000);
+    },
+    
+    handleOnline() {
+      this.isOnline = true;
+      this.isOffline = false;
+      this.showNetworkSuccessMessage();
+      // Retry any failed requests when connection is restored
+      this.retryFailedRequests();
+      // Reload fresh data
+      this.loadUsers(1);
+    },
+    
+    handleOffline() {
+      this.isOnline = false;
+      this.isOffline = true;
+      this.showOfflineWarning();
+      // Try to load cached data
+      this.loadCachedData();
+    },
+    
+    async checkNetworkStatus() {
+      try {
+        // Try to fetch a small resource to check connectivity
+        await axios.get('https://companion.ajaywatpade.in/api/ping', { timeout: 5000 });
+        if (!this.isOnline) {
+          this.handleOnline();
+        }
+      } catch (error) {
+        if (this.isOnline) {
+          this.handleOffline();
+        }
+      }
+    },
+    
+    showNetworkWarning(message = "Slow or unstable network connection", isOffline = false) {
+      if (this.networkWarningTimeout) clearTimeout(this.networkWarningTimeout);
+      this.networkWarningMessage = message;
+      this.isOffline = isOffline;
+      this.showNetworkWarning = true;
+      
+      // Auto-hide warning after 5 seconds
+      this.networkWarningTimeout = setTimeout(() => {
+        this.showNetworkWarning = false;
+      }, 5000);
+    },
+    
+    showOfflineWarning() {
+      this.showNetworkWarning("No internet connection. Showing cached content.", true);
+    },
+    
+    showNetworkSuccessMessage() {
+      this.networkWarningMessage = "Connection restored!";
+      this.isOffline = false;
+      this.showNetworkWarning = true;
+      
+      if (this.networkWarningTimeout) clearTimeout(this.networkWarningTimeout);
+      this.networkWarningTimeout = setTimeout(() => {
+        this.showNetworkWarning = false;
+      }, 3000);
+    },
+    
+    dismissNetworkWarning() {
+      this.showNetworkWarning = false;
+      if (this.networkWarningTimeout) clearTimeout(this.networkWarningTimeout);
+    },
+    
+    async retryFailedRequests() {
+      if (this.failedRequests.length > 0) {
+        const requestsToRetry = [...this.failedRequests];
+        this.failedRequests = [];
+        
+        for (const request of requestsToRetry) {
+          try {
+            await this.retryRequest(request);
+          } catch (error) {
+            console.error("Failed to retry request:", error);
+            this.failedRequests.push(request);
+          }
+        }
+        
+        if (this.failedRequests.length === 0) {
+          this.showNetworkWarning("All pending requests completed successfully!", false);
+          setTimeout(() => {
+            this.showNetworkWarning = false;
+          }, 3000);
+        }
+      }
+    },
+    
+    async retryRequest(request) {
+      switch (request.type) {
+        case 'loadUsers':
+          await this.loadUsers(request.page);
+          break;
+        case 'toggleLike':
+          await this.toggleFavourite(request.person);
+          break;
+        default:
+          console.warn("Unknown request type:", request.type);
+      }
+    },
+    
+    loadCachedData() {
+      // Try to load data from localStorage cache
+      const cachedUsers = localStorage.getItem('cached_users');
+      if (cachedUsers) {
+        try {
+          this.people = JSON.parse(cachedUsers);
+          this.showNetworkWarning("Using cached data while offline", true);
+        } catch (e) {
+          console.error("Failed to load cached data", e);
+        }
+      }
+    },
+    
+    cacheUserData(users) {
+      try {
+        localStorage.setItem('cached_users', JSON.stringify(users));
+      } catch (e) {
+        console.error("Failed to cache user data", e);
+      }
+    },
+    
     setVideoRef(el, id) {
       if (el) this.videoRefs[id] = el;
     },
@@ -302,7 +526,12 @@ export default {
             other.currentTime = 0;
           }
         });
-        video.play().catch(e => console.log("play error", e));
+        video.play().catch(e => {
+          console.log("play error", e);
+          if (e.name === 'NotAllowedError') {
+            this.showNetworkWarning("Video playback requires user interaction", false);
+          }
+        });
       }
     },
     toggleSound(id) {
@@ -353,7 +582,17 @@ export default {
     async loadUsers(page = 1) {
       const token = localStorage.getItem("token");
       if (!token) return;
+      
+      // Check if offline
+      if (!navigator.onLine) {
+        this.showNetworkWarning("You're offline. Showing cached content.", true);
+        this.loadCachedData();
+        this.failedRequests.push({ type: 'loadUsers', page });
+        return;
+      }
+      
       if (page === 1) this.loading = true;
+      
       try {
         const res = await axios.get("https://companion.ajaywatpade.in/api/users", {
           headers: { Authorization: `Bearer ${token}` },
@@ -366,8 +605,10 @@ export default {
             state: this.filters.state,
             verified_badge: this.filters.verified_badge,
             habits: this.filters.habits
-          }
+          },
+          timeout: 15000 // 15 second timeout
         });
+        
         let newUsers = res.data.data.map(p => ({
           ...p,
           profile_photo: p.profile_photo
@@ -379,22 +620,47 @@ export default {
           liked: p.liked || false,
           like_count: p.like_count || 0
         }));
+        
         newUsers = this.shuffleArray(newUsers);
+        
         if (page === 1) {
           this.originalPeople = newUsers;
           this.people = newUsers;
           this.videoRefs = {};
+          // Cache the data
+          this.cacheUserData(newUsers);
         } else {
           this.people = [...this.people, ...newUsers];
         }
+        
         this.currentPage = res.data.current_page;
         this.lastPage = res.data.last_page;
+        
         this.$nextTick(() => {
           this.setupIntersectionObserver();
           this.refreshVisibleUsers();
         });
       } catch (err) {
         console.error("Load error", err);
+        
+        // Handle different error types
+        if (err.code === 'ECONNABORTED') {
+          this.showNetworkWarning("Request timeout. Network may be slow.", false);
+        } else if (err.message === 'Network Error') {
+          this.showNetworkWarning("Network error. Please check your connection.", true);
+          this.handleOffline();
+        } else if (err.response && err.response.status === 500) {
+          this.showNetworkWarning("Server error. Please try again later.", false);
+        } else {
+          this.showNetworkWarning("Failed to load users. Please check your connection.", false);
+        }
+        
+        // Try to load from cache on error
+        if (page === 1 && this.people.length === 0) {
+          this.loadCachedData();
+        }
+        
+        this.failedRequests.push({ type: 'loadUsers', page });
       } finally {
         this.loading = false;
         this.loadingMore = false;
@@ -418,16 +684,28 @@ export default {
     async toggleFavourite(person) {
       const token = localStorage.getItem("token");
       if (!token) return;
+      
+      if (!navigator.onLine) {
+        this.showNetworkWarning("Cannot like while offline. Will retry when connection is restored.", true);
+        this.failedRequests.push({ type: 'toggleLike', person });
+        return;
+      }
+      
       try {
         const res = await axios.post(
           `https://companion.ajaywatpade.in/api/users/${person.id}/toggle-like`,
           {},
-          { headers: { Authorization: `Bearer ${token}` } }
+          { 
+            headers: { Authorization: `Bearer ${token}` },
+            timeout: 10000
+          }
         );
         person.liked = res.data.liked;
         person.like_count = res.data.like_count;
       } catch (e) {
         console.error(e);
+        this.showNetworkWarning("Failed to update like. Please check your connection.", false);
+        this.failedRequests.push({ type: 'toggleLike', person });
       }
     },
     goToDetails(id) {
@@ -480,10 +758,16 @@ export default {
     async refreshVisibleUsers() {
       const token = localStorage.getItem("token");
       if (!token) return;
+      
+      if (!navigator.onLine) {
+        return; // Skip refresh when offline
+      }
+      
       try {
         const res = await axios.get("https://companion.ajaywatpade.in/api/users", {
           headers: { Authorization: `Bearer ${token}` },
-          params: { per_page: 50 }
+          params: { per_page: 50 },
+          timeout: 10000
         });
         const updatedMap = new Map(res.data.data.map(u => [u.id, u]));
         this.people = this.people.map(p => {
@@ -499,7 +783,48 @@ export default {
           }
           return p;
         });
-      } catch(e) {}
+        // Update cache
+        this.cacheUserData(this.people);
+      } catch(e) {
+        console.error("Failed to refresh users", e);
+      }
+    },
+    // Animated placeholder methods - Fixed version
+    startTypingAnimation() {
+      this.currentDisplayText = "";
+      this.isDeleting = false;
+      this.placeholderIndex = 0;
+      this.currentPlaceholder = this.placeholders[0];
+      this.typeNextCharacter();
+    },
+    
+    typeNextCharacter() {
+      const fullText = this.placeholders[this.placeholderIndex];
+      
+      if (!this.isDeleting) {
+        // Typing
+        if (this.currentDisplayText.length < fullText.length) {
+          this.currentDisplayText = fullText.substring(0, this.currentDisplayText.length + 1);
+          this.currentPlaceholder = this.currentDisplayText;
+          this.typingTimeout = setTimeout(() => this.typeNextCharacter(), this.typingSpeed);
+        } else {
+          // Finished typing, pause then start deleting
+          this.isDeleting = true;
+          this.typingTimeout = setTimeout(() => this.typeNextCharacter(), this.pauseDuration);
+        }
+      } else {
+        // Deleting
+        if (this.currentDisplayText.length > 0) {
+          this.currentDisplayText = this.currentDisplayText.substring(0, this.currentDisplayText.length - 1);
+          this.currentPlaceholder = this.currentDisplayText;
+          this.typingTimeout = setTimeout(() => this.typeNextCharacter(), this.deletingSpeed);
+        } else {
+          // Move to next placeholder
+          this.isDeleting = false;
+          this.placeholderIndex = (this.placeholderIndex + 1) % this.placeholders.length;
+          this.typingTimeout = setTimeout(() => this.typeNextCharacter(), this.typingSpeed);
+        }
+      }
     }
   }
 };
@@ -519,9 +844,107 @@ export default {
   padding-bottom: 80px;
 }
 
+/* Network Warning Toast Styles */
+.network-warning-toast {
+  position: fixed;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: linear-gradient(135deg, #ff6b6b, #ff4757);
+  color: white;
+  padding: 12px 20px;
+  border-radius: 50px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  z-index: 2000;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+  backdrop-filter: blur(10px);
+  max-width: 90%;
+  animation: slideDown 0.3s ease;
+}
+
+.network-warning-toast.offline {
+  background: linear-gradient(135deg, #a55, #8b3a3a);
+}
+
+.toast-content {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.toast-content i {
+  font-size: 18px;
+}
+
+.toast-retry {
+  background: rgba(255,255,255,0.2);
+  border: 1px solid rgba(255,255,255,0.3);
+  padding: 6px 12px;
+  border-radius: 30px;
+  color: white;
+  cursor: pointer;
+  font-size: 12px;
+  transition: 0.2s;
+}
+
+.toast-retry:hover {
+  background: rgba(255,255,255,0.3);
+}
+
+.toast-close {
+  background: none;
+  border: none;
+  color: white;
+  cursor: pointer;
+  font-size: 16px;
+  opacity: 0.8;
+  transition: 0.2s;
+}
+
+.toast-close:hover {
+  opacity: 1;
+}
+
+.toast-slide-enter-active, .toast-slide-leave-active {
+  transition: all 0.3s ease;
+}
+.toast-slide-enter, .toast-slide-leave-to {
+  transform: translateX(-50%) translateY(-100%);
+  opacity: 0;
+}
+
+/* Offline Mode Banner */
+.offline-mode-banner {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  text-align: center;
+  padding: 12px;
+  font-size: 14px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  position: sticky;
+  top: 0;
+  z-index: 1500;
+}
+
+.offline-banner-slide-enter-active, .offline-banner-slide-leave-active {
+  transition: all 0.3s ease;
+}
+.offline-banner-slide-enter, .offline-banner-slide-leave-to {
+  transform: translateY(-100%);
+  opacity: 0;
+}
+
 /* Hero Header */
 .hero-header {
-  background: linear-gradient(135deg, #FF6B9E 0%, #FF8E53 100%);
+  background: linear-gradient(135deg, #ff0058 0%, #df004c 100%);
   border-radius: 0 0 48px 48px;
   padding: 32px 24px 56px;
   position: relative;
@@ -598,13 +1021,49 @@ export default {
   color: #FF6B9E;
   font-size: 18px;
 }
-.search-input-modern {
+.search-input-wrapper {
   flex: 1;
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+.search-input-modern {
+  width: 100%;
   border: none;
   padding: 14px 0;
   font-size: 16px;
   background: transparent;
   outline: none;
+  position: relative;
+  z-index: 2;
+}
+.animated-placeholder {
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #aaa;
+  font-size: 16px;
+  pointer-events: none;
+  white-space: nowrap;
+  transition: opacity 0.2s ease;
+  z-index: 1;
+}
+.animated-placeholder.hidden {
+  opacity: 0;
+}
+.placeholder-text {
+  display: inline-block;
+}
+.cursor {
+  display: inline-block;
+  animation: blink 0.7s step-end infinite;
+  margin-left: 2px;
+  font-weight: 400;
+}
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
 }
 .filter-chip {
   background: rgba(255,255,255,0.95);
@@ -792,7 +1251,7 @@ export default {
   align-items: baseline;
 }
 .name-row h3 {
-  font-size: 20px;
+  font-size: 18px;
   font-weight: 700;
   display: flex;
   align-items: center;
@@ -825,7 +1284,7 @@ export default {
   margin-top: 8px;
 }
 .chat-preview-btn {
-  background: linear-gradient(90deg, #FF6B9E, #FF8E53);
+  background: linear-gradient(135deg, #ff0058 0%, #df004c 100%);
   border: none;
   padding: 12px 20px;
   border-radius: 60px;
@@ -893,17 +1352,142 @@ export default {
   padding: 60px 20px;
   color: #aaa;
 }
-.skeleton-card {
-  height: 480px;
-  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
-  background-size: 200% 100%;
-  animation: loading 1.5s infinite;
-  border-radius: 36px;
-  margin-bottom: 24px;
+
+/* ===== SKELETON LOADING STYLES - EXACT MATCH TO ACTUAL CARDS ===== */
+.skeleton-container {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
 }
-@keyframes loading {
-  0% { background-position: 200% 0; }
-  100% { background-position: -200% 0; }
+
+.skeleton-card {
+  background: white;
+  border-radius: 36px;
+  overflow: hidden;
+  box-shadow: 0 15px 35px rgba(0,0,0,0.05), 0 5px 12px rgba(0,0,0,0.08);
+}
+
+.skeleton-media {
+  position: relative;
+}
+
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    #f0f0f0 25%,
+    #e8e8e8 50%,
+    #f0f0f0 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+/* Media skeleton - matches card-media exactly */
+.card-media.skeleton {
+  width: 100%;
+  aspect-ratio: 4 / 5;
+  border-radius: 0;
+}
+
+/* Rating badge skeleton */
+.rating-badge.skeleton-text {
+  width: 60px;
+  height: 28px;
+  border-radius: 40px;
+  background: linear-gradient(90deg, #e0e0e0 25%, #d0d0d0 50%, #e0e0e0 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+/* Like button skeleton */
+.like-btn.skeleton-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 60px;
+  background: linear-gradient(90deg, #e0e0e0 25%, #d0d0d0 50%, #e0e0e0 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+/* Name skeleton */
+.name-skeleton {
+  width: 120px;
+  height: 22px;
+  border-radius: 8px;
+  background: linear-gradient(90deg, #e0e0e0 25%, #d0d0d0 50%, #e0e0e0 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+/* Distance skeleton */
+.distance-skeleton {
+  width: 70px;
+  height: 16px;
+  border-radius: 8px;
+  background: linear-gradient(90deg, #e0e0e0 25%, #d0d0d0 50%, #e0e0e0 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+/* Status tag skeleton */
+.status-skeleton {
+  width: 100px;
+  height: 28px;
+  border-radius: 50px;
+  margin: 12px 0 8px;
+  background: linear-gradient(90deg, #e0e0e0 25%, #d0d0d0 50%, #e0e0e0 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+/* Subtitle skeleton */
+.subtitle-skeleton {
+  width: 180px;
+  height: 18px;
+  border-radius: 8px;
+  margin-bottom: 16px;
+  background: linear-gradient(90deg, #e0e0e0 25%, #d0d0d0 50%, #e0e0e0 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+/* Button skeleton */
+.skeleton-button {
+  width: 100%;
+  height: 48px;
+  border-radius: 60px;
+  background: linear-gradient(90deg, #e0e0e0 25%, #d0d0d0 50%, #e0e0e0 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+/* Shimmer animation */
+.shimmer {
+  background: linear-gradient(
+    90deg,
+    #f0f0f0 0%,
+    #f8f8f8 50%,
+    #f0f0f0 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+/* ===== END SKELETON STYLES ===== */
+
+.skeleton-card {
+  height: auto;
+  background: white;
+  border-radius: 36px;
+  margin-bottom: 0;
 }
 .loader-more {
   display: flex;
@@ -925,4 +1509,10 @@ export default {
 }
 .card-list-enter-active, .card-list-leave-active { transition: all 0.4s; }
 .card-list-enter, .card-list-leave-to { opacity: 0; transform: translateY(30px); }
+.verified-icon {
+  width: 22px;
+  height: 23px;
+  margin-left: 4px;
+  vertical-align: middle;
+}
 </style>

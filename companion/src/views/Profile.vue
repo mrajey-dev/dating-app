@@ -1100,7 +1100,7 @@ export default {
   justify-content: center;
   gap: 10px;
   padding: 15px;
-  background: linear-gradient(135deg, #667eea, #764ba2);
+  background: linear-gradient(135deg, #E91E63, #F44336);
   color: white;
   border-radius: 15px;
   cursor: pointer;

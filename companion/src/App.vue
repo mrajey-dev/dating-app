@@ -15,18 +15,18 @@
         @mouseenter="hoverMenu = true"
         @mouseleave="hoverMenu = false"
       >
-        <!-- <div class="menu-icon-wrapper">
+        <div class="menu-icon-wrapper">
           <span class="menu-line" :class="{ 'rotate': hoverMenu }"></span>
           <span class="menu-line" :class="{ 'fade': hoverMenu }"></span>
           <span class="menu-line" :class="{ 'rotate-reverse': hoverMenu }"></span>
-        </div> -->
+        </div>
       </div>
 
       <!-- App Name with Gradient Animation -->
       <div class="app-name" v-if="$route.name !== 'AuthPages'">
         <!-- <span class="heart-icon">❤️</span> -->
         <span class="app-title">
-          <span class="text-gradient">Heart</span>
+          <span class="text-gradient">Heart </span>
           <strong class="text-gradient-pink">Link</strong>
         </span>
       </div>
@@ -293,6 +293,7 @@ export default {
   cursor: pointer;
   z-index: 10000;
   padding: 8px;
+  display: none;
   border-radius: 12px;
   transition: all 0.3s ease;
 }
@@ -362,14 +363,14 @@ export default {
 }
 
 .text-gradient {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #ff0058 0%, #ffc002 100%);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
 }
 
 .text-gradient-pink {
-  background: linear-gradient(135deg, #fd5068 0%, #ff8a5c 100%);
+  background: linear-gradient(135deg, #ffc002 0%, #df004c 100%);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
@@ -738,6 +739,7 @@ export default {
   
   .app-title {
     font-size: 20px;
+            margin-right: -38px;
     font-weight: 700!important;
   }
   

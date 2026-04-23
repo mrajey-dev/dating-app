@@ -11,29 +11,85 @@
       </div>
     </transition>
 
-    <!-- SKELETON LOADER -->
+    <!-- SKELETON LOADER - EXACT MATCH TO ACTUAL PROFILE LAYOUT -->
     <div v-if="loading" class="skeleton-wrapper">
-      <div class="skeleton-hero shimmer"></div>
-      <div class="skeleton-card">
-        <div class="skeleton-avatar shimmer"></div>
-        <div class="skeleton-line w-50 shimmer"></div>
-        <div class="skeleton-line w-35 shimmer"></div>
-        <div class="skeleton-stats">
-          <div class="skeleton-stat shimmer"></div>
-          <div class="skeleton-stat shimmer"></div>
-          <div class="skeleton-stat shimmer"></div>
+      <!-- Hero Section Skeleton -->
+      <div class="skeleton-hero-section">
+        <div class="skeleton-hero-overlay"></div>
+        <div class="skeleton-hero-back-btn shimmer"></div>
+        <div class="skeleton-hero-badge shimmer"></div>
+        <div class="skeleton-hero-info">
+          <div class="skeleton-hero-name shimmer"></div>
+          <div class="skeleton-hero-location shimmer"></div>
+          <div class="skeleton-hero-quote shimmer"></div>
         </div>
-        <div class="skeleton-buttons">
+      </div>
+
+      <!-- Profile Card Skeleton -->
+      <div class="skeleton-profile-card">
+        <!-- Stats Row Skeleton -->
+        <div class="skeleton-stats-row">
+          <div class="skeleton-stat-item">
+            <div class="skeleton-stat-value shimmer"></div>
+            <div class="skeleton-stat-label shimmer"></div>
+          </div>
+          <div class="skeleton-stat-divider"></div>
+          <div class="skeleton-stat-item">
+            <div class="skeleton-stat-value shimmer"></div>
+            <div class="skeleton-stat-label shimmer"></div>
+          </div>
+          <div class="skeleton-stat-divider"></div>
+          <div class="skeleton-stat-item">
+            <div class="skeleton-stat-value shimmer"></div>
+            <div class="skeleton-stat-label shimmer"></div>
+          </div>
+        </div>
+
+        <!-- Buttons Row Skeleton -->
+        <div class="skeleton-buttons-row">
           <div class="skeleton-btn shimmer"></div>
           <div class="skeleton-btn shimmer"></div>
         </div>
-        <div class="skeleton-bio shimmer"></div>
-        <div class="skeleton-habits shimmer"></div>
-        <div class="skeleton-gallery">
-          <div class="skeleton-img shimmer"></div>
-          <div class="skeleton-img shimmer"></div>
-          <div class="skeleton-img shimmer"></div>
+
+        <!-- About Section Skeleton -->
+        <div class="skeleton-about-section">
+          <div class="skeleton-section-title shimmer"></div>
+          <div class="skeleton-about-text shimmer"></div>
+          <div class="skeleton-info-grid">
+            <div class="skeleton-info-item shimmer"></div>
+            <div class="skeleton-info-item shimmer"></div>
+            <div class="skeleton-info-item shimmer"></div>
+          </div>
         </div>
+
+        <!-- Habits Section Skeleton -->
+        <div class="skeleton-habits-section">
+          <div class="skeleton-section-title shimmer"></div>
+          <div class="skeleton-habits-container">
+            <div class="skeleton-habit-pill shimmer"></div>
+            <div class="skeleton-habit-pill shimmer"></div>
+            <div class="skeleton-habit-pill shimmer"></div>
+            <div class="skeleton-habit-pill shimmer"></div>
+          </div>
+        </div>
+
+        <!-- Gallery Section Skeleton -->
+        <div class="skeleton-gallery-section">
+          <div class="skeleton-section-title shimmer"></div>
+          <div class="skeleton-gallery-grid">
+            <div class="skeleton-gallery-item grid-span-2 shimmer"></div>
+            <div class="skeleton-gallery-item shimmer"></div>
+            <div class="skeleton-gallery-item shimmer"></div>
+            <div class="skeleton-gallery-item shimmer"></div>
+            <div class="skeleton-gallery-item shimmer"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bottom Action Bar Skeleton -->
+      <div class="skeleton-bottom-bar">
+        <div class="skeleton-action-btn shimmer"></div>
+        <div class="skeleton-action-btn shimmer"></div>
       </div>
     </div>
 
@@ -63,9 +119,6 @@
           </div>
           <div class="hero-quote">"{{ person.subtitle || 'Looking for something real' }}"</div>
         </div>
-        
-        <!-- Wave SVG (properly displayed) -->
-       
       </div>
 
       <!-- PROFILE CARD -->
@@ -131,7 +184,7 @@
         <!-- Habits Section -->
         <div class="habits-section" v-if="formattedHabits && formattedHabits.length">
           <div class="section-title">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ff4d6d" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ff4d6d" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-2zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
             <h3>Habits & Interests</h3>
           </div>
           <div class="habits-container">
@@ -242,14 +295,11 @@ export default {
   name: "Details",
   components: { ChatPopup },
 
-  // ✅ ADD THIS - Reset scroll before component even loads
   beforeRouteEnter(to, from, next) {
-    // Scroll to top immediately when navigating to this route
     window.scrollTo({ top: 0, left: 0, behavior: 'instant' })
     next()
   },
 
-  // ✅ ADD THIS - Reset scroll when route changes within same component
   beforeRouteUpdate(to, from, next) {
     window.scrollTo({ top: 0, left: 0, behavior: 'instant' })
     next()
@@ -275,7 +325,6 @@ export default {
   },
 
   mounted() {
-    // ✅ Force scroll to top when component mounts
     window.scrollTo({ top: 0, left: 0, behavior: 'instant' })
     
     this.loggedInUserId = Number(localStorage.getItem("user_id")) || 0
@@ -485,13 +534,10 @@ export default {
           await this.checkMatchStatus()
           this.loading = false
           
-          // ✅ Scroll to top after profile loads (multiple ways to ensure it works)
           this.$nextTick(() => {
             window.scrollTo({ top: 0, left: 0, behavior: 'instant' })
-            // Also try scrolling the main container
             const app = document.querySelector('.dating-app')
             if (app) app.scrollTop = 0
-            // Also try scrolling body
             document.body.scrollTop = 0
             document.documentElement.scrollTop = 0
           })
@@ -595,23 +641,240 @@ export default {
 .toast-slide-enter-active, .toast-slide-leave-active { transition: all 0.3s ease; }
 .toast-slide-enter, .toast-slide-leave-to { opacity: 0; transform: translateX(-50%) translateY(-20px); }
 
-/* ========== SKELETON ========== */
-.skeleton-wrapper { background: #faf8f9; min-height: 100vh; }
-.skeleton-hero { height: 350px; background: linear-gradient(135deg, #e0e0e0, #f0f0f0); }
-.skeleton-card { background: white; border-radius: 32px; margin: -40px 16px 0; padding: 24px; }
-.skeleton-avatar { width: 80px; height: 80px; border-radius: 50%; margin: 0 auto 16px; background: #e0e0e0; }
-.skeleton-line { height: 14px; background: #e0e0e0; border-radius: 8px; margin: 0 auto 12px; }
-.w-50 { width: 50%; } .w-35 { width: 35%; }
-.skeleton-stats { display: flex; justify-content: space-around; margin: 24px 0; }
-.skeleton-stat { width: 60px; height: 40px; background: #e0e0e0; border-radius: 12px; }
-.skeleton-buttons { display: flex; gap: 12px; margin-bottom: 24px; }
-.skeleton-btn { flex: 1; height: 48px; background: #e0e0e0; border-radius: 40px; }
-.skeleton-bio { height: 80px; background: #e0e0e0; border-radius: 20px; margin-bottom: 20px; }
-.skeleton-habits { height: 50px; background: #e0e0e0; border-radius: 20px; margin-bottom: 20px; }
-.skeleton-gallery { display: flex; gap: 10px; }
-.skeleton-img { flex: 1; height: 110px; background: #e0e0e0; border-radius: 16px; }
-.shimmer { background: linear-gradient(90deg, #e0e0e0 25%, #f0f0f0 50%, #e0e0e0 75%); background-size: 200% 100%; animation: shimmer 1.5s infinite; }
-@keyframes shimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
+/* ========== SKELETON LOADER - EXACT MATCH TO PROFILE LAYOUT ========== */
+.skeleton-wrapper {
+  background: #ffffff;
+  min-height: 100vh;
+}
+
+/* Hero Section Skeleton */
+.skeleton-hero-section {
+  height: 420px;
+  background: linear-gradient(135deg, #e0e0e0 0%, #d0d0d0 100%);
+  position: relative;
+  border-radius: 0 0 48px 48px;
+  overflow: hidden;
+}
+.skeleton-hero-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(180deg, rgba(0,0,0,0.2) 0%, rgba(0,0,0,0.5) 60%, rgba(0,0,0,0.7) 100%);
+}
+.skeleton-hero-back-btn {
+  position: absolute;
+  top: 50px;
+  left: 20px;
+  width: 40px;
+  height: 40px;
+  background: rgba(0,0,0,0.3);
+  border-radius: 30px;
+}
+.skeleton-hero-badge {
+  position: absolute;
+  top: 50px;
+  right: 20px;
+  width: 90px;
+  height: 34px;
+  background: rgba(0,0,0,0.3);
+  border-radius: 30px;
+}
+.skeleton-hero-info {
+  position: absolute;
+  bottom: 70px;
+  left: 0;
+  right: 0;
+  padding: 0 24px;
+}
+.skeleton-hero-name {
+  width: 180px;
+  height: 36px;
+  background: rgba(255,255,255,0.3);
+  border-radius: 12px;
+  margin-bottom: 12px;
+}
+.skeleton-hero-location {
+  width: 120px;
+  height: 18px;
+  background: rgba(255,255,255,0.3);
+  border-radius: 8px;
+  margin-bottom: 10px;
+}
+.skeleton-hero-quote {
+  width: 200px;
+  height: 16px;
+  background: rgba(255,255,255,0.3);
+  border-radius: 8px;
+}
+
+/* Profile Card Skeleton */
+.skeleton-profile-card {
+  background: white;
+  border-radius: 40px;
+  margin: -30px 16px 20px;
+  padding: 24px 20px;
+  position: relative;
+  z-index: 15;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+}
+
+/* Stats Row Skeleton */
+.skeleton-stats-row {
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  background: #f8f9fc;
+  border-radius: 60px;
+  padding: 16px 20px;
+  margin-bottom: 24px;
+}
+.skeleton-stat-item {
+  flex: 1;
+  text-align: center;
+}
+.skeleton-stat-value {
+  width: 50px;
+  height: 28px;
+  background: #e8e8e8;
+  border-radius: 8px;
+  margin: 0 auto 6px;
+}
+.skeleton-stat-label {
+  width: 50px;
+  height: 12px;
+  background: #e8e8e8;
+  border-radius: 6px;
+  margin: 0 auto;
+}
+.skeleton-stat-divider {
+  width: 1px;
+  height: 35px;
+  background: #e0e0e0;
+}
+
+/* Buttons Row Skeleton */
+.skeleton-buttons-row {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 28px;
+}
+.skeleton-btn {
+  flex: 1;
+  height: 48px;
+  background: #e8e8e8;
+  border-radius: 12px;
+}
+
+/* About Section Skeleton */
+.skeleton-about-section {
+  margin-bottom: 28px;
+}
+.skeleton-section-title {
+  width: 80px;
+  height: 20px;
+  background: #e8e8e8;
+  border-radius: 8px;
+  margin-bottom: 16px;
+}
+.skeleton-about-text {
+  height: 80px;
+  background: #f0f0f0;
+  border-radius: 24px;
+  margin-bottom: 16px;
+}
+.skeleton-info-grid {
+  display: flex;
+  gap: 12px;
+}
+.skeleton-info-item {
+  flex: 1;
+  height: 70px;
+  background: #f0f0f0;
+  border-radius: 20px;
+}
+
+/* Habits Section Skeleton */
+.skeleton-habits-section {
+  margin-bottom: 28px;
+}
+.skeleton-habits-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.skeleton-habit-pill {
+  width: 80px;
+  height: 38px;
+  background: #f0f0f0;
+  border-radius: 40px;
+}
+
+/* Gallery Section Skeleton */
+.skeleton-gallery-section {
+  margin-bottom: 20px;
+}
+.skeleton-gallery-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+.skeleton-gallery-item {
+  background: #f0f0f0;
+  border-radius: 18px;
+  aspect-ratio: 1;
+}
+.skeleton-gallery-item.grid-span-2 {
+  grid-column: span 2;
+  aspect-ratio: 16/10;
+}
+
+/* Bottom Action Bar Skeleton */
+.skeleton-bottom-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  max-width: 480px;
+  margin: 0 auto;
+  display: flex;
+  gap: 16px;
+  padding: 16px 24px;
+  background: rgba(255,255,255,0.96);
+  backdrop-filter: blur(20px);
+  border-top: 1px solid rgba(255,77,109,0.15);
+  z-index: 100;
+}
+.skeleton-action-btn {
+  flex: 1;
+  height: 50px;
+  background: #e8e8e8;
+  border-radius: 12px;
+}
+
+/* Shimmer Animation */
+.shimmer {
+  background: linear-gradient(
+    90deg,
+    #e0e0e0 0%,
+    #f0f0f0 50%,
+    #e0e0e0 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+/* ========== END SKELETON STYLES ========== */
 
 /* ========== HERO SECTION ========== */
 .hero-section {
@@ -698,21 +961,6 @@ export default {
   margin-top: 10px;
   opacity: 0.9;
 }
-.hero-wave {
-  position: absolute;
-  bottom: -1px;
-  left: 0;
-  width: 100%;
-  line-height: 0;
-  z-index: 10;
-}
-.hero-wave svg {
-  width: 100%;
-  height: 50px;
-}
-.hero-wave path {
-  fill: white;
-}
 
 /* ========== PROFILE CARD ========== */
 .profile-card {
@@ -752,7 +1000,7 @@ export default {
   justify-content: center;
   gap: 8px;
   padding: 14px 0;
-  border-radius: 50px;
+  border-radius: 10px;
   font-weight: 600;
   font-size: 14px;
   border: none;
@@ -804,7 +1052,7 @@ export default {
 .info-grid {
   display: flex;
   gap: 12px;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
 }
 .info-item {
   flex: 1;
@@ -839,6 +1087,7 @@ export default {
 .gallery-section { margin-bottom: 20px; }
 .gallery-count { margin-left: auto; font-size: 11px; color: #aaa; }
 .gallery-grid {
+  margin-bottom: 15%;
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 8px;
@@ -900,7 +1149,7 @@ export default {
   justify-content: center;
   gap: 8px;
   padding: 14px 0;
-  border-radius: 50px;
+  border-radius: 10px;
   font-weight: 700;
   font-size: 14px;
   border: none;

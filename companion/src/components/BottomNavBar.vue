@@ -59,6 +59,7 @@ export default {
   border-top: 1px solid rgba(255, 77, 109, 0.2);
   z-index: 100;
   box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.1);
+  display: none;
 }
 
 .nav-item {
@@ -126,6 +127,7 @@ export default {
 @media (max-width: 480px) {
   .bottom-nav-bar {
     height: 90px;
+    display: none;
   }
 
   .nav-item {
@@ -142,6 +144,7 @@ export default {
 @media (max-width: 360px) {
   .bottom-nav-bar {
     height: 80px;
+    display: none;
   }
 
   .nav-item {
