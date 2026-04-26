@@ -1,13 +1,13 @@
 {
   "project_info": {
-    "project_number": "675454563061",
-    "project_id": "heartlink-b120d",
-    "storage_bucket": "heartlink-b120d.firebasestorage.app"
+    "project_number": "72894412463",
+    "project_id": "heartlink-datingapp",
+    "storage_bucket": "heartlink-datingapp.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:675454563061:android:39ab3c8e9f918b789e0bbc",
+        "mobilesdk_app_id": "1:72894412463:android:87cb56ee6f374d5c48065a",
         "android_client_info": {
           "package_name": "com.heartlink.app"
         }
@@ -15,7 +15,7 @@
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyDYxIWqWcTGQbRMtyVnRmjPcGJt4GK8mm8"
+          "current_key": "AIzaSyClTbcq3JUQG5JNnHi8wX3BJcjJBHY-HVg"
         }
       ],
       "services": {

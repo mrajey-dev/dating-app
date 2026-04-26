@@ -111,6 +111,7 @@
 </template>
 
 <script>
+import { PushNotifications } from '@capacitor/push-notifications';
 import { useNotificationStore } from '@/stores/notification'
 import { useRouter } from 'vue-router'
 import { onMounted, onUnmounted, ref, watch } from 'vue'
@@ -119,11 +120,13 @@ import { App as CapacitorApp } from '@capacitor/app'
 import { StatusBar, Style } from '@capacitor/status-bar';
 import { Capacitor } from '@capacitor/core';
 
+// ✅ STATUS BAR FIX
 if (Capacitor.isNativePlatform()) {
   StatusBar.setOverlaysWebView({ overlay: false });
-  StatusBar.setBackgroundColor({ color: '#ffffff' }); // your theme color
-  StatusBar.setStyle({ style: Style.Light }); // Light = white text
+  StatusBar.setBackgroundColor({ color: '#ffffff' });
+  StatusBar.setStyle({ style: Style.Dark }); // ✅ FIXED
 }
+
 export default {
   components: { AppToast },
   setup() {
@@ -148,11 +151,7 @@ export default {
 
     const toggleSidebar = () => {
       sidebarOpen.value = !sidebarOpen.value
-      if (sidebarOpen.value) {
-        document.body.style.overflow = 'hidden'
-      } else {
-        document.body.style.overflow = ''
-      }
+      document.body.style.overflow = sidebarOpen.value ? 'hidden' : ''
     }
 
     const closeSidebar = () => {
@@ -161,8 +160,7 @@ export default {
     }
 
     const logout = () => {
-      localStorage.removeItem('token')
-      localStorage.removeItem('user')
+      localStorage.clear()
       router.push('/auth')
       closeSidebar()
     }
@@ -170,7 +168,7 @@ export default {
     const getUserInfo = () => {
       const user = JSON.parse(localStorage.getItem('user') || '{}')
       userName.value = user.first_name ? `${user.first_name} ${user.last_name || ''}` : 'Guest User'
-      userEmail.value = user.email || 'user@example.com'
+      userEmail.value = user.email || ''
       userAvatar.value = user.profile_photo || ''
     }
 
@@ -181,19 +179,67 @@ export default {
     }
 
     onMounted(() => {
+
+      // 🔔 PUSH NOTIFICATIONS SETUP
+      PushNotifications.requestPermissions().then(result => {
+        if (result.receive === 'granted') {
+          PushNotifications.register();
+        }
+      });
+
+      // 🔑 TOKEN
+      PushNotifications.addListener('registration', (token) => {
+        console.log('FCM Token:', token.value);
+
+        fetch('https://your-api.com/save-token', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + localStorage.getItem('token')
+          },
+          body: JSON.stringify({ fcm_token: token.value })
+        }).catch(() => {});
+      });
+
+      // 📩 FOREGROUND NOTIFICATION
+      PushNotifications.addListener('pushNotificationReceived', (notification) => {
+        console.log('Received:', notification);
+
+        notificationStore.count += 1
+        notificationStore.seen = false
+
+        if (notificationSound.value) {
+          notificationSound.value.play().catch(() => {})
+        }
+      });
+
+      // 👆 CLICK ACTION
+      PushNotifications.addListener('pushNotificationActionPerformed', (action) => {
+        const data = action.notification.data || {}
+
+        if (data.type === 'message') {
+          router.push(`/chat/${data.user_id}`)
+        } else if (data.type === 'like') {
+          router.push('/notifications')
+        } else if (data.type === 'follow') {
+          router.push('/profile')
+        } else {
+          router.push('/notifications')
+        }
+      });
+
+      // 🔄 APP INIT
       loading.value = true
       getUserInfo()
-      // Only fetch notification count once on mount
+
       notificationStore.fetchCount().finally(() => loading.value = false)
       previousCount.value = notificationStore.count
       notificationStore.seen = false
 
-      // Removed: intervalId = setInterval(() => { notificationStore.fetchCount() }, 2000)
-
       window.addEventListener('scroll', handleScroll)
 
-      // Android back button handling
-      CapacitorApp.addListener('backButton', ({ canGoBack }) => {
+      // 🔙 BACK BUTTON
+      CapacitorApp.addListener('backButton', () => {
         if (sidebarOpen.value) {
           closeSidebar()
         } else if (router.currentRoute.value.path !== '/') {
@@ -204,9 +250,7 @@ export default {
           } else {
             backPressedOnce = true
             showExitToast()
-            setTimeout(() => {
-              backPressedOnce = false
-            }, 2000)
+            setTimeout(() => backPressedOnce = false, 2000)
           }
         }
       })
@@ -220,8 +264,6 @@ export default {
       setTimeout(() => toast.remove(), 2000)
     }
 
-    // Removed the automatic watch that played sound when count changed
-    // This will only play sound when manually refreshed or when coming from a page that updates the count
     watch(
       () => notificationStore.count,
       (newCount, oldCount) => {
@@ -234,8 +276,8 @@ export default {
     )
 
     onUnmounted(() => {
-      // Removed: if (intervalId) clearInterval(intervalId)
       window.removeEventListener('scroll', handleScroll)
+      PushNotifications.removeAllListeners() // ✅ important
     })
 
     return {

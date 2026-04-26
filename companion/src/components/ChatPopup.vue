@@ -50,14 +50,18 @@
       </div>
 
       <!-- 3 Dots Menu -->
-      <div class="chat-menu">
-        <span class="menu-icon" @click="toggleMenu">⋮</span>
-        <div v-if="showMenu" class="menu-dropdown">
-          <div class="menu-item" @click="openWallpaperSelector">
-            Change Wallpaper
-          </div>
-        </div>
-      </div>
+      <!-- 3 Dots Menu -->
+<div class="chat-menu">
+  <span class="menu-icon" @click="toggleMenu">⋮</span>
+  <div v-if="showMenu" class="menu-dropdown">
+    <div class="menu-item" @click="openWallpaperSelector">
+      Change Wallpaper
+    </div>
+    <div class="menu-item delete-chat" @click="confirmClearChat">
+      Clear All Chat
+    </div>
+  </div>
+</div>
         
       <!-- ================= INCOMING CALL ================= -->
       <div v-if="showIncomingCall" class="incoming-call">
@@ -396,6 +400,154 @@ export default {
     }
   },
   methods: {
+     confirmClearChat() {
+    // Close the menu first
+    this.showMenu = false;
+    
+    // Show confirmation dialog
+    const confirmed = confirm(
+      `⚠️ Clear all messages with ${this.localPerson.first_name}?\n\n` 
+    );
+    
+    if (confirmed) {
+      this.clearAllChat();
+    }
+  },
+  
+  async clearAllChat() {
+    try {
+      const token = localStorage.getItem("token");
+      
+      // Show loading toast
+      this.showCustomToast("Clearing chat history...");
+      
+      // 1. Delete messages from server
+      await axios.delete(
+        `https://companion.ajaywatpade.in/api/messages/clear/${this.person.id}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      
+      // 2. Clear local messages array
+      this.messages = [];
+      
+      // 3. Delete all images from IndexedDB for this conversation
+      const conversationId = `${Math.min(Number(this.userId), Number(this.person.id))}_${Math.max(Number(this.userId), Number(this.person.id))}`;
+      
+      if (this.imageDB) {
+        // Delete all messages from local storage
+        const transaction = this.imageDB.transaction(['messages'], 'readwrite');
+        const store = transaction.objectStore('messages');
+        const index = store.index('conversationId');
+        const request = index.getAllKeys(conversationId);
+        
+        request.onsuccess = () => {
+          const keys = request.result;
+          keys.forEach(key => {
+            store.delete(key);
+          });
+        };
+        
+        // Delete all images from local storage
+        const imageTransaction = this.imageDB.transaction(['images'], 'readwrite');
+        const imageStore = imageTransaction.objectStore('images');
+        const imageIndex = imageStore.index('conversationId');
+        const imageRequest = imageIndex.getAllKeys(conversationId);
+        
+        imageRequest.onsuccess = () => {
+          const imageKeys = imageRequest.result;
+          imageKeys.forEach(key => {
+            // Revoke blob URLs before deleting
+            const getRequest = imageStore.get(key);
+            getRequest.onsuccess = () => {
+              if (getRequest.result && getRequest.result.url) {
+                URL.revokeObjectURL(getRequest.result.url);
+              }
+              imageStore.delete(key);
+            };
+            getRequest.onerror = () => {
+              imageStore.delete(key);
+            };
+          });
+        };
+      }
+      
+      // 4. Show success message
+      this.showCustomToast("Chat cleared!");
+      
+      // 5. Scroll to top
+      this.$nextTick(() => {
+        const container = this.$refs.chatBody;
+        if (container) {
+          container.scrollTop = 0;
+        }
+      });
+      
+    } catch (err) {
+      console.error("Failed to clear chat:", err);
+      
+      if (err.response?.status === 403) {
+        this.showCustomToast("You don't have permission to clear this chat");
+      } else if (err.response?.status === 404) {
+        // If server endpoint doesn't exist, fall back to local-only clear
+        this.clearChatLocally();
+      } else {
+        this.showCustomToast("Failed to clear chat. Please try again.");
+      }
+    }
+  },
+  
+  // Fallback method for local-only clearing (if server endpoint isn't ready)
+  async clearChatLocally() {
+    try {
+      const conversationId = `${Math.min(Number(this.userId), Number(this.person.id))}_${Math.max(Number(this.userId), Number(this.person.id))}`;
+      
+      // Clear local messages array
+      this.messages = [];
+      
+      // Delete all messages from local storage
+      if (this.imageDB) {
+        const transaction = this.imageDB.transaction(['messages'], 'readwrite');
+        const store = transaction.objectStore('messages');
+        const index = store.index('conversationId');
+        const request = index.getAllKeys(conversationId);
+        
+        request.onsuccess = () => {
+          const keys = request.result;
+          keys.forEach(key => {
+            store.delete(key);
+          });
+        };
+        
+        // Delete all images
+        const imageTransaction = this.imageDB.transaction(['images'], 'readwrite');
+        const imageStore = imageTransaction.objectStore('images');
+        const imageIndex = imageStore.index('conversationId');
+        const imageRequest = imageIndex.getAllKeys(conversationId);
+        
+        imageRequest.onsuccess = () => {
+          const imageKeys = imageRequest.result;
+          imageKeys.forEach(key => {
+            const getRequest = imageStore.get(key);
+            getRequest.onsuccess = () => {
+              if (getRequest.result && getRequest.result.url) {
+                URL.revokeObjectURL(getRequest.result.url);
+              }
+              imageStore.delete(key);
+            };
+            getRequest.onerror = () => {
+              imageStore.delete(key);
+            };
+          });
+        };
+      }
+      
+      this.showCustomToast("Chat cleared locally!");
+      
+    } catch (err) {
+      console.error("Failed to clear chat locally:", err);
+      this.showCustomToast("Failed to clear chat");
+    }
+  },
     previewImage(imageUrl) {
       this.previewImageUrl = imageUrl;
       this.showImagePreview = true;
@@ -2478,4 +2630,5 @@ fixImageUrl(url) {
     max-height: 150px;
   }
 }
+
 </style>
