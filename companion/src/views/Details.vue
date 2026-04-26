@@ -164,7 +164,15 @@
           </div>
           <div class="info-grid">
             <div class="info-item" v-if="person.dob">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ff4d6d" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ff4d6d" stroke-width="2">
+  <path d="M12 2L14 6H10L12 2Z" fill="#ff4d6d" stroke="none"/>
+  <rect x="4" y="10" width="16" height="10" rx="1" fill="#ff4d6d" stroke="none"/>
+  <rect x="6" y="8" width="12" height="3" rx="0.5" fill="#ff9eb5" stroke="none"/>
+  <circle cx="8" cy="14" r="1" fill="white"/>
+  <circle cx="12" cy="14" r="1" fill="white"/>
+  <circle cx="16" cy="14" r="1" fill="white"/>
+  <path d="M7 20L8 17M17 20L16 17M12 20V17" stroke="#ff4d6d" stroke-width="1.5" stroke-linecap="round"/>
+</svg>
               <span>Born</span>
               <strong>{{ formatDate(person.dob) }}</strong>
             </div>
@@ -1038,6 +1046,7 @@ export default {
   align-items: center;
   gap: 10px;
   margin-bottom: 16px;
+  display: none;
 }
 .section-title svg { flex-shrink: 0; }
 .section-title h3 { font-size: 16px; font-weight: 700; color: #1a1a2e; }
@@ -1047,6 +1056,7 @@ export default {
   padding: 18px;
   margin-bottom: 16px;
   border: 1px solid #ffe2ea;
+  display: none;
 }
 .about-text p { font-size: 14px; line-height: 1.6; color: #555; }
 .info-grid {

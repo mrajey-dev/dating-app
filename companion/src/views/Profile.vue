@@ -1,6 +1,6 @@
 <template>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
-  <div class="profile-page">
+  <div class="profile-page" v-if="isLoggedIn">
     <!-- Animated Background -->
     <div class="animated-bg">
       <div class="gradient-bg"></div>
@@ -43,9 +43,6 @@
                 {{ user.first_name }} {{ user.last_name }}
                 <img v-if="user.verified_badge" src="/verified1.png" alt="Verified" class="verified-icon" />
               </h2>
-              <button class="icon-btn edit-btn" @click="toggleEditForm">
-                <i class="fa fa-edit"></i>
-              </button>
             </div>
 
             <div class="profile-stats">
@@ -71,21 +68,49 @@
           <p>{{ user.subtitle }}</p>
         </div>
 
-        <!-- Introduction Video -->
-        <div class="video-section">
-          <h3 class="section-title">
-            <i class="fa fa-video-camera"></i> Introduction Video
-          </h3>
-          <div class="video-container">
-            <video v-if="previewVideo" :src="previewVideo" controls class="intro-video"></video>
-            <label class="upload-video-btn" v-else>
-              <i class="fa fa-cloud-upload"></i> Upload Introduction Video
-              <input type="file" accept="video/*" @change="onVideoSelect" hidden />
-            </label>
-            <label class="upload-video-btn small" v-if="previewVideo">
-              <i class="fa fa-exchange"></i> Change Video
-              <input type="file" accept="video/*" @change="onVideoSelect" hidden />
-            </label>
+        <!-- Tab Navigation -->
+        <div class="tab-navigation">
+          <button 
+            class="tab-btn" 
+            :class="{ active: activeTab === 'personal' }"
+            @click="activeTab = 'personal'"
+          >
+            <i class="fa fa-user-circle"></i> Personal Details
+          </button>
+          <button 
+            class="tab-btn" 
+            :class="{ active: activeTab === 'professional' }"
+            @click="activeTab = 'professional'"
+          >
+            <i class="fa fa-briefcase"></i> Professional Details
+          </button>
+        </div>
+
+        <!-- Introduction Video & Edit Profile Row -->
+        <div class="action-buttons-row">
+          <div class="video-section">
+            <h3 class="section-title">
+              <i class="fa fa-video-camera"></i> Introduction Video
+            </h3>
+            <div class="video-container">
+              <video v-if="previewVideo" :src="previewVideo" controls class="intro-video"></video>
+              <label class="upload-video-btn" v-else>
+                <i class="fa fa-cloud-upload"></i> Upload Introduction Video
+                <input type="file" accept="video/*" @change="onVideoSelect" hidden />
+              </label>
+              <label class="upload-video-btn small" v-if="previewVideo">
+                <i class="fa fa-exchange"></i> Change Video
+                <input type="file" accept="video/*" @change="onVideoSelect" hidden />
+              </label>
+            </div>
+          </div>
+
+          <!-- Edit Profile Button aligned in same row -->
+          <div class="edit-profile-section">
+            <button class="edit-profile-btn" @click="toggleEditForm">
+              <i class="fa fa-edit"></i>
+              <span>{{ activeTab === 'personal' ? 'Edit Personal Details' : 'Edit Professional Details' }}</span>
+            </button>
           </div>
         </div>
 
@@ -112,10 +137,10 @@
           </div>
         </div>
 
-        <!-- Edit Form with Slide Animation -->
-        <div ref="editFormContainer" class="edit-form-container" v-show="showPersonalDetails">
+        <!-- Personal Details Edit Form -->
+        <div ref="editFormContainer" class="edit-form-container" v-show="showPersonalDetails && activeTab === 'personal'">
           <div class="form-header">
-            <h3><i class="fa fa-user-circle"></i> Edit Profile</h3>
+            <h3><i class="fa fa-user-circle"></i> Edit Personal Details</h3>
             <button class="close-form" @click="closeEditForm">✕</button>
           </div>
           <form class="profile-form" @submit.prevent="updateProfile">
@@ -228,13 +253,307 @@
 
             <div class="form-actions">
               <button type="submit" class="btn-save">
-                <i class="fa fa-save"></i> Save Changes
+                <i class="fa fa-save"></i> Save
               </button>
               <button type="button" class="btn-cancel-form" @click="closeEditForm">
                 <i class="fa fa-times"></i> Cancel
               </button>
             </div>
           </form>
+        </div>
+
+        <!-- Professional Details Edit Form -->
+        <div ref="professionalFormContainer" class="edit-form-container" v-show="showPersonalDetails && activeTab === 'professional'">
+          <div class="form-header">
+            <h3><i class="fa fa-briefcase"></i> Edit Professional Details</h3>
+            <button class="close-form" @click="closeEditForm">✕</button>
+          </div>
+          <form class="profile-form" @submit.prevent="updateProfessionalDetails">
+            <!-- Job Title -->
+            <div class="form-group">
+              <label><i class="fa fa-tag"></i> Job Title</label>
+              <input v-model="professional.job_title" placeholder="e.g., Software Engineer, Marketing Manager" />
+            </div>
+
+            <!-- Company / Organization -->
+            <div class="form-group">
+              <label><i class="fa fa-building-o"></i> Company / Organization</label>
+              <input v-model="professional.company" placeholder="e.g., Google, Microsoft, Self-employed" />
+            </div>
+
+            <!-- Industry -->
+            <div class="form-group">
+              <label><i class="fa fa-industry"></i> Industry</label>
+              <select v-model="professional.industry">
+                <option value="">Select Industry</option>
+                <option>Technology / IT</option>
+                <option>Healthcare / Medical</option>
+                <option>Finance / Banking</option>
+                <option>Education / Training</option>
+                <option>Retail / E-commerce</option>
+                <option>Manufacturing</option>
+                <option>Real Estate</option>
+                <option>Hospitality / Tourism</option>
+                <option>Media / Entertainment</option>
+                <option>Transportation / Logistics</option>
+                <option>Agriculture</option>
+                <option>Government / Public Sector</option>
+                <option>Non-Profit / NGO</option>
+                <option>Other</option>
+              </select>
+            </div>
+
+            <div class="form-row">
+              <!-- Employment Type -->
+              <div class="form-group">
+                <label><i class="fa fa-clock-o"></i> Employment Type</label>
+                <select v-model="professional.employment_type">
+                  <option value="">Select Type</option>
+                  <option>Full-time</option>
+                  <option>Part-time</option>
+                  <option>Self-employed</option>
+                  <option>Freelance</option>
+                  <option>Contract</option>
+                  <option>Internship</option>
+                  <option>Remote</option>
+                  <option>Hybrid</option>
+                  <option>Not employed</option>
+                  <option>Student</option>
+                  <option>Retired</option>
+                </select>
+              </div>
+
+              <!-- Experience Level -->
+              <div class="form-group">
+                <label><i class="fa fa-line-chart"></i> Experience Level</label>
+                <select v-model="professional.experience_level">
+                  <option value="">Select Experience</option>
+                  <option>Entry Level (0-2 years)</option>
+                  <option>Junior (2-4 years)</option>
+                  <option>Mid Level (5-8 years)</option>
+                  <option>Senior (9-12 years)</option>
+                  <option>Executive (13+ years)</option>
+                  <option>Student</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="form-row">
+              <!-- Work Location -->
+              <div class="form-group">
+                <label><i class="fa fa-map-marker"></i> Work Location</label>
+                <input v-model="professional.work_location" placeholder="City, State or Remote" />
+              </div>
+
+              <!-- Salary Range -->
+              <div class="form-group">
+                <label><i class="fa fa-money"></i> Annual Salary Range</label>
+                <select v-model="professional.salary_range">
+                  <option value="">Select Salary Range</option>
+                  <option>Under $30,000</option>
+                  <option>$30,000 - $50,000</option>
+                  <option>$50,001 - $75,000</option>
+                  <option>$75,001 - $100,000</option>
+                  <option>$100,001 - $150,000</option>
+                  <option>$150,001 - $200,000</option>
+                  <option>Over $200,000</option>
+                  <option>Prefer not to say</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Skills -->
+            <div class="form-group">
+              <label><i class="fa fa-code"></i> Skills</label>
+              <input v-model="skillsText" placeholder="Enter skills separated by commas (e.g., JavaScript, Project Management, Leadership)" />
+              <div class="habits-preview">
+                <span v-for="(skill, i) in skillsArray" :key="i" class="habit-chip">
+                  <i class="fa fa-check-circle"></i> {{ skill }}
+                </span>
+              </div>
+            </div>
+
+            <div class="form-row">
+              <!-- Highest Qualification -->
+              <div class="form-group">
+                <label><i class="fa fa-graduation-cap"></i> Highest Qualification</label>
+                <select v-model="professional.qualification">
+                  <option value="">Select Qualification</option>
+                  <option>High School / Secondary</option>
+                  <option>Diploma</option>
+                  <option>Bachelor's Degree</option>
+                  <option>Master's Degree</option>
+                  <option>Doctorate (PhD)</option>
+                  <option>Professional Certification</option>
+                  <option>Trade School</option>
+                  <option>Other</option>
+                </select>
+              </div>
+
+              <!-- University / Institute -->
+              <div class="form-group">
+                <label><i class="fa fa-university"></i> University / Institute</label>
+                <input v-model="professional.university" placeholder="Name of your university or institute" />
+              </div>
+            </div>
+
+            <!-- Languages Known -->
+            <div class="form-group">
+              <label><i class="fa fa-language"></i> Languages Known</label>
+              <input v-model="languagesText" placeholder="Enter languages separated by commas (e.g., English, Spanish, French)" />
+              <div class="habits-preview">
+                <span v-for="(lang, i) in languagesArray" :key="i" class="habit-chip">
+                  <i class="fa fa-globe"></i> {{ lang }}
+                </span>
+              </div>
+            </div>
+
+            <!-- Certifications -->
+            <div class="form-group">
+              <label><i class="fa fa-certificate"></i> Certifications (Optional)</label>
+              <textarea v-model="professional.certifications" rows="2" placeholder="List your certifications, one per line"></textarea>
+            </div>
+
+            <!-- Professional Summary -->
+            <div class="form-group">
+              <label><i class="fa fa-file-text-o"></i> Professional Summary</label>
+              <textarea v-model="professional.professional_summary" rows="3" placeholder="Brief summary of your professional background, achievements, and career goals..."></textarea>
+            </div>
+
+            <!-- Portfolio / Website -->
+            <div class="form-group">
+              <label><i class="fa fa-link"></i> Portfolio / Website</label>
+              <input v-model="professional.portfolio_url" placeholder="https://yourportfolio.com or LinkedIn URL" type="url" />
+            </div>
+
+            <div class="form-actions">
+              <button type="submit" class="btn-save">
+                <i class="fa fa-save"></i> Save
+              </button>
+              <button type="button" class="btn-cancel-form" @click="closeEditForm">
+                <i class="fa fa-times"></i> Cancel
+              </button>
+            </div>
+          </form>
+        </div>
+
+        <!-- Professional Details Display Card (when not editing) -->
+        <div class="professional-display" v-if="!showPersonalDetails && activeTab === 'professional' && hasProfessionalData">
+          <div class="display-card">
+            <div class="display-header">
+              <i class="fa fa-briefcase"></i>
+              <h4>Professional Information</h4>
+            </div>
+            <div class="display-content">
+              <div class="info-row" v-if="professional.job_title">
+                <i class="fa fa-tag"></i>
+                <div class="info-text">
+                  <span class="info-label">Job Title:</span>
+                  <span class="info-value">{{ professional.job_title }}</span>
+                </div>
+              </div>
+              <div class="info-row" v-if="professional.company">
+                <i class="fa fa-building-o"></i>
+                <div class="info-text">
+                  <span class="info-label">Company:</span>
+                  <span class="info-value">{{ professional.company }}</span>
+                </div>
+              </div>
+              <div class="info-row" v-if="professional.industry">
+                <i class="fa fa-industry"></i>
+                <div class="info-text">
+                  <span class="info-label">Industry:</span>
+                  <span class="info-value">{{ professional.industry }}</span>
+                </div>
+              </div>
+              <div class="info-row" v-if="professional.employment_type">
+                <i class="fa fa-clock-o"></i>
+                <div class="info-text">
+                  <span class="info-label">Employment Type:</span>
+                  <span class="info-value">{{ professional.employment_type }}</span>
+                </div>
+              </div>
+              <div class="info-row" v-if="professional.experience_level">
+                <i class="fa fa-line-chart"></i>
+                <div class="info-text">
+                  <span class="info-label">Experience:</span>
+                  <span class="info-value">{{ professional.experience_level }}</span>
+                </div>
+              </div>
+              <div class="info-row" v-if="professional.work_location">
+                <i class="fa fa-map-marker"></i>
+                <div class="info-text">
+                  <span class="info-label">Work Location:</span>
+                  <span class="info-value">{{ professional.work_location }}</span>
+                </div>
+              </div>
+              <div class="info-row" v-if="professional.salary_range && professional.salary_range !== 'Prefer not to say'">
+                <i class="fa fa-money"></i>
+                <div class="info-text">
+                  <span class="info-label">Salary Range:</span>
+                  <span class="info-value">{{ professional.salary_range }}</span>
+                </div>
+              </div>
+              <div class="info-row skills-row" v-if="skillsArray.length">
+                <i class="fa fa-code"></i>
+                <div class="info-text">
+                  <span class="info-label">Skills:</span>
+                  <div class="skills-tags">
+                    <span v-for="skill in skillsArray" :key="skill" class="skill-tag">{{ skill }}</span>
+                  </div>
+                </div>
+              </div>
+              <div class="info-row" v-if="professional.qualification">
+                <i class="fa fa-graduation-cap"></i>
+                <div class="info-text">
+                  <span class="info-label">Qualification:</span>
+                  <span class="info-value">{{ professional.qualification }}</span>
+                </div>
+              </div>
+              <div class="info-row" v-if="professional.university">
+                <i class="fa fa-university"></i>
+                <div class="info-text">
+                  <span class="info-label">Institute:</span>
+                  <span class="info-value">{{ professional.university }}</span>
+                </div>
+              </div>
+              <div class="info-row" v-if="languagesArray.length">
+                <i class="fa fa-language"></i>
+                <div class="info-text">
+                  <span class="info-label">Languages:</span>
+                  <div class="skills-tags">
+                    <span v-for="lang in languagesArray" :key="lang" class="skill-tag">{{ lang }}</span>
+                  </div>
+                </div>
+              </div>
+              <div class="info-row" v-if="professional.certifications">
+                <i class="fa fa-certificate"></i>
+                <div class="info-text">
+                  <span class="info-label">Certifications:</span>
+                  <span class="info-value">{{ professional.certifications }}</span>
+                </div>
+              </div>
+              <div class="info-row" v-if="professional.professional_summary">
+                <i class="fa fa-file-text-o"></i>
+                <div class="info-text">
+                  <span class="info-label">Summary:</span>
+                  <span class="info-value summary-text">{{ professional.professional_summary }}</span>
+                </div>
+              </div>
+              <div class="info-row" v-if="professional.portfolio_url">
+                <i class="fa fa-link"></i>
+                <div class="info-text">
+                  <span class="info-label">Portfolio:</span>
+                  <a :href="professional.portfolio_url" target="_blank" class="portfolio-link">{{ professional.portfolio_url }}</a>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="empty-state" v-if="!hasProfessionalData">
+            <i class="fa fa-briefcase"></i>
+            <p>No professional details added yet.</p>
+            <p class="empty-hint">Click "Edit Professional Details" to add your work and education information.</p>
+          </div>
         </div>
 
       </div>
@@ -300,6 +619,14 @@
       </div>
     </div>
   </div>
+  
+  <!-- Loading or Redirect State -->
+  <div v-else class="auth-guard">
+    <div class="loading-spinner" v-if="isCheckingAuth">
+      <i class="fa fa-spinner fa-spin"></i>
+      <p>Checking authentication...</p>
+    </div>
+  </div>
 </template>
 
 <script>
@@ -310,10 +637,14 @@ import '@fortawesome/fontawesome-free/css/all.min.css'
 import BottomNavBar from '@/components/BottomNavBar.vue'
 
 export default {
+  name: 'ProfilePage',
   components: { BottomNavBar },
   data() {
     return {
+      isLoggedIn: false,
+      isCheckingAuth: true,
       showPersonalDetails: false,
+      activeTab: 'personal', // 'personal' or 'professional'
       previewVideo: null,
       lightboxOpen: false,
       lightboxIndex: 0,
@@ -360,7 +691,25 @@ export default {
         following: 0,
         is_online: true,
       },
+      professional: {
+        job_title: "",
+        company: "",
+        industry: "",
+        employment_type: "",
+        experience_level: "",
+        work_location: "",
+        salary_range: "",
+        skills: [],
+        qualification: "",
+        university: "",
+        languages: [],
+        certifications: "",
+        professional_summary: "",
+        portfolio_url: "",
+      },
       habitsText: "",
+      skillsText: "",
+      languagesText: "",
       fileUploads: {
         profile_photo: null,
         photo_gallery: [],
@@ -377,89 +726,162 @@ export default {
       today.setFullYear(today.getFullYear() - 18)
       return today.toISOString().split("T")[0]
     },
+    skillsArray() {
+      return this.skillsText.split(",").map(s => s.trim()).filter(s => s)
+    },
+    languagesArray() {
+      return this.languagesText.split(",").map(l => l.trim()).filter(l => l)
+    },
+    hasProfessionalData() {
+      return this.professional.job_title || 
+             this.professional.company || 
+             this.professional.industry || 
+             this.professional.employment_type ||
+             this.skillsArray.length ||
+             this.professional.qualification ||
+             this.languagesArray.length ||
+             this.professional.professional_summary
+    }
   },
   async mounted() {
-    // Scroll to top immediately when component mounts
-    this.scrollToTop()
-    
-    const storedUser = JSON.parse(localStorage.getItem("user"))
-    if (!storedUser) return
-
-    const profilePhoto = storedUser.profile_photo
-      ? storedUser.profile_photo.startsWith("http")
-        ? storedUser.profile_photo
-        : `https://companion.ajaywatpade.in/dating-backend/public/storage/${storedUser.profile_photo}`
-      : ""
-
-    if (storedUser.introduction_video) {
-      this.previewVideo = storedUser.introduction_video.startsWith("http")
-        ? storedUser.introduction_video
-        : `https://companion.ajaywatpade.in/dating-backend/public/storage/${storedUser.introduction_video}`
-    }
-
-    this.user = {
-      ...storedUser,
-      profile_photo: profilePhoto,
-      verified_badge: storedUser.verified_badge === 1 || storedUser.verified_badge === "1" || storedUser.verified_badge === true,
-      followers: Number(storedUser.followers_count || 0),
-      following: Number(storedUser.following_count || 0),
-    }
-
-    if (Array.isArray(storedUser.habits)) {
-      this.habitsText = storedUser.habits.join(", ")
-    } else if (typeof storedUser.habits === "string") {
-      try {
-        const parsed = JSON.parse(storedUser.habits)
-        if (Array.isArray(parsed)) this.habitsText = parsed.join(", ")
-        else this.habitsText = storedUser.habits
-      } catch (e) {
-        this.habitsText = storedUser.habits
-      }
-    }
-
-    if (storedUser.photo_gallery) {
-      let galleryArr = []
-      if (typeof storedUser.photo_gallery === "string") {
-        try {
-          galleryArr = JSON.parse(storedUser.photo_gallery)
-        } catch (e) {
-          galleryArr = []
-        }
-      } else if (Array.isArray(storedUser.photo_gallery)) {
-        galleryArr = storedUser.photo_gallery
-      }
-      this.previewPhoto.photo_gallery = galleryArr.map(p =>
-        p.startsWith("http") ? p : `https://companion.ajaywatpade.in/dating-backend/public/storage/${p.replace("gallery\\", "gallery/")}`
-      )
-      this.user.photo_gallery = galleryArr
-    }
+    this.checkAuthentication()
+    this.loadProfessionalData()
   },
   beforeRouteEnter(to, from, next) {
-    // For Vue Router - scroll to top before entering the route
     next(vm => {
-      vm.scrollToTop()
+      if (vm.isLoggedIn) {
+        vm.scrollToTop()
+      }
     })
   },
   beforeRouteUpdate(to, from, next) {
-    // For Vue Router - scroll to top when navigating within the same component
-    this.scrollToTop()
+    if (this.isLoggedIn) {
+      this.scrollToTop()
+    }
     next()
   },
   methods: {
-    // Scroll to top with smooth behavior
+    checkAuthentication() {
+      const token = localStorage.getItem("token")
+      const storedUser = localStorage.getItem("user")
+      
+      if (!token || !storedUser) {
+        this.isLoggedIn = false
+        this.isCheckingAuth = false
+        this.redirectToLogin()
+        return
+      }
+      
+      this.verifyTokenWithBackend(token)
+    },
+    
+    async verifyTokenWithBackend(token) {
+      try {
+        this.loadUserData()
+      } catch (error) {
+        console.error("Token verification failed:", error)
+        this.clearAuthAndRedirect()
+      }
+    },
+    
+    loadProfessionalData() {
+      const storedProfessional = localStorage.getItem("professional_details")
+      if (storedProfessional) {
+        const profData = JSON.parse(storedProfessional)
+        this.professional = { ...this.professional, ...profData }
+        this.skillsText = (profData.skills || []).join(", ")
+        this.languagesText = (profData.languages || []).join(", ")
+      }
+    },
+    
+    loadUserData() {
+      const storedUser = JSON.parse(localStorage.getItem("user"))
+      if (!storedUser) {
+        this.clearAuthAndRedirect()
+        return
+      }
+      
+      this.isLoggedIn = true
+      this.isCheckingAuth = false
+      
+      this.$nextTick(() => {
+        this.scrollToTop()
+      })
+      
+      const profilePhoto = storedUser.profile_photo
+        ? storedUser.profile_photo.startsWith("http")
+          ? storedUser.profile_photo
+          : `https://companion.ajaywatpade.in/dating-backend/public/storage/${storedUser.profile_photo}`
+        : ""
+
+      if (storedUser.introduction_video) {
+        this.previewVideo = storedUser.introduction_video.startsWith("http")
+          ? storedUser.introduction_video
+          : `https://companion.ajaywatpade.in/dating-backend/public/storage/${storedUser.introduction_video}`
+      }
+
+      this.user = {
+        ...storedUser,
+        profile_photo: profilePhoto,
+        verified_badge: storedUser.verified_badge === 1 || storedUser.verified_badge === "1" || storedUser.verified_badge === true,
+        followers: Number(storedUser.followers_count || 0),
+        following: Number(storedUser.following_count || 0),
+      }
+
+      if (Array.isArray(storedUser.habits)) {
+        this.habitsText = storedUser.habits.join(", ")
+      } else if (typeof storedUser.habits === "string") {
+        try {
+          const parsed = JSON.parse(storedUser.habits)
+          if (Array.isArray(parsed)) this.habitsText = parsed.join(", ")
+          else this.habitsText = storedUser.habits
+        } catch (e) {
+          this.habitsText = storedUser.habits
+        }
+      }
+
+      if (storedUser.photo_gallery) {
+        let galleryArr = []
+        if (typeof storedUser.photo_gallery === "string") {
+          try {
+            galleryArr = JSON.parse(storedUser.photo_gallery)
+          } catch (e) {
+            galleryArr = []
+          }
+        } else if (Array.isArray(storedUser.photo_gallery)) {
+          galleryArr = storedUser.photo_gallery
+        }
+        this.previewPhoto.photo_gallery = galleryArr.map(p =>
+          p.startsWith("http") ? p : `https://companion.ajaywatpade.in/dating-backend/public/storage/${p.replace("gallery\\", "gallery/")}`
+        )
+        this.user.photo_gallery = galleryArr
+      }
+    },
+    
+    clearAuthAndRedirect() {
+      localStorage.removeItem("token")
+      localStorage.removeItem("user")
+      this.isLoggedIn = false
+      this.isCheckingAuth = false
+      this.redirectToLogin()
+    },
+    
+    redirectToLogin() {
+      if (this.$router) {
+        this.$router.replace('/')
+      } else {
+        window.location.href = '/'
+      }
+    },
+    
     scrollToTop() {
-      // Use multiple methods to ensure scrolling works across different browsers and scenarios
       window.scrollTo({
         top: 0,
         left: 0,
         behavior: 'smooth'
       })
-      
-      // Fallback for older browsers
       document.documentElement.scrollTop = 0
       document.body.scrollTop = 0
-      
-      // Also scroll any scrollable containers
       const scrollableElements = document.querySelectorAll('.profile-page, .profile-container, .profile-card')
       scrollableElements.forEach(element => {
         if (element.scrollTop) {
@@ -468,7 +890,6 @@ export default {
       })
     },
     
-    // Custom Confirmation Modal Methods
     showConfirmModal(options) {
       return new Promise((resolve) => {
         this.confirmModal = {
@@ -538,40 +959,46 @@ export default {
       this.pendingRemovePhotoIndex = null
     },
 
-    // Toggle edit form with auto-scroll
     toggleEditForm() {
       if (this.showPersonalDetails) {
         this.closeEditForm()
       } else {
         this.showPersonalDetails = true
         this.$nextTick(() => {
-          this.scrollToEditForm()
+          if (this.activeTab === 'personal') {
+            this.scrollToEditForm()
+          } else {
+            this.scrollToProfessionalForm()
+          }
         })
       }
     },
     
-    // Close edit form
     closeEditForm() {
       this.showPersonalDetails = false
     },
     
-    // Auto-scroll to edit form with smooth animation
     scrollToEditForm() {
       const editForm = this.$refs.editFormContainer
       if (editForm) {
         const elementPosition = editForm.getBoundingClientRect().top
         const offsetPosition = elementPosition + window.pageYOffset - 80
-        
-        window.scrollTo({
-          top: offsetPosition,
-          behavior: 'smooth'
-        })
-        
+        window.scrollTo({ top: offsetPosition, behavior: 'smooth' })
         editForm.style.transition = 'all 0.3s ease'
         editForm.style.boxShadow = '0 0 0 3px #fd5068'
-        setTimeout(() => {
-          editForm.style.boxShadow = ''
-        }, 1000)
+        setTimeout(() => { editForm.style.boxShadow = '' }, 1000)
+      }
+    },
+
+    scrollToProfessionalForm() {
+      const professionalForm = this.$refs.professionalFormContainer
+      if (professionalForm) {
+        const elementPosition = professionalForm.getBoundingClientRect().top
+        const offsetPosition = elementPosition + window.pageYOffset - 80
+        window.scrollTo({ top: offsetPosition, behavior: 'smooth' })
+        professionalForm.style.transition = 'all 0.3s ease'
+        professionalForm.style.boxShadow = '0 0 0 3px #fd5068'
+        setTimeout(() => { professionalForm.style.boxShadow = '' }, 1000)
       }
     },
     
@@ -642,7 +1069,6 @@ export default {
       } catch (err) {
         console.error(err)
         this.showToast("Failed to remove photo", "error")
-        // Revert on error
         this.previewPhoto.photo_gallery.splice(index, 0, removedPhoto)
         this.user.photo_gallery.splice(index, 0, removedPhoto)
       }
@@ -763,9 +1189,75 @@ export default {
         this.showToast("Failed to update profile", "error")
       }
     },
+
+   async updateProfessionalDetails() {
+    const token = localStorage.getItem("token")
+    if (!token) {
+        this.showToast("Please login again", "error")
+        return
+    }
+
+    this.professional.skills = this.skillsArray
+    this.professional.languages = this.languagesArray
+
+    try {
+        const response = await axios.post(
+            "https://companion.ajaywatpade.in/api/profile/update-professional",
+            this.professional,
+            { 
+                headers: { 
+                    Authorization: `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                } 
+            }
+        )
+        
+        if (response.data.success) {
+            localStorage.setItem("professional_details", JSON.stringify(this.professional))
+            this.showToast(response.data.message, "success")
+            this.closeEditForm()
+        } else {
+            this.showToast(response.data.message || "Failed to update", "error")
+        }
+    } catch (err) {
+        console.error("Error updating professional details:", err)
+        const errorMsg = err.response?.data?.message || "Failed to update professional details"
+        this.showToast(errorMsg, "error")
+    }
+},
+
+// Load professional details on page load
+async loadProfessionalDataFromAPI() {
+    const token = localStorage.getItem("token")
+    if (!token) return
+    
+    try {
+        const response = await axios.get(
+            "https://companion.ajaywatpade.in/api/profile/professional-details",
+            { 
+                headers: { 
+                    Authorization: `Bearer ${token}`,
+                    'Accept': 'application/json'
+                } 
+            }
+        )
+        
+        if (response.data.success && response.data.data) {
+            const profData = response.data.data
+            this.professional = { ...this.professional, ...profData }
+            this.skillsText = (profData.skills || []).join(", ")
+            this.languagesText = (profData.languages || []).join(", ")
+            localStorage.setItem("professional_details", JSON.stringify(this.professional))
+        }
+    } catch (err) {
+        console.error("Error loading professional details:", err)
+    }
+}
   },
 }
 </script>
+
 
 <style scoped>
 * {
@@ -841,7 +1333,6 @@ export default {
 .glass-effect {
   background: rgba(255, 255, 255, 0.96);
   backdrop-filter: blur(10px);
-  /* border-radius: 30px; */
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
   overflow: hidden;
   animation: slideUp 0.6s cubic-bezier(0.2, 0.9, 0.4, 1.1);
@@ -859,7 +1350,54 @@ export default {
   }
 }
 
-/* Logout Button - Top Right Corner */
+/* Tab Navigation */
+.tab-navigation {
+  display: flex;
+  gap: 0;
+  padding: 0 20px;
+  margin-top: 10px;
+  margin-bottom: 20px;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.tab-btn {
+  flex: 1;
+  padding: 12px 16px;
+  background: transparent;
+  border: none;
+  font-size: 14px;
+  font-weight: 600;
+  color: #888;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+}
+
+.tab-btn i {
+  margin-right: 8px;
+}
+
+.tab-btn.active {
+  color: #fd5068;
+}
+
+.tab-btn.active::after {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(135deg, #fd5068, #ff8a5c);
+  border-radius: 3px 3px 0 0;
+}
+
+.tab-btn:hover:not(.active) {
+  color: #fd5068;
+  background: rgba(253, 80, 104, 0.05);
+}
+
+/* Logout Button */
 .logout-btn-top {
   position: absolute;
   top: 15px;
@@ -1001,25 +1539,6 @@ export default {
   height: 18px;
 }
 
-.edit-btn {
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  border: none;
-  background: linear-gradient(135deg, #fd5068, #ff8a5c);
-  color: white;
-  cursor: pointer;
-  transition: all 0.3s;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.edit-btn:hover {
-  transform: scale(1.08);
-  box-shadow: 0 5px 15px rgba(253,80,104,0.4);
-}
-
 .profile-stats {
   display: flex;
   gap: 30px;
@@ -1077,9 +1596,27 @@ export default {
   color: #999;
 }
 
-/* Video Section */
+/* Action Buttons Row */
+.action-buttons-row {
+  display: flex;
+  gap: 16px;
+  padding: 0 20px;
+  margin-bottom: 20px;
+}
+
+.action-buttons-row .video-section {
+  flex: 2;
+  padding: 0;
+  border: none;
+}
+
+.action-buttons-row .edit-profile-section {
+  flex: 1;
+  display: flex;
+  align-items: stretch;
+}
+
 .video-section {
-  padding: 20px;
   border-top: 1px solid rgba(0,0,0,0.05);
   border-bottom: 1px solid rgba(0,0,0,0.05);
 }
@@ -1117,6 +1654,36 @@ export default {
   margin-top: 10px;
   background: #f0f0f0;
   color: #666;
+}
+
+/* Edit Profile Button */
+.edit-profile-btn {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 15px 12px;
+  background: linear-gradient(135deg, #fd5068, #ff8a5c);
+  color: white;
+  border: none;
+  border-radius: 15px;
+  cursor: pointer;
+  transition: all 0.3s;
+  font-weight: 600;
+  font-size: 14px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.edit-profile-btn i {
+  font-size: 20px;
+}
+
+.edit-profile-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(253, 80, 104, 0.3);
 }
 
 /* Gallery Section */
@@ -1352,6 +1919,13 @@ export default {
   border-radius: 20px;
   font-size: 11px;
   animation: chipPop 0.3s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.habit-chip i {
+  font-size: 10px;
 }
 
 @keyframes chipPop {
@@ -1400,6 +1974,136 @@ export default {
 
 .btn-cancel-form:hover {
   background: #e0e0e0;
+}
+
+/* Professional Display Card */
+.professional-display {
+  padding: 20px;
+}
+
+.display-card {
+  background: #f8f9fa;
+  border-radius: 20px;
+  overflow: hidden;
+}
+
+.display-header {
+  background: linear-gradient(135deg, #fd5068, #ff8a5c);
+  padding: 15px 20px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.display-header i {
+  font-size: 20px;
+  color: white;
+}
+
+.display-header h4 {
+  color: white;
+  font-size: 16px;
+  margin: 0;
+}
+
+.display-content {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.info-row {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.info-row > i {
+  width: 20px;
+  color: #fd5068;
+  font-size: 16px;
+  margin-top: 2px;
+}
+
+.info-text {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.info-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #999;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.info-value {
+  font-size: 14px;
+  color: #333;
+}
+
+.summary-text {
+  line-height: 1.5;
+  color: #555;
+}
+
+.skills-row .info-text {
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.skills-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 5px;
+}
+
+.skill-tag {
+  background: linear-gradient(135deg, #fd5068, #ff8a5c);
+  color: white;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+}
+
+.portfolio-link {
+  color: #fd5068;
+  text-decoration: none;
+  word-break: break-all;
+  font-size: 13px;
+}
+
+.portfolio-link:hover {
+  text-decoration: underline;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 50px 20px;
+  background: #f8f9fa;
+  border-radius: 20px;
+}
+
+.empty-state i {
+  font-size: 48px;
+  color: #ddd;
+  margin-bottom: 15px;
+}
+
+.empty-state p {
+  color: #999;
+  font-size: 14px;
+}
+
+.empty-state .empty-hint {
+  font-size: 12px;
+  margin-top: 8px;
+  color: #bbb;
 }
 
 /* Lightbox Modal */
@@ -1469,7 +2173,7 @@ export default {
   transform: translateY(-50%) scale(1.1);
 }
 
-/* Custom Confirmation Modal */
+/* Confirmation Modal */
 .confirm-modal-overlay {
   position: fixed;
   inset: 0;
@@ -1693,29 +2397,6 @@ export default {
   transform: translateX(-50%) translateY(20px);
 }
 
-/* Slide Up Animation */
-.slide-up-enter-active,
-.slide-up-leave-active {
-  transition: all 0.3s ease;
-}
-
-.slide-up-enter-from,
-.slide-up-leave-to {
-  opacity: 0;
-  transform: translateY(20px);
-}
-
-/* Modal Fade */
-.modal-fade-enter-active,
-.modal-fade-leave-active {
-  transition: opacity 0.3s;
-}
-
-.modal-fade-enter-from,
-.modal-fade-leave-to {
-  opacity: 0;
-}
-
 /* Responsive */
 @media (max-width: 600px) {
   .profile-page {
@@ -1765,6 +2446,44 @@ export default {
   .confirm-modal {
     width: 85%;
     margin: 20px;
+  }
+  
+  .action-buttons-row {
+    gap: 12px;
+    display: flex;
+    flex-direction: column-reverse;
+    flex-wrap: nowrap;
+  }
+  
+  .action-buttons-row .edit-profile-section {
+    min-height: 56px;
+  }
+  
+  .edit-profile-btn {
+    flex-direction: row;
+    padding: 12px;
+  }
+  
+  .edit-profile-btn i {
+    font-size: 16px;
+  }
+
+  .tab-btn {
+    font-size: 12px;
+    padding: 10px 8px;
+  }
+
+  .tab-btn i {
+    margin-right: 4px;
+  }
+
+  .info-row {
+    flex-direction: column;
+    gap: 5px;
+  }
+
+  .info-row > i {
+    margin-top: 0;
   }
 }
 </style>

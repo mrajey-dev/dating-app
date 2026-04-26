@@ -554,7 +554,7 @@ export default {
   backdrop-filter: blur(12px);
   color: #E91E63;
   border: 1.5px solid rgba(255,255,255,0.6);
-  font-weight: 800!important;
+
 }
 
 .btn-secondary:hover {

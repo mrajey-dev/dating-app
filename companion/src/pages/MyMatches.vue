@@ -8,16 +8,7 @@
     </div>
 
     <!-- Header -->
-    <div class="page-header">
-      <button class="back-btn" @click="$router.push('/home')">
-        <span>←</span> Back
-      </button>
-      <div class="header-title">
-        <div class="title-icon">💖</div>
-        <h1>My Matches</h1>
-      </div>
-      <div class="header-spacer"></div>
-    </div>
+    
 
     <!-- Tab Navigation -->
     <div class="tab-container">

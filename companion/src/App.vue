@@ -116,7 +116,14 @@ import { useRouter } from 'vue-router'
 import { onMounted, onUnmounted, ref, watch } from 'vue'
 import AppToast from '@/components/AppToast.vue'
 import { App as CapacitorApp } from '@capacitor/app'
+import { StatusBar, Style } from '@capacitor/status-bar';
+import { Capacitor } from '@capacitor/core';
 
+if (Capacitor.isNativePlatform()) {
+  StatusBar.setOverlaysWebView({ overlay: false });
+  StatusBar.setBackgroundColor({ color: '#ffffff' }); // your theme color
+  StatusBar.setStyle({ style: Style.Light }); // Light = white text
+}
 export default {
   components: { AppToast },
   setup() {
@@ -167,7 +174,6 @@ export default {
       userAvatar.value = user.profile_photo || ''
     }
 
-    let intervalId = null
     let backPressedOnce = false
 
     const handleScroll = () => {
@@ -177,13 +183,12 @@ export default {
     onMounted(() => {
       loading.value = true
       getUserInfo()
+      // Only fetch notification count once on mount
       notificationStore.fetchCount().finally(() => loading.value = false)
       previousCount.value = notificationStore.count
       notificationStore.seen = false
 
-      intervalId = setInterval(() => {
-        notificationStore.fetchCount()
-      }, 2000)
+      // Removed: intervalId = setInterval(() => { notificationStore.fetchCount() }, 2000)
 
       window.addEventListener('scroll', handleScroll)
 
@@ -215,6 +220,8 @@ export default {
       setTimeout(() => toast.remove(), 2000)
     }
 
+    // Removed the automatic watch that played sound when count changed
+    // This will only play sound when manually refreshed or when coming from a page that updates the count
     watch(
       () => notificationStore.count,
       (newCount, oldCount) => {
@@ -227,7 +234,7 @@ export default {
     )
 
     onUnmounted(() => {
-      if (intervalId) clearInterval(intervalId)
+      // Removed: if (intervalId) clearInterval(intervalId)
       window.removeEventListener('scroll', handleScroll)
     })
 

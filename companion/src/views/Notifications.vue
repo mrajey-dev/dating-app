@@ -178,7 +178,7 @@ export default {
     // Scroll to top immediately when component mounts
     this.scrollToTop()
     this.safeFetchNotifications();
-    this.startNotificationPolling();
+    // Removed: this.startNotificationPolling();
   },
   beforeRouteEnter(to, from, next) {
     // For Vue Router - scroll to top before entering the route
@@ -197,7 +197,8 @@ export default {
     }
   },
   beforeUnmount() {
-    if (this.pollingInterval) clearInterval(this.pollingInterval);
+    // Removed polling interval cleanup since it's no longer used
+    // if (this.pollingInterval) clearInterval(this.pollingInterval);
   },
   methods: {
     // Scroll to top with smooth behavior
@@ -228,12 +229,7 @@ export default {
       this.toast.show = true;
       setTimeout(() => { this.toast.show = false }, 3000);
     },
-    startNotificationPolling() {
-      this.pollingInterval = setInterval(() => {
-        if (document.hidden) return;
-        this.fetchNotifications(true);
-      }, 30000);
-    },
+    // Removed: startNotificationPolling() method
     safeFetchNotifications() {
       const token = localStorage.getItem("token");
       if (!token || this.$route.path === "/login") return;

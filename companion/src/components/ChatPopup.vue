@@ -139,7 +139,7 @@
           <p v-if="msg.text">{{ msg.text }}</p>
           
           <!-- Image message -->
-          <img v-if="msg.image" :src="msg.image" class="chat-image" />
+          <img v-if="msg.image" :src="msg.image" class="chat-image" @click="previewImage(msg.image)" />
         </div>
         
         <div class="chat-time">
@@ -180,6 +180,16 @@
     <div class="chat-footer">
       <!-- Emoji Button -->
       <button class="emoji-btn" @click="toggleEmojiPicker">😊</button>
+
+      <!-- Image Button -->
+      <button class="image-btn" @click="triggerImageUpload">📷</button>
+      <input 
+        type="file" 
+        ref="imageInput" 
+        accept="image/*" 
+        style="display: none" 
+        @change="sendImage"
+      />
 
       <!-- Message Input -->
       <input
@@ -249,6 +259,11 @@
 
     <div class="overlay" @click="closeChat"></div>
     <audio ref="remoteAudio" autoplay playsinline></audio>
+    
+    <!-- Image Preview Modal -->
+    <div v-if="showImagePreview" class="image-preview-modal" @click="closeImagePreview">
+      <img :src="previewImageUrl" class="preview-image" />
+    </div>
   </div>
 </template>
 
@@ -309,8 +324,14 @@ export default {
       messages: [],
       newMessage: "",
       refreshInterval: null,
-      scrollAtBottom: false,
+      scrollAtBottom: true,
       replyToMessage: null,
+      imageDB: null,
+      showImagePreview: false,
+      previewImageUrl: '',
+      signalInterval: null,
+      statusInterval: null,
+      typingInterval: null,
     };
   },
   watch: {
@@ -321,23 +342,26 @@ export default {
       }
       if (newVal !== oldVal) {
         const status = newVal ? "online" : "offline";
-        this.showCustomToast(`User is now ${status}`);
+        // this.showCustomToast(`User is now ${status}`);
       }
     },
     showChat(newVal) {
       if (newVal) this.startChat();
       else this.stopChat();
     },
-    messages() {
-      this.$nextTick(() => {
-        if (this.scrollAtBottom) {
-          this.scrollToBottom(true);
-        }
-      });
+    messages: {
+      handler() {
+        this.$nextTick(() => {
+          if (this.scrollAtBottom) {
+            this.scrollToBottom(true);
+          }
+        });
+      },
+      deep: true
     }
   },
-  mounted() {
-    this.signalInterval = setInterval(this.fetchSignals, 1000);
+  async mounted() {
+    await this.initImageDatabase();
     this.startOnlinePing();
   },
   computed: {
@@ -372,11 +396,363 @@ export default {
     }
   },
   methods: {
+    previewImage(imageUrl) {
+      this.previewImageUrl = imageUrl;
+      this.showImagePreview = true;
+    },
+    closeImagePreview() {
+      this.showImagePreview = false;
+      this.previewImageUrl = '';
+    },
+    
+    // Initialize IndexedDB for local image storage
+    async initImageDatabase() {
+      return new Promise((resolve, reject) => {
+        const request = indexedDB.open('ChatImagesDB', 1);
+        
+        request.onerror = (event) => {
+          console.error('IndexedDB error:', event.target.error);
+          reject(event.target.error);
+        };
+        
+        request.onsuccess = (event) => {
+          this.imageDB = event.target.result;
+          console.log('Image database opened successfully');
+          resolve();
+        };
+        
+        request.onupgradeneeded = (event) => {
+          const db = event.target.result;
+          
+          // Create object store for images
+          if (!db.objectStoreNames.contains('images')) {
+            const store = db.createObjectStore('images', { keyPath: 'id' });
+            store.createIndex('conversationId', 'conversationId', { unique: false });
+            store.createIndex('timestamp', 'timestamp', { unique: false });
+          }
+          
+          // Create object store for message metadata
+          if (!db.objectStoreNames.contains('messages')) {
+            const messageStore = db.createObjectStore('messages', { keyPath: 'id' });
+            messageStore.createIndex('conversationId', 'conversationId', { unique: false });
+            messageStore.createIndex('timestamp', 'timestamp', { unique: false });
+          }
+        };
+      });
+    },
+
+    // Save image to IndexedDB
+    async saveImageToLocal(imageBlob, messageId, conversationId) {
+      if (!this.imageDB) {
+        console.error('Image database not initialized');
+        return null;
+      }
+      
+      return new Promise((resolve, reject) => {
+        const transaction = this.imageDB.transaction(['images'], 'readwrite');
+        const store = transaction.objectStore('images');
+        
+        const imageData = {
+          id: String(messageId),
+          conversationId: conversationId,
+          blob: imageBlob,
+          url: URL.createObjectURL(imageBlob),
+          timestamp: Date.now()
+        };
+        
+        const request = store.put(imageData);
+        
+        request.onsuccess = () => {
+          console.log('Image saved locally:', messageId);
+          resolve(imageData.url);
+        };
+        
+        request.onerror = (event) => {
+          console.error('Failed to save image:', event.target.error);
+          reject(event.target.error);
+        };
+      });
+    },
+
+    // Get image from IndexedDB
+    async getImageFromLocal(messageId) {
+      if (!this.imageDB) return null;
+      
+      return new Promise((resolve, reject) => {
+        const transaction = this.imageDB.transaction(['images'], 'readonly');
+        const store = transaction.objectStore('images');
+        const request = store.get(String(messageId));
+        
+        request.onsuccess = () => {
+          if (request.result) {
+            resolve(request.result.url);
+          } else {
+            resolve(null);
+          }
+        };
+        
+        request.onerror = (event) => {
+          reject(event.target.error);
+        };
+      });
+    },
+
+    // Delete image from local storage
+    async deleteImageFromLocal(messageId) {
+      if (!this.imageDB) return;
+      
+      return new Promise((resolve, reject) => {
+        const transaction = this.imageDB.transaction(['images'], 'readwrite');
+        const store = transaction.objectStore('images');
+        
+        const getRequest = store.get(String(messageId));
+        getRequest.onsuccess = () => {
+          if (getRequest.result && getRequest.result.url) {
+            URL.revokeObjectURL(getRequest.result.url);
+          }
+          
+          const deleteRequest = store.delete(String(messageId));
+          deleteRequest.onsuccess = () => {
+            console.log('Image deleted locally:', messageId);
+            resolve();
+          };
+          deleteRequest.onerror = (event) => {
+            reject(event.target.error);
+          };
+        };
+        getRequest.onerror = (event) => {
+          reject(event.target.error);
+        };
+      });
+    },
+
+    // Save message metadata locally
+    async saveMessageLocally(message) {
+      if (!this.imageDB) return;
+      
+      return new Promise((resolve, reject) => {
+        const transaction = this.imageDB.transaction(['messages'], 'readwrite');
+        const store = transaction.objectStore('messages');
+        
+        const messageData = {
+          ...message,
+          conversationId: `${Math.min(Number(message.sender_id), Number(message.receiver_id))}_${Math.max(Number(message.sender_id), Number(message.receiver_id))}`,
+          timestamp: Date.now()
+        };
+        
+        const request = store.put(messageData);
+        request.onsuccess = () => resolve();
+        request.onerror = (event) => reject(event.target.error);
+      });
+    },
+
+    // Load messages from local storage first
+    async loadMessagesFromLocal(conversationId) {
+      if (!this.imageDB) return [];
+      
+      return new Promise((resolve, reject) => {
+        const transaction = this.imageDB.transaction(['messages'], 'readonly');
+        const store = transaction.objectStore('messages');
+        const index = store.index('conversationId');
+        const request = index.getAll(conversationId);
+        
+        request.onsuccess = async () => {
+          const messages = request.result || [];
+          
+          for (const msg of messages) {
+            if (msg.image && !msg.image.startsWith('blob:') && !msg.image.startsWith('http')) {
+              const imageUrl = await this.getImageFromLocal(msg.id);
+              if (imageUrl) {
+                msg.image = imageUrl;
+              }
+            }
+          }
+          
+          resolve(messages.sort((a, b) => new Date(a.created_at) - new Date(b.created_at)));
+        };
+        
+        request.onerror = (event) => reject(event.target.error);
+      });
+    },
+
+    triggerImageUpload() {
+      this.$refs.imageInput.click();
+    },
+
+async sendImage(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  
+  if (!this.person?.id) {
+    console.warn("Receiver ID missing");
+    return;
+  }
+
+  if (file.size > 5 * 1024 * 1024) {
+    this.showCustomToast("Image size should be less than 5MB");
+    event.target.value = '';
+    return;
+  }
+
+  if (!file.type.startsWith('image/')) {
+    this.showCustomToast("Please select a valid image file");
+    event.target.value = '';
+    return;
+  }
+
+  const tempId = `temp_${Date.now()}_${Math.random()}`;
+  
+  try {
+    const token = localStorage.getItem("token");
+    
+    // Create local blob URL for immediate display
+    const localImageUrl = URL.createObjectURL(file);
+    
+    const newMsg = {
+      id: tempId,
+      sender_id: Number(this.userId),
+      receiver_id: this.person.id,
+      text: "",
+      image: localImageUrl,
+      type: "sender",
+      seen: false,
+      delivered: false,
+      created_at: new Date().toISOString(),
+      is_local: true,
+      reply_to: this.replyToMessage ? {
+        id: this.replyToMessage.id,
+        text: this.replyToMessage.text || '📷 Image',
+        sender_name: this.replyToMessage.type === 'sender' ? 'You' : this.localPerson.first_name
+      } : null
+    };
+
+    // Add to UI immediately
+    this.messages.push(newMsg);
+    this.scrollToBottom(true);
+    
+    // Save temporary message locally
+    await this.saveMessageLocally(newMsg);
+    
+    // Prepare form data for server
+    const formData = new FormData();
+    formData.append("receiver_id", this.person.id);
+    formData.append("image", file);
+    
+    if (this.replyToMessage) {
+      formData.append("reply_to_id", this.replyToMessage.id);
+    }
+
+    // Send to server
+    const res = await axios.post(
+      "https://companion.ajaywatpade.in/api/messages/image",
+      formData,
+      { 
+        headers: { 
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'multipart/form-data'
+        } 
+      }
+    );
+
+    console.log("Server response:", res.data); // Debug log
+    
+    const serverImageUrl = res.data.image;
+    
+    const msgIndex = this.messages.findIndex(m => m.id === tempId);
+    if (msgIndex !== -1) {
+      const updatedMsg = {
+        ...this.messages[msgIndex],
+        id: res.data.id,
+        image: serverImageUrl, // Use server URL
+        is_local: false,
+        delivered: true
+      };
+      
+      this.messages[msgIndex] = updatedMsg;
+      
+      // Save to local storage
+      await this.saveMessageLocally(updatedMsg);
+      
+      // Remove temporary message from storage
+      if (this.imageDB) {
+        const transaction = this.imageDB.transaction(['messages'], 'readwrite');
+        const store = transaction.objectStore('messages');
+        store.delete(tempId);
+      }
+    }
+    
+    this.cancelReply();
+    this.showCustomToast("Image sent successfully");
+
+  } catch (err) {
+    console.error("Failed to send image:", err);
+    
+    // Remove the temporary message on failure
+    const msgIndex = this.messages.findIndex(m => m.id === tempId);
+    if (msgIndex !== -1) {
+      // Revoke the blob URL to prevent memory leaks
+      if (this.messages[msgIndex].image && this.messages[msgIndex].image.startsWith('blob:')) {
+        URL.revokeObjectURL(this.messages[msgIndex].image);
+      }
+      this.messages.splice(msgIndex, 1);
+      
+      // Remove from local storage
+      if (this.imageDB) {
+        const transaction = this.imageDB.transaction(['messages'], 'readwrite');
+        const store = transaction.objectStore('messages');
+        store.delete(tempId);
+      }
+    }
+    
+    if (err.response?.status === 403) {
+      this.isPlanOver = true;
+      this.showCustomToast(err.response?.data?.message || "Message limit exceeded. Please upgrade to continue sending images 🚀");
+    } else {
+      this.showCustomToast(err.response?.data?.message || "Failed to send image. Please try again.");
+    }
+  }
+  
+  // Clear the input
+  event.target.value = '';
+},
+async checkUserPlanForReceiver(receiverId) {
+  try {
+    const token = localStorage.getItem("token");
+    const gender = localStorage.getItem("gender");
+
+    if (gender === "female") {
+      return { hasPlan: true, plan: 'free' };
+    }
+
+    const res = await axios.get(
+      `https://companion.ajaywatpade.in/api/user/plan-status/${receiverId}`,
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+
+    return { hasPlan: !res.data.is_plan_over, plan: res.data.plan };
+  } catch (err) {
+    console.error("Failed to check plan status", err);
+    return { hasPlan: false, plan: null };
+  }
+},
+    fileToBlob(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          fetch(e.target.result)
+            .then(res => res.blob())
+            .then(blob => resolve(blob))
+            .catch(reject);
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+    },
+
     openUserProfile() {
       this.$emit("openProfile", this.person);
     },
 
-    // WhatsApp-style reply handlers
     handleMessageLongPress(msg, event) {
       if (this.longPressTimer) {
         clearTimeout(this.longPressTimer);
@@ -430,7 +806,6 @@ export default {
     },
 
     replyToSelectedMessage() {
-      // Set the message to reply to (WhatsApp style)
       this.replyToMessage = {
         ...this.selectedMessage,
         sender_name: this.selectedMessage.type === 'sender' ? 'You' : this.localPerson.first_name
@@ -438,7 +813,6 @@ export default {
       this.showMessageMenu = false;
       this.selectedMessage = null;
       
-      // Focus input after setting reply
       this.$nextTick(() => {
         if (this.$refs.chatInput) {
           this.$refs.chatInput.focus();
@@ -461,11 +835,31 @@ export default {
           return;
         }
         
-        await axios.delete(
-          `https://companion.ajaywatpade.in/api/messages/${this.selectedMessage.id}`,
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
+        // Delete from server if it's not a local-only message
+        if (!this.selectedMessage.is_local && this.selectedMessage.id.toString().indexOf('temp_') === -1) {
+          await axios.delete(
+            `https://companion.ajaywatpade.in/api/messages/${this.selectedMessage.id}`,
+            { headers: { Authorization: `Bearer ${token}` } }
+          );
+        }
         
+        // Delete image from local storage if it's an image message
+        if (this.selectedMessage.image) {
+          // Revoke blob URL if it's a blob
+          if (this.selectedMessage.image.startsWith('blob:')) {
+            URL.revokeObjectURL(this.selectedMessage.image);
+          }
+          await this.deleteImageFromLocal(this.selectedMessage.id);
+        }
+        
+        // Delete message from local storage
+        if (this.imageDB) {
+          const transaction = this.imageDB.transaction(['messages'], 'readwrite');
+          const store = transaction.objectStore('messages');
+          store.delete(String(this.selectedMessage.id));
+        }
+        
+        // Remove from UI
         this.messages = this.messages.filter(
           m => m.id !== this.selectedMessage.id
         );
@@ -485,28 +879,33 @@ export default {
       }
     },
 
-    async checkPlanStatus() {
-      try {
-        const token = localStorage.getItem("token");
-        const gender = localStorage.getItem("gender");
+ async checkPlanStatus() {
+  try {
+    const token = localStorage.getItem("token");
+    const gender = localStorage.getItem("gender");
 
-        if (gender === "female") {
-          this.isPlanOver = false;
-          return;
-        }
+    // Women always have free access
+    if (gender === "female") {
+      this.isPlanOver = false;
+      return false;
+    }
 
-        const res = await axios.get(
-          "https://companion.ajaywatpade.in/api/user/plan-status",
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
+    // Check plan status for men
+    const res = await axios.get(
+      "https://companion.ajaywatpade.in/api/user/plan-status",
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
 
-        this.isPlanOver = res.data.is_plan_over;
+    this.isPlanOver = res.data.is_plan_over;
+    return this.isPlanOver;
 
-      } catch (err) {
-        console.error("Failed to check plan status", err);
-        this.isPlanOver = false;
-      }
-    },
+  } catch (err) {
+    console.error("Failed to check plan status", err);
+    // Default to false to allow functionality
+    this.isPlanOver = false;
+    return false;
+  }
+},
     
     goToUpgrade() {
       this.$router.push({
@@ -595,20 +994,24 @@ export default {
     },
     
     async fetchSignals() {
-      const token = localStorage.getItem("token");
-      const res = await axios.get(
-        `https://companion.ajaywatpade.in/api/call/signals`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+      try {
+        const token = localStorage.getItem("token");
+        const res = await axios.get(
+          `https://companion.ajaywatpade.in/api/call/signals`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
 
-      res.data.forEach(signal => {
-        if (signal.type === "offer") this.incomingCall(signal);
-        if (signal.type === "answer") this.handleAnswer(signal.data);
-        if (signal.type === "ice") this.handleIce(signal.data);
-        if (signal.type === "end-call") {
-          this.onRemoteEndCall();
-        }
-      });
+        res.data.forEach(signal => {
+          if (signal.type === "offer") this.incomingCall(signal);
+          if (signal.type === "answer") this.handleAnswer(signal.data);
+          if (signal.type === "ice") this.handleIce(signal.data);
+          if (signal.type === "end-call") {
+            this.onRemoteEndCall();
+          }
+        });
+      } catch (err) {
+        console.error("Fetch signals error:", err);
+      }
     },
     
     onRemoteEndCall() {
@@ -677,7 +1080,7 @@ export default {
         return;
       }
       this.isInputActive = false;
-      this.$refs.chatInput?.blur();
+      if (this.$refs.chatInput) this.$refs.chatInput.blur();
       this.callActive = true;
       this.openCallUI();
       this.resumeAudioContext();
@@ -730,7 +1133,7 @@ export default {
         data
       }, {
         headers: { Authorization: `Bearer ${token}` }
-      });
+      }).catch(err => console.error("Send signal error:", err));
     },
 
     openCallUI() {
@@ -751,10 +1154,6 @@ export default {
       }
     },
 
-    toggleCamera() {
-      this.cameraOff = !this.cameraOff;
-    },
-
     handleScroll() {
       const el = this.$refs.chatBody;
       if (!el) return;
@@ -769,65 +1168,8 @@ export default {
       this.newMessage += emoji;
       this.showEmojiPicker = false;
       this.$nextTick(() => {
-        this.$refs.chatInput?.focus();
+        if (this.$refs.chatInput) this.$refs.chatInput.focus();
       });
-    },
-
-    async sendImage(event) {
-      const file = event.target.files[0];
-      if (!file) return;
-      if (!this.person?.id) {
-        console.warn("Receiver ID missing");
-        return;
-      }
-
-      const formData = new FormData();
-      formData.append("receiver_id", this.person.id);
-      formData.append("image", file);
-
-      try {
-        const token = localStorage.getItem("token");
-        if (!token) throw new Error("No auth token");
-
-        const res = await axios.post(
-          "https://companion.ajaywatpade.in/api/messages/image",
-          formData,
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
-
-        const imgUrl = res.data?.image || res.data?.data?.image || res.data?.url;
-        if (!imgUrl) throw new Error("Image URL missing in response");
-
-        const newMsg = {
-          id: res.data.id || Date.now(),
-          sender_id: Number(this.userId),
-          receiver_id: this.person.id,
-          text: "",
-          image: imgUrl,
-          type: "sender",
-          seen: false,
-          delivered: false,
-          created_at: res.data.created_at || new Date().toISOString(),
-          reply_to: this.replyToMessage ? {
-            id: this.replyToMessage.id,
-            text: this.replyToMessage.text || '📷 Image',
-            sender_name: this.replyToMessage.type === 'sender' ? 'You' : this.localPerson.first_name
-          } : null
-        };
-
-        this.messages.push(newMsg);
-        this.cancelReply(); // Clear reply after sending
-        this.scrollToBottom(true);
-
-      } catch (err) {
-        if (err.response?.status === 403) {
-          this.isPlanOver = true;
-          this.showCustomToast("Upgrade your plan to continue 🚀");
-        } else {
-          console.error("Failed to send image:", err);
-          this.showCustomToast(err.response?.data?.message || "Failed to send image");
-        }
-      }
     },
     
     async stopTyping() {
@@ -869,7 +1211,6 @@ export default {
     },
     
     startStatusRefresh() {
-      console.log("Status refresh started");
       this.statusInterval = setInterval(async () => {
         try {
           const token = localStorage.getItem("token");
@@ -887,7 +1228,7 @@ export default {
     },
 
     stopStatusRefresh() {
-      clearInterval(this.statusInterval);
+      if (this.statusInterval) clearInterval(this.statusInterval);
     },
 
     startOnlinePing() {
@@ -899,7 +1240,6 @@ export default {
             {},
             { headers: { Authorization: `Bearer ${token}` } }
           );
-          console.log("last_active_at updated");
         } catch (err) {
           console.error("Ping failed", err);
         }
@@ -907,7 +1247,7 @@ export default {
     },
 
     stopOnlinePing() {
-      clearInterval(this.onlineInterval);
+      if (this.onlineInterval) clearInterval(this.onlineInterval);
     },
 
     async markMessagesSeen() {
@@ -929,27 +1269,6 @@ export default {
       setTimeout(() => {
         this.showToast = false;
       }, 2500);
-    },
-
-    async updateMessage() {
-      if (!this.editText.trim()) return;
-      try {
-        const token = localStorage.getItem("token");
-        await axios.put(
-          `https://companion.ajaywatpade.in/api/messages/${this.editingMessageId}`,
-          { text: this.editText },
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
-        const msg = this.messages.find(m => m.id === this.editingMessageId);
-        if (msg) {
-          msg.text = this.editText;
-          msg.is_edited = 1;
-        }
-        this.editingMessageId = null;
-        this.editText = "";
-      } catch (err) {
-        console.error("Edit failed", err);
-      }
     },
 
     closeWallpaper() {
@@ -998,20 +1317,25 @@ export default {
       this.localPerson = { ...this.person };
       await this.fetchMessages();
       await this.markMessagesSeen();
-      await this.fetchMessages(); 
       this.scrollToBottom(false);
       this.typingInterval = setInterval(this.checkTyping, 2000);
       if (!this.refreshInterval) {
-        this.refreshInterval = setInterval(this.fetchMessages, 1000);
+        this.refreshInterval = setInterval(this.fetchMessages, 3000);
+      }
+      if (!this.signalInterval) {
+        this.signalInterval = setInterval(this.fetchSignals, 1000);
       }
       this.startOnlinePing();
       this.startStatusRefresh();
     },
 
     stopChat() {
-      clearInterval(this.refreshInterval);
-      clearInterval(this.typingInterval);
+      if (this.refreshInterval) clearInterval(this.refreshInterval);
+      if (this.typingInterval) clearInterval(this.typingInterval);
+      if (this.signalInterval) clearInterval(this.signalInterval);
       this.refreshInterval = null;
+      this.typingInterval = null;
+      this.signalInterval = null;
       this.stopOnlinePing();
       this.stopStatusRefresh();
     },
@@ -1024,49 +1348,28 @@ export default {
       });
     },
     
-    async fetchMessages() {
+   async fetchMessages() {
   if (!this.person?.id) return;
   
   try {
     const token = localStorage.getItem("token");
+    const conversationId = `${Math.min(Number(this.userId), Number(this.person.id))}_${Math.max(Number(this.userId), Number(this.person.id))}`;
+    
+    // Load from local storage first for instant display
+    const localMessages = await this.loadMessagesFromLocal(conversationId);
+    
+    if (localMessages.length > 0 && this.messages.length === 0) {
+      this.messages = localMessages;
+    }
+    
+    // Fetch from server to sync
     const res = await axios.get(
       `https://companion.ajaywatpade.in/api/messages/${this.person.id}`,
       { headers: { Authorization: `Bearer ${token}` } }
     );
     
-    const data = Array.isArray(res.data) ? res.data : [];
-    
-    // Create a map of existing messages to preserve any temporary data
-    const existingMessagesMap = new Map();
-    this.messages.forEach(msg => {
-      existingMessagesMap.set(msg.id, msg);
-    });
-    
-    this.messages = data.map(msg => {
-      // Check if we already have this message and preserve any local data
-      const existingMsg = existingMessagesMap.get(msg.id);
-      
-      return {
-        id: msg.id,
-        sender_id: Number(msg.sender_id),
-        receiver_id: Number(msg.receiver_id),
-        text: (msg.text ?? "").trim(),
-        image: msg.image ?? null,
-        type: msg.type,
-        created_at: msg.created_at,
-        seen: Boolean(msg.seen),
-        delivered: Boolean(msg.delivered),
-        // Preserve reply_to data from API response
-        reply_to: msg.reply_to ? {
-          id: msg.reply_to.id,
-          text: msg.reply_to.text || '📷 Image',
-          sender_name: msg.reply_to.sender_name || 
-                      (msg.reply_to.sender_id === Number(this.userId) ? 'You' : this.localPerson?.first_name || 'User')
-        } : null,
-        // Preserve any local flags if needed
-        ...(existingMsg || {})
-      };
-    });
+    const serverMessages = Array.isArray(res.data) ? res.data : [];
+    await this.mergeMessages(serverMessages, conversationId);
     
     if (!this.showWallpaperModal) {
       this.focusInput();
@@ -1074,71 +1377,276 @@ export default {
     
   } catch (err) {
     console.error("Failed to fetch messages:", err);
-    this.messages = [];
   }
 },
 
-    async sendMessage() {
-      if (!this.canChat) {
-        this.showCustomToast("You can send messages only after matching 💕");
-        return;
+async mergeMessages(serverMessages, conversationId) {
+  for (const serverMsg of serverMessages) {
+    const existingMsg = this.messages.find(m => String(m.id) === String(serverMsg.id));
+    
+    if (!existingMsg) {
+      let imageUrl = null;
+      
+      if (serverMsg.image) {
+        // Fix image URL if needed
+        imageUrl = this.fixImageUrl(serverMsg.image);
+        
+        // Cache image locally in background
+        if (imageUrl && imageUrl.startsWith('http')) {
+          this.cacheImageInBackground(imageUrl, serverMsg.id, conversationId);
+        }
       }
+      
+      const processedMsg = {
+        id: serverMsg.id,
+        sender_id: Number(serverMsg.sender_id),
+        receiver_id: Number(serverMsg.receiver_id),
+        text: (serverMsg.text ?? "").trim(),
+        image: imageUrl,
+        type: serverMsg.type === 'sent' ? 'sender' : serverMsg.type,
+        created_at: serverMsg.created_at,
+        seen: Boolean(serverMsg.seen),
+        delivered: Boolean(serverMsg.delivered),
+        reply_to: serverMsg.reply_to ? {
+          id: serverMsg.reply_to.id,
+          text: serverMsg.reply_to.text || '📷 Image',
+          sender_name: serverMsg.reply_to.sender_name || 
+                      (serverMsg.reply_to.sender_id === Number(this.userId) ? 'You' : this.localPerson?.first_name || 'User')
+        } : null
+      };
+      
+      await this.saveMessageLocally(processedMsg);
+      this.messages.push(processedMsg);
+    } else {
+      // Update existing message status
+      let needsUpdate = false;
+      if (serverMsg.seen && !existingMsg.seen) {
+        existingMsg.seen = true;
+        needsUpdate = true;
+      }
+      if (serverMsg.delivered && !existingMsg.delivered) {
+        existingMsg.delivered = true;
+        needsUpdate = true;
+      }
+      if (needsUpdate) {
+        await this.saveMessageLocally(existingMsg);
+      }
+    }
+  }
+  
+  // Sort messages by timestamp
+  this.messages.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+},
 
-      const trimmedMessage = this.newMessage.trim();
-      if (!trimmedMessage || !this.person?.id) return;
+// Helper function to fix image URLs
+fixImageUrl(url) {
+  if (!url) return null;
+  
+  // If it's already a full URL, return as is
+  if (url.startsWith('http://') || url.startsWith('https://')) {
+    return url;
+  }
+  
+  // If it's a relative path, convert to full URL
+  if (url.startsWith('/storage/')) {
+    return `https://companion.ajaywatpade.in${url}`;
+  }
+  
+  if (url.startsWith('storage/')) {
+    return `https://companion.ajaywatpade.in/${url}`;
+  }
+  
+  return url;
+},
 
-      try {
-        const token = localStorage.getItem("token");
+    async mergeMessages(serverMessages, conversationId) {
+      for (const serverMsg of serverMessages) {
+        const existingMsg = this.messages.find(m => String(m.id) === String(serverMsg.id));
         
-        const payload = {
-          receiver_id: this.person.id,
-          text: trimmedMessage
-        };
-        
-        // Add reply data if replying to a message (WhatsApp style)
-        if (this.replyToMessage) {
-          payload.reply_to_id = this.replyToMessage.id;
-        }
-
-        const res = await axios.post(
-          "https://companion.ajaywatpade.in/api/messages",
-          payload,
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
-
-        const newMsg = {
-          id: res.data.id,
-          sender_id: Number(this.userId),
-          receiver_id: this.person.id,
-          text: trimmedMessage,
-          type: "sender",
-          delivered: false,
-          seen: false,
-          created_at: res.data.created_at,
-          reply_to: this.replyToMessage ? {
-            id: this.replyToMessage.id,
-            text: this.replyToMessage.text || '📷 Image',
-            sender_name: this.replyToMessage.type === 'sender' ? 'You' : this.localPerson.first_name
-          } : null
-        };
-
-        this.messages.push(newMsg);
-        this.newMessage = "";
-        
-        // Clear reply state after sending (WhatsApp style - remove preview bar)
-        this.cancelReply();
-        
-        this.scrollToBottom(true);
-
-      } catch (err) {
-        if (err.response?.status === 403) {
-          this.isPlanOver = true;
-          this.showCustomToast("Upgrade your plan to continue");
+        if (!existingMsg) {
+          let imageUrl = null;
+          
+          if (serverMsg.image) {
+            // Check if image is already cached locally
+            const cachedImage = await this.getImageFromLocal(serverMsg.id);
+            if (cachedImage) {
+              imageUrl = cachedImage;
+            } else if (serverMsg.image.startsWith('http')) {
+              // Download and cache the image from server in background
+              this.cacheImageInBackground(serverMsg.image, serverMsg.id, conversationId);
+              imageUrl = serverMsg.image; // Use server URL temporarily
+            } else {
+              imageUrl = serverMsg.image;
+            }
+          }
+          
+          const processedMsg = {
+            id: serverMsg.id,
+            sender_id: Number(serverMsg.sender_id),
+            receiver_id: Number(serverMsg.receiver_id),
+            text: (serverMsg.text ?? "").trim(),
+            image: imageUrl,
+            type: serverMsg.type === 'sent' ? 'sender' : serverMsg.type,
+            created_at: serverMsg.created_at,
+            seen: Boolean(serverMsg.seen),
+            delivered: Boolean(serverMsg.delivered),
+            reply_to: serverMsg.reply_to ? {
+              id: serverMsg.reply_to.id,
+              text: serverMsg.reply_to.text || '📷 Image',
+              sender_name: serverMsg.reply_to.sender_name || 
+                          (serverMsg.reply_to.sender_id === Number(this.userId) ? 'You' : this.localPerson?.first_name || 'User')
+            } : null
+          };
+          
+          await this.saveMessageLocally(processedMsg);
+          this.messages.push(processedMsg);
         } else {
-          console.error("Failed to send message:", err);
+          // Update existing message status
+          let needsUpdate = false;
+          if (serverMsg.seen && !existingMsg.seen) {
+            existingMsg.seen = true;
+            needsUpdate = true;
+          }
+          if (serverMsg.delivered && !existingMsg.delivered) {
+            existingMsg.delivered = true;
+            needsUpdate = true;
+          }
+          if (needsUpdate) {
+            await this.saveMessageLocally(existingMsg);
+          }
         }
+      }
+      
+      // Sort messages by timestamp
+      this.messages.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+    },
+    
+    async cacheImageInBackground(imageUrl, messageId, conversationId) {
+      try {
+        const response = await fetch(imageUrl);
+        const blob = await response.blob();
+        await this.saveImageToLocal(blob, messageId, conversationId);
+        
+        // Update the message image URL in UI
+        const msgIndex = this.messages.findIndex(m => String(m.id) === String(messageId));
+        if (msgIndex !== -1) {
+          const cachedUrl = await this.getImageFromLocal(messageId);
+          if (cachedUrl) {
+            this.messages[msgIndex].image = cachedUrl;
+          }
+        }
+      } catch (err) {
+        console.error('Failed to cache image in background:', err);
       }
     },
+
+  async sendMessage() {
+  if (!this.canChat) {
+    this.showCustomToast("You can send messages only after matching 💕");
+    return;
+  }
+
+  // Check plan status before sending
+  const gender = localStorage.getItem("gender");
+  if (gender !== "female") {
+    const isPlanOver = await this.checkPlanStatus();
+    if (isPlanOver) {
+      this.showCustomToast("Upgrade your plan to continue sending messages 🚀");
+      return;
+    }
+  }
+
+  const trimmedMessage = this.newMessage.trim();
+  if (!trimmedMessage || !this.person?.id) return;
+
+  const tempId = `temp_msg_${Date.now()}_${Math.random()}`;
+  
+  // Create temporary message for instant display
+  const tempMsg = {
+    id: tempId,
+    sender_id: Number(this.userId),
+    receiver_id: this.person.id,
+    text: trimmedMessage,
+    type: "sender",
+    delivered: false,
+    seen: false,
+    created_at: new Date().toISOString(),
+    is_local: true,
+    reply_to: this.replyToMessage ? {
+      id: this.replyToMessage.id,
+      text: this.replyToMessage.text || '📷 Image',
+      sender_name: this.replyToMessage.type === 'sender' ? 'You' : this.localPerson.first_name
+    } : null
+  };
+
+  this.messages.push(tempMsg);
+  this.newMessage = "";
+  this.cancelReply();
+  this.scrollToBottom(true);
+  
+  // Save temporarily
+  await this.saveMessageLocally(tempMsg);
+
+  try {
+    const token = localStorage.getItem("token");
+    
+    const payload = {
+      receiver_id: this.person.id,
+      text: trimmedMessage
+    };
+    
+    if (this.replyToMessage) {
+      payload.reply_to_id = this.replyToMessage.id;
+    }
+
+    const res = await axios.post(
+      "https://companion.ajaywatpade.in/api/messages",
+      payload,
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+
+    // Update temporary message with real data
+    const msgIndex = this.messages.findIndex(m => m.id === tempId);
+    if (msgIndex !== -1) {
+      const updatedMsg = {
+        ...this.messages[msgIndex],
+        id: res.data.id,
+        is_local: false,
+        delivered: true
+      };
+      this.messages[msgIndex] = updatedMsg;
+      await this.saveMessageLocally(updatedMsg);
+      
+      // Remove temporary version from storage
+      if (this.imageDB) {
+        const transaction = this.imageDB.transaction(['messages'], 'readwrite');
+        const store = transaction.objectStore('messages');
+        store.delete(tempId);
+      }
+    }
+
+  } catch (err) {
+    console.error("Failed to send message:", err);
+    
+    // Remove temporary message on failure
+    const msgIndex = this.messages.findIndex(m => m.id === tempId);
+    if (msgIndex !== -1) {
+      this.messages.splice(msgIndex, 1);
+      if (this.imageDB) {
+        const transaction = this.imageDB.transaction(['messages'], 'readwrite');
+        const store = transaction.objectStore('messages');
+        store.delete(tempId);
+      }
+    }
+    
+    if (err.response?.status === 403) {
+      this.isPlanOver = true;
+      this.showCustomToast("Your plan has expired. Please upgrade to continue 💕");
+    } else {
+      this.showCustomToast("Failed to send message. Please try again.");
+    }
+  }
+},
 
     scrollToBottom(smooth = true) {
       this.$nextTick(() => {
@@ -1153,11 +1661,33 @@ export default {
           container.scrollTop = container.scrollHeight;
         }
       });
+    },
+
+    cleanupLocalStorage() {
+      if (this.imageDB) {
+        const transaction = this.imageDB.transaction(['images'], 'readwrite');
+        const store = transaction.objectStore('images');
+        const index = store.index('timestamp');
+        const thirtyDaysAgo = Date.now() - (30 * 24 * 60 * 60 * 1000);
+        const range = IDBKeyRange.upperBound(thirtyDaysAgo);
+        
+        const request = index.openCursor(range);
+        request.onsuccess = (event) => {
+          const cursor = event.target.result;
+          if (cursor) {
+            if (cursor.value.url) {
+              URL.revokeObjectURL(cursor.value.url);
+            }
+            cursor.delete();
+            cursor.continue();
+          }
+        };
+      }
     }
   },
   beforeUnmount() {
-    clearInterval(this.onlineInterval);
     this.stopChat();
+    this.cleanupLocalStorage();
   },
 };
 </script>
@@ -1184,6 +1714,7 @@ export default {
   color: rgb(16, 12, 14);
   background: #fafafa;
   border-bottom: 1px solid #ddd;
+  flex-shrink: 0;
 }
 
 .chat-user {
@@ -1191,6 +1722,7 @@ export default {
   align-items: center;
   margin-left: 10px;
   cursor: pointer;
+  flex: 1;
 }
 
 .chat-avatar {
@@ -1304,7 +1836,7 @@ export default {
   text-overflow: ellipsis;
 }
 
-/* WhatsApp-style Reply Preview Bar (at bottom above input) */
+/* Reply Preview Bar */
 .reply-preview-bar {
   background: #e8e8e8;
   border-radius: 12px 12px 8px 8px;
@@ -1331,10 +1863,6 @@ export default {
   gap: 10px;
   background: #f0f0f0;
   border-left: 4px solid #00a884;
-}
-
-.reply-preview-line {
-  display: none;
 }
 
 .reply-preview-details {
@@ -1418,6 +1946,7 @@ export default {
   z-index: 1001;
   box-sizing: border-box;
   align-items: center;
+  flex-shrink: 0;
 }
 
 .chat-footer input {
@@ -1448,6 +1977,12 @@ export default {
   background: transparent;
   font-weight: bold;
   padding: 0 8px;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+.image-btn:hover {
+  transform: scale(1.1);
 }
 
 .send-btn {
@@ -1460,6 +1995,27 @@ export default {
 .send-btn:disabled {
   color: #ccc;
   cursor: not-allowed;
+}
+
+/* ================= IMAGE PREVIEW MODAL ================= */
+.image-preview-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.9);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  cursor: pointer;
+}
+
+.preview-image {
+  max-width: 90%;
+  max-height: 90%;
+  object-fit: contain;
 }
 
 /* ================= MENU ================= */
@@ -1541,14 +2097,6 @@ export default {
   color: #075E54;
 }
 
-.message-menu .delete i {
-  font-size: 16px;
-}
-
-.message-menu .delete:hover {
-  background: #fff0f0;
-}
-
 @keyframes fadeIn {
   from { 
     opacity: 0; 
@@ -1581,22 +2129,7 @@ export default {
   to { opacity: 1; transform: translateX(-50%) translateY(0); }
 }
 
-.online-dot {
-  display: inline-block;
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  margin-right: 5px;
-}
-
-.online-dot.online {
-  background: #4caf50;
-}
-
-.online-dot.offline {
-  background: #ccc;
-}
-
+/* ================= WALLPAPER MODAL ================= */
 .wallpaper-modal {
   position: fixed;
   inset: 0;
@@ -1670,6 +2203,7 @@ export default {
   }
 }
 
+/* ================= TYPING INDICATOR ================= */
 .typing {
   color: #08570b;
   font-size: 13px;
@@ -1678,6 +2212,7 @@ export default {
   gap: 4px;
 }
 
+/* ================= EMOJI PICKER ================= */
 .emoji-picker {
   position: absolute;
   bottom: 70px;
@@ -1705,11 +2240,19 @@ export default {
   transform: scale(1.2);
 }
 
+/* ================= IMAGE STYLES ================= */
 .chat-image {
   max-width: 200px;
+  max-height: 200px;
   border-radius: 12px;
   margin-top: 5px;
   cursor: pointer;
+  object-fit: cover;
+  transition: transform 0.2s ease;
+}
+
+.chat-image:hover {
+  transform: scale(1.02);
 }
 
 .chat-status {
@@ -1873,32 +2416,9 @@ export default {
   white-space: nowrap;
 }
 
-.upgrade-btn::before {
-  content: '';
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 0;
-  height: 0;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.3);
-  transform: translate(-50%, -50%);
-  transition: width 0.6s, height 0.6s;
-}
-
-.upgrade-btn:hover::before {
-  width: 300px;
-  height: 300px;
-}
-
 .upgrade-btn:hover {
   transform: translateY(-2px);
   box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
-  background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
-}
-
-.upgrade-btn:active {
-  transform: translateY(0);
 }
 
 .upgrade-btn .rocket {
@@ -1909,16 +2429,6 @@ export default {
 @keyframes float {
   0%, 100% { transform: translateY(0px); }
   50% { transform: translateY(-3px); }
-}
-
-.upgrade-btn .premium-badge {
-  display: inline-block;
-  animation: shine 2s infinite;
-}
-
-@keyframes shine {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.6; text-shadow: 0 0 5px gold; }
 }
 
 /* Animations */
@@ -1961,6 +2471,11 @@ export default {
   
   .reply-preview-text {
     max-width: 150px;
+  }
+  
+  .chat-image {
+    max-width: 150px;
+    max-height: 150px;
   }
 }
 </style>
