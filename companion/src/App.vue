@@ -23,13 +23,13 @@
       </div>
 
       <!-- App Name with Gradient Animation -->
-      <div class="app-name" v-if="$route.name !== 'AuthPages'">
-        <!-- <span class="heart-icon">❤️</span> -->
-        <span class="app-title">
-          <span class="text-gradient">Heart </span>
-          <strong class="text-gradient-pink">Link</strong>
-        </span>
-      </div>
+    <div class="app-name" v-if="$route.name !== 'AuthPages'">
+  <img 
+    src="@/assets/logo.png" 
+    alt="Heart Link Logo" 
+    class="app-logo"
+  />
+</div>
 
       <!-- Notification Icon with Awesome Animations -->
       <div
@@ -821,5 +821,12 @@ export default {
 
 ::-webkit-scrollbar-thumb:hover {
   background: #fd5068;
+}
+.app-logo {
+  height: 82px;   /* adjust as needed */
+  width: auto;
+  object-fit: contain;
+  margin-right: -33px;
+
 }
 </style>
