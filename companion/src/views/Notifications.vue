@@ -594,7 +594,7 @@ export default {
   inset: 0;
   border-radius: 50%;
   background: rgba(0,0,0,0.5);
-  display: flex;
+  display: none;
   align-items: center;
   justify-content: center;
   opacity: 0;

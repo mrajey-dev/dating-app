@@ -8,7 +8,7 @@
           <span class="wave-emoji">✨</span>
           <span>Discover</span>
         </div>
-        <h1 class="main-title">Find Your<span class="accent"> Vibe</span></h1>
+        <h1 class="main-title">Find Your <span class="accent"> Vibe</span></h1>
         <p class="sub-headline">Meaningful connections start here</p>
       </div>
       
@@ -207,6 +207,8 @@ export default {
   data() {
     return {
       userGender: null,
+      userAge: null,        // Store user's age
+      userDob: null,        // Store user's date of birth
       searchFocused: false,
       showFilter: false,
       search: "",
@@ -291,6 +293,61 @@ export default {
     if (this.typingTimeout) clearTimeout(this.typingTimeout);
   },
   methods: {
+    // Calculate age from date of birth
+    calculateAge(dob) {
+      if (!dob) return null;
+      const birthDate = new Date(dob);
+      const today = new Date();
+      let age = today.getFullYear() - birthDate.getFullYear();
+      const monthDiff = today.getMonth() - birthDate.getMonth();
+      if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+        age--;
+      }
+      return age;
+    },
+
+    // Get age range category based on user's age
+    getAgeRangeCategory(age) {
+      if (!age) return null;
+      if (age >= 18 && age <= 35) return 'young';
+      if (age > 35 && age <= 50) return 'middle';
+      if (age > 50) return 'senior';
+      return null;
+    },
+
+    // Get minimum age for filtering based on user's age category
+    getMinAgeForFilter(age) {
+      if (!age) return 18;
+      if (age >= 18 && age <= 35) return 18;
+      if (age > 35 && age <= 50) return 36;
+      if (age > 50) return 51;
+      return 18;
+    },
+
+    // Get maximum age for filtering based on user's age category
+    getMaxAgeForFilter(age) {
+      if (!age) return 120;
+      if (age >= 18 && age <= 35) return 35;
+      if (age > 35 && age <= 50) return 50;
+      if (age > 50) return 120;
+      return 120;
+    },
+
+    // Filter users by age range based on current user's age
+    filterUsersByAge(users) {
+      if (!this.userAge) return users;
+      
+      const minAge = this.getMinAgeForFilter(this.userAge);
+      const maxAge = this.getMaxAgeForFilter(this.userAge);
+      
+      return users.filter(user => {
+        if (!user.dob) return false;
+        const userAge = this.calculateAge(user.dob);
+        if (!userAge) return false;
+        return userAge >= minAge && userAge <= maxAge;
+      });
+    },
+
     resetAndSearch() {
       this.currentPage = 1;
       this.currentDisplayIndex = 0;
@@ -473,6 +530,8 @@ export default {
           like_count: p.like_count || 0
         }));
         
+        // Apply age-based filtering
+        newUsers = this.filterUsersByAge(newUsers);
         newUsers = this.shuffleArray(newUsers);
         
         if (page === 1) {
@@ -524,6 +583,13 @@ export default {
         this.$router.replace("/");
         return;
       }
+      
+      // Store user's date of birth and calculate age
+      this.userDob = stored.dob || null;
+      if (this.userDob) {
+        this.userAge = this.calculateAge(this.userDob);
+      }
+      
       this.user = {
         first_name: stored.first_name || "",
         last_name: stored.last_name || "",
@@ -686,7 +752,6 @@ export default {
   }
 };
 </script>
-
 <style scoped>
 /* Keep all existing styles... */
 

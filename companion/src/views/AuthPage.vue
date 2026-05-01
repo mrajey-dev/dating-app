@@ -77,17 +77,15 @@
           </button>
 
           <!-- Brand Section -->
-          <div class="brand-section">
-            <div class="logo-wrapper">
-              <div class="logo-icon">
-                <svg width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M14 23.5C14 23.5 2 16.5 2 9.5C2 6.5 4.5 4 7.5 4C10.5 4 13 6.5 14 9.5C15 6.5 17.5 4 20.5 4C23.5 4 26 6.5 26 9.5C26 16.5 14 23.5 14 23.5Z" fill="currentColor"/>
-                </svg>
-              </div>
-              <h1 class="brand-name">Heart<span>Link</span></h1>
-            </div>
-            <p class="brand-tagline">{{ activeTab === 'login' ? 'Welcome back. Sign in to continue your journey.' : 'Create your account and start your journey.' }}</p>
-          </div>
+        <div class="brand-section">
+  <div class="logo-wrapper">
+    <div class="hllogo-icon">
+      <img src="@/assets/hllogo.png" alt="HeartLink Logo" width="48" height="48">
+    </div>
+    <h1 class="brand-name" style="color: #353897;">Heart<span style="color: #e91e63;"> Link</span></h1>
+  </div>
+  <p class="brand-tagline">{{ activeTab === 'login' ? 'Welcome back. Sign in to continue your journey.' : 'Create your account and start your journey.' }}</p>
+</div>
 
           <!-- Tab Switcher -->
           <div class="tab-switcher">
@@ -786,7 +784,7 @@ export default {
 .brand-name {
   font-size: 1.9rem;
   font-weight: 700;
-  background: linear-gradient(135deg, #ff0048, #651300);
+  /* background: linear-gradient(135deg, #ff0048, #651300); */
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
@@ -867,13 +865,13 @@ export default {
 
 .submit-btn {
   width: 100%;
-  background: linear-gradient(120deg, #ff9a9e, #fad0c4);
+  background: linear-gradient(120deg, #353897, #e91e63);
   border: none;
   padding: 0.9rem;
   border-radius: 40px;
   font-weight: 700;
   font-size: 1rem;
-  color: #4a2b33;
+  color: #ffffff;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -964,5 +962,13 @@ export default {
   .btn-primary, .btn-secondary { justify-content: center; }
   /* .auth-card { padding: 1.5rem; } */
   .back-to-welcome { top: 0.5rem; left: 0.5rem; }
+}
+.hllogo-icon {
+  width: 32px!important;
+  height: 32px!important;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 </style>

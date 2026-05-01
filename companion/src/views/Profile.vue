@@ -89,10 +89,12 @@
         <!-- Introduction Video & Edit Profile Row -->
         <div class="action-buttons-row">
           <div class="video-section">
-            <h3 class="section-title">
-              <i class="fa fa-video-camera"></i> Introduction Video
-            </h3>
-            <div class="video-container">
+            <!-- Loader overlay for video upload -->
+            <div v-if="videoUploading" class="video-upload-loader">
+              <div class="loader-spinner"></div>
+              <p>Uploading video...</p>
+            </div>
+            <div class="video-container" :class="{ 'opacity-low': videoUploading }">
               <video v-if="previewVideo" :src="previewVideo" controls class="intro-video"></video>
               <label class="upload-video-btn" v-else>
                 <i class="fa fa-cloud-upload"></i> Upload Introduction Video
@@ -105,9 +107,9 @@
             </div>
           </div>
 
-          <!-- Edit Profile Button aligned in same row -->
+          <!-- Edit Profile Button aligned in same row - Gemini style animated border -->
           <div class="edit-profile-section">
-            <button class="edit-profile-btn" @click="toggleEditForm">
+            <button class="edit-profile-btn gemini-border" @click="toggleEditForm">
               <i class="fa fa-edit"></i>
               <span>{{ activeTab === 'personal' ? 'Edit Personal Details' : 'Edit Professional Details' }}</span>
             </button>
@@ -644,7 +646,7 @@ export default {
       isLoggedIn: false,
       isCheckingAuth: true,
       showPersonalDetails: false,
-      activeTab: 'personal', // 'personal' or 'professional'
+      activeTab: 'personal',
       previewVideo: null,
       lightboxOpen: false,
       lightboxIndex: 0,
@@ -652,6 +654,7 @@ export default {
       cropper: null,
       cropImageUrl: null,
       selectedProfileFile: null,
+      videoUploading: false,
       toast: {
         show: false,
         message: "",
@@ -1033,6 +1036,8 @@ export default {
         return
       }
 
+      this.videoUploading = true
+
       const formData = new FormData()
       formData.append("introduction_video", file)
 
@@ -1043,10 +1048,12 @@ export default {
         this.previewVideo = URL.createObjectURL(file)
         this.user.introduction_video = res.data.introduction_video
         localStorage.setItem("user", JSON.stringify(res.data))
-        this.showToast("Video uploaded successfully")
+        this.showToast("Video uploaded")
       } catch (err) {
         console.error(err)
         this.showToast("Failed to upload video", "error")
+      } finally {
+        this.videoUploading = false
       }
     },
     triggerProfilePhotoInput() {
@@ -1065,7 +1072,7 @@ export default {
           { headers: { Authorization: `Bearer ${token}` } }
         )
         localStorage.setItem("user", JSON.stringify(res.data))
-        this.showToast("Photo removed successfully")
+        this.showToast("Photo removed")
       } catch (err) {
         console.error(err)
         this.showToast("Failed to remove photo", "error")
@@ -1182,7 +1189,7 @@ export default {
           headers: { Authorization: `Bearer ${token}` }
         })
         localStorage.setItem("user", JSON.stringify(res.data))
-        this.showToast("Profile updated successfully")
+        this.showToast("Profile updated")
         this.closeEditForm()
       } catch (err) {
         console.error(err)
@@ -1337,6 +1344,7 @@ async loadProfessionalDataFromAPI() {
   overflow: hidden;
   animation: slideUp 0.6s cubic-bezier(0.2, 0.9, 0.4, 1.1);
   position: relative;
+  border-radius: 24px;
 }
 
 @keyframes slideUp {
@@ -1434,6 +1442,7 @@ async loadProfessionalDataFromAPI() {
   height: 140px;
   background: linear-gradient(135deg, #fd5068, #ff8a5c);
   position: relative;
+  display: none;
 }
 
 .cover-overlay {
@@ -1446,7 +1455,6 @@ async loadProfessionalDataFromAPI() {
 .profile-header {
   padding: 0 20px 20px;
   position: relative;
-  margin-top: -50px;
   display: flex;
   gap: 20px;
   flex-wrap: wrap;
@@ -1608,6 +1616,7 @@ async loadProfessionalDataFromAPI() {
   flex: 2;
   padding: 0;
   border: none;
+  position: relative;
 }
 
 .action-buttons-row .edit-profile-section {
@@ -1619,6 +1628,51 @@ async loadProfessionalDataFromAPI() {
 .video-section {
   border-top: 1px solid rgba(0,0,0,0.05);
   border-bottom: 1px solid rgba(0,0,0,0.05);
+  position: relative;
+}
+
+/* Video Upload Loader */
+.video-upload-loader {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  border-radius: 15px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+  backdrop-filter: blur(4px);
+}
+
+.loader-spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid rgba(255, 255, 255, 0.3);
+  border-top: 4px solid #fd5068;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 12px;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.video-upload-loader p {
+  color: white;
+  font-size: 14px;
+  font-weight: 500;
+  margin: 0;
+}
+
+.opacity-low {
+  opacity: 0.5;
+  pointer-events: none;
 }
 
 .video-container {
@@ -1637,8 +1691,7 @@ async loadProfessionalDataFromAPI() {
   justify-content: center;
   gap: 10px;
   padding: 15px;
-  background: linear-gradient(135deg, #E91E63, #F44336);
-  color: white;
+  color: rgb(49 43 136);
   border-radius: 15px;
   cursor: pointer;
   transition: all 0.3s;
@@ -1647,7 +1700,6 @@ async loadProfessionalDataFromAPI() {
 
 .upload-video-btn:hover {
   transform: translateY(-2px);
-  box-shadow: 0 10px 25px rgba(102,126,234,0.3);
 }
 
 .upload-video-btn.small {
@@ -1656,7 +1708,7 @@ async loadProfessionalDataFromAPI() {
   color: #666;
 }
 
-/* Edit Profile Button */
+/* Edit Profile Button - Gemini Style Animated Border */
 .edit-profile-btn {
   width: 100%;
   height: 100%;
@@ -1666,24 +1718,94 @@ async loadProfessionalDataFromAPI() {
   justify-content: center;
   gap: 8px;
   padding: 15px 12px;
-  background: linear-gradient(135deg, #fd5068, #ff8a5c);
-  color: white;
+  background: transparent;
+  color: #1a1a2e;
   border: none;
-  border-radius: 15px;
   cursor: pointer;
   transition: all 0.3s;
   font-weight: 600;
   font-size: 14px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  position: relative;
+  border-radius: 15px;
+  z-index: 1;
+  overflow: hidden;
+}
+
+/* Gemini animated border effect */
+.gemini-border {
+  position: relative;
+  background: white;
+  border-radius: 15px;
+}
+
+.gemini-border::before {
+  content: '';
+  position: absolute;
+  top: -2px;
+  left: -2px;
+  right: -2px;
+  bottom: -2px;
+  background: linear-gradient(
+    45deg,
+    #ff0080,
+    #ff8c00,
+    #40e0d0,
+    #1e90ff,
+    #ff0080
+  );
+  background-size: 400%;
+  border-radius: 17px;
+  z-index: -1;
+  animation: geminiBorder 6s linear infinite;
+  opacity: 0.7;
+  transition: opacity 0.3s ease;
+}
+
+.gemini-border::after {
+  content: '';
+  position: absolute;
+  inset: 2px;
+  background: white;
+  border-radius: 13px;
+  z-index: -1;
+}
+
+.gemini-border:hover::before {
+  opacity: 1;
+  animation: geminiBorder 3s linear infinite;
+}
+
+.gemini-border:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+}
+
+@keyframes geminiBorder {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
 }
 
 .edit-profile-btn i {
   font-size: 20px;
+  background: linear-gradient(135deg, #ff0080, #ff8c00);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
 }
 
-.edit-profile-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(253, 80, 104, 0.3);
+.edit-profile-btn span {
+  background: linear-gradient(135deg, #1a1a2e, #2d2d5e);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  font-weight: 700;
 }
 
 /* Gallery Section */

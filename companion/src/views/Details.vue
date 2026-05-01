@@ -453,7 +453,11 @@ export default {
           )
           if (res.data.success) {
             this.matchStatus = 'requested'
-            this.notificationStore.increment()
+            // Only increment notification if the request was sent successfully
+            // The notification store should only count actual notifications from backend
+            // But we're incrementing here for UI feedback - this should be removed
+            // or replaced with actual notification count from backend
+            // this.notificationStore.increment() // COMMENTED OUT - Don't increment here
             this.showToast(`✨ Request sent to ${this.person.first_name}`, "success")
           }
         } else if (this.matchStatus === 'requested') {
@@ -542,6 +546,9 @@ export default {
           await this.checkMatchStatus()
           this.loading = false
           
+          // Fetch and sync notification count from backend after profile loads
+          await this.syncNotificationCount()
+          
           this.$nextTick(() => {
             window.scrollTo({ top: 0, left: 0, behavior: 'instant' })
             const app = document.querySelector('.dating-app')
@@ -556,6 +563,21 @@ export default {
         console.error("Fetch error:", e)
         this.showToast("Profile not found", "error")
         this.$router.back()
+      }
+    },
+
+    async syncNotificationCount() {
+      // Fetch actual notification count from backend
+      try {
+        const res = await axios.get(
+          "https://companion.ajaywatpade.in/api/notifications/count",
+          { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } }
+        )
+        if (res.data && typeof res.data.count === 'number') {
+          this.notificationStore.setCount(res.data.count)
+        }
+      } catch (e) {
+        console.error("Failed to sync notification count", e)
       }
     },
 
@@ -582,14 +604,18 @@ export default {
       this.person.followers_count = wasFollowing ? Math.max(count - 1, 0) : count + 1
 
       try {
-        await axios.post(
+        const res = await axios.post(
           "https://companion.ajaywatpade.in/api/follow-toggle",
           { user_id: this.person.id },
           { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } }
         )
-        if (!wasFollowing) {
-          this.notificationStore.increment()
+        if (!wasFollowing && res.data.success) {
+          // Only show toast, don't increment notification here
+          // Notification should only come from backend when someone follows YOU back
           this.showToast(`Following ${this.person.first_name} ✨`, "success")
+          
+          // Don't increment notification - following someone doesn't create a notification
+          // this.notificationStore.increment() // REMOVED
         }
       } catch (e) {
         this.isFollowing = wasFollowing

@@ -24,8 +24,35 @@
       <transition name="step-fade" mode="out-in">
         <div :key="currentStep" class="step-content">
           
-          <!-- Step 0: Basic Info -->
+          <!-- Step 0: Age Preference (NEW FIRST STEP) -->
           <div v-if="currentStep === 0">
+            <h2 class="step-title">Find Your Perfect Match</h2>
+            <p class="step-subtitle">Select your age group to find compatible partners</p>
+            
+            <div class="age-cards-grid">
+              <div 
+                v-for="ageGroup in ageGroups" 
+                :key="ageGroup.range"
+                class="age-card"
+                :class="{ active: selectedAgeGroup === ageGroup.range }"
+                @click="selectAgeGroup(ageGroup.range)"
+              >
+                <div class="age-icon" :class="ageGroup.iconClass">
+                  <i :class="ageGroup.icon"></i>
+                </div>
+                <div class="age-range">{{ ageGroup.range }}</div>
+                <div class="age-description">{{ ageGroup.description }}</div>
+              </div>
+            </div>
+            
+            <div class="age-note">
+              <i class="fa fa-heart"></i>
+              <span>We'll show you profiles within your selected age range</span>
+            </div>
+          </div>
+
+          <!-- Step 1: Basic Info -->
+          <div v-if="currentStep === 1">
             <h2 class="step-title">Welcome! Let's start with basics</h2>
             <p class="step-subtitle">Tell us who you are</p>
             
@@ -157,8 +184,8 @@
             </div>
           </div>
 
-          <!-- Step 1: Personal Details -->
-          <div v-if="currentStep === 1">
+          <!-- Step 2: Personal Details -->
+          <div v-if="currentStep === 2">
             <h2 class="step-title">Tell us more about you</h2>
             <p class="step-subtitle">This helps us find your perfect match</p>
             
@@ -201,8 +228,8 @@
             </div>
           </div>
 
-          <!-- Step 2: Location -->
-          <div v-if="currentStep === 2" class="center-step">
+          <!-- Step 3: Location -->
+          <div v-if="currentStep === 3" class="center-step">
             <h2 class="step-title">Where are you located?</h2>
             <p class="step-subtitle">We'll show you matches nearby</p>
             
@@ -228,8 +255,8 @@
             </p>
           </div>
 
-          <!-- Step 3: Profile Photo -->
-          <div v-if="currentStep === 3" class="center-step">
+          <!-- Step 4: Profile Photo -->
+          <div v-if="currentStep === 4" class="center-step">
             <h2 class="step-title">Add your profile photo</h2>
             <p class="step-subtitle">Profiles with photos get 5× more matches</p>
             
@@ -256,8 +283,8 @@
             <input type="file" ref="photoInput" accept="image/*" hidden @change="handlePhotoSelect" />
           </div>
 
-          <!-- Step 4: Bio & Interests -->
-          <div v-if="currentStep === 4">
+          <!-- Step 5: Bio & Interests -->
+          <div v-if="currentStep === 5">
             <h2 class="step-title">Tell the world about you</h2>
             <p class="step-subtitle">Share what makes you unique</p>
             
@@ -299,8 +326,8 @@
             </div>
           </div>
 
-          <!-- Step 5: Photos Gallery -->
-          <div v-if="currentStep === 5">
+          <!-- Step 6: Photos Gallery -->
+          <div v-if="currentStep === 6">
             <h2 class="step-title">Show more of your life</h2>
             <p class="step-subtitle">Add up to 9 photos to your gallery</p>
             
@@ -318,8 +345,8 @@
             <input type="file" ref="galleryInput" accept="image/*" multiple hidden @change="handleGallerySelect" />
           </div>
 
-          <!-- Step 6: Address -->
-          <div v-if="currentStep === 6">
+          <!-- Step 7: Address -->
+          <div v-if="currentStep === 7">
             <h2 class="step-title">Your address</h2>
             <p class="step-subtitle">Used to find matches in your area</p>
             
@@ -450,8 +477,17 @@ export default {
       currentStep: 0,
       focusedField: '',
       showPassword: false,
-      stepNames: ['Basics', 'Details', 'Location', 'Photo', 'Bio', 'Gallery', 'Address'],
+      stepNames: ['Age', 'Basics', 'Details', 'Location', 'Photo', 'Bio', 'Gallery', 'Address'],
       statuses: ['Single', 'Married', 'Divorced', 'Separated', 'Widowed'],
+      
+      // Age Groups Selection
+      selectedAgeGroup: '',
+      ageGroups: [
+        { range: '18-25', description: 'Young', icon: 'fa fa-music', iconClass: 'icon-young' },
+        { range: '26-35', description: 'Ambitious', icon: 'fa fa-briefcase', iconClass: 'icon-ambitious' },
+        { range: '36-50', description: 'Established', icon: 'fa fa-star', iconClass: 'icon-established' },
+        { range: '50+', description: 'Sophisticated', icon: 'fa fa-diamond', iconClass: 'icon-wise' }
+      ],
       
       form: {
         firstName: '', 
@@ -472,7 +508,8 @@ export default {
         state: '', 
         country: 'India',
         latitude: '', 
-        longitude: ''
+        longitude: '',
+        age_preference: ''  // New field for age preference
       },
       
       // Country selector data
@@ -522,13 +559,14 @@ export default {
     
     isStepValid() {
       switch(this.currentStep) {
-        case 0: return this.form.firstName && this.form.lastName && this.form.email && this.form.password && this.form.mobile && this.form.password.length >= 6
-        case 1: return this.form.dob && this.form.gender && this.form.status
-        case 2: return this.locationGranted || this.locationSkipped
-        case 3: return !!this.profilePhoto
-        case 4: return this.form.bio && this.form.habits
-        case 5: return true
-        case 6: return this.form.city && this.form.address && this.form.pincode && this.form.state
+        case 0: return !!this.selectedAgeGroup
+        case 1: return this.form.firstName && this.form.lastName && this.form.email && this.form.password && this.form.mobile && this.form.password.length >= 6
+        case 2: return this.form.dob && this.form.gender && this.form.status
+        case 3: return this.locationGranted || this.locationSkipped
+        case 4: return !!this.profilePhoto
+        case 5: return this.form.bio && this.form.habits
+        case 6: return true
+        case 7: return this.form.city && this.form.address && this.form.pincode && this.form.state
         default: return true
       }
     }
@@ -548,6 +586,11 @@ export default {
   },
   
   methods: {
+    selectAgeGroup(range) {
+      this.selectedAgeGroup = range
+      this.form.age_preference = range
+    },
+    
     // Fetch all countries from REST API
     async fetchCountries() {
       this.isLoadingCountries = true
@@ -676,7 +719,7 @@ export default {
           this.form.longitude = position.coords.longitude
           this.locationLoading = false
           setTimeout(() => { 
-            if (this.currentStep === 2) this.currentStep++ 
+            if (this.currentStep === 3) this.currentStep++ 
           }, 500)
         },
         (error) => {
@@ -796,6 +839,7 @@ export default {
         formData.append('pincode', this.form.pincode)
         formData.append('state', this.form.state)
         formData.append('country', this.form.country)
+        formData.append('age_preference', this.form.age_preference)  // Add age preference
         
         if (this.form.latitude) formData.append('latitude', this.form.latitude)
         if (this.form.longitude) formData.append('longitude', this.form.longitude)
@@ -994,6 +1038,101 @@ export default {
   color: #666;
   font-size: 0.95rem;
   margin-bottom: 2rem;
+}
+
+/* ===== AGE SELECTION CARDS ===== */
+.age-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1.25rem;
+  margin-bottom: 2rem;
+}
+
+.age-card {
+  background: #ffffff;
+  border: 2px solid #eef2f6;
+  border-radius: 24px;
+  padding: 1.75rem 1rem;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.2, 0.9, 0.4, 1.1);
+}
+
+.age-card:hover {
+  transform: translateY(-4px);
+  border-color: #ffd4d4;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.05);
+}
+
+.age-card.active {
+  border-color: #E91E63;
+  background: linear-gradient(135deg, rgba(233, 30, 99, 0.03), rgba(233, 30, 99, 0.01));
+  box-shadow: 0 8px 24px rgba(233, 30, 99, 0.12);
+}
+
+.age-icon {
+  width: 70px;
+  height: 70px;
+  margin: 0 auto 1rem auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  font-size: 2rem;
+  transition: all 0.3s ease;
+}
+
+.age-card.active .age-icon {
+  transform: scale(1.05);
+}
+
+.icon-young {
+  background: linear-gradient(135deg, #ffe2e2, #fff0f0);
+  color: #ff6b6b;
+}
+
+.icon-ambitious {
+  background: linear-gradient(135deg, #e0f3ff, #ecf8ff);
+  color: #4a9eff;
+}
+
+.icon-established {
+  background: linear-gradient(135deg, #e8f5e9, #f1f9f1);
+  color: #4caf50;
+}
+
+.icon-wise {
+  background: linear-gradient(135deg, #f3e5f5, #faf0fc);
+  color: #9c27b0;
+}
+
+.age-range {
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: #1a1a2e;
+  margin-bottom: 0.35rem;
+}
+
+.age-description {
+  font-size: 0.75rem;
+  color: #888;
+}
+
+.age-note {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  background: #f8f9fc;
+  border-radius: 50px;
+  font-size: 0.8rem;
+  color: #666;
+}
+
+.age-note .fa-heart {
+  color: #E91E63;
+  font-size: 0.8rem;
 }
 
 /* ===== FLOATING LABEL STYLES ===== */
@@ -1795,6 +1934,36 @@ export default {
   
   .step-title {
     font-size: 1.5rem;
+  }
+  
+  .age-cards-grid {
+    grid-template-columns: 1fr;
+    gap: 0.875rem;
+  }
+  
+  .age-card {
+    padding: 1.25rem 1rem;
+    display: flex;
+    align-items: center;
+    text-align: left;
+    gap: 1rem;
+            flex-wrap: wrap;
+  }
+  
+  .age-icon {
+    margin: 0;
+    width: 55px;
+    height: 55px;
+    font-size: 1.5rem;
+  }
+  
+  .age-card-content {
+    flex: 1;
+  }
+  
+  .age-range {
+    font-size: 1.1rem;
+    margin-bottom: 0.2rem;
   }
   
   .phone-combined-container {
